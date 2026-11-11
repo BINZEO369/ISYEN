@@ -2,7 +2,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import Fastify from 'fastify';
-import type { AppConfig } from './config.js';
+import { loadConfig, type AppConfig } from './config.js';
 import { createSupabaseIntegration } from './integrations/supabase.js';
 import { registerDatabaseRoutes } from './routes/database.js';
 
@@ -38,3 +38,8 @@ export function buildApp(config: AppConfig) {
   registerDatabaseRoutes(app, integration);
   return app;
 }
+
+// Vercel's Node runtime requires the module default export to be a server or
+// request handler. The local entrypoint still owns `listen()` for development.
+const vercelApp = buildApp(loadConfig());
+export default vercelApp;
