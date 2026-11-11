@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { SupabaseIntegration } from '../integrations/supabase.js';
-import { isResourceName, resourceNames, resources, type FieldRule, type ResourceName } from './resources.js';
+import { isResourceName, isSafeEsp32S3OutputPin, isValidEsp32S3LightConfig, resourceNames, resources, type FieldRule, type ResourceName } from './resources.js';
 
 const idParams = z.object({ resource: z.string(), id: z.string().uuid() });
 const resourceParams = z.object({ resource: z.string() });
@@ -45,6 +45,7 @@ function schemaFor(rule: FieldRule, queryValue = false): z.ZodTypeAny {
     case 'gatewayStatus': return z.enum(['online', 'offline', 'degraded', 'provisioning']);
     case 'deviceStatus': return z.enum(['online', 'offline', 'unavailable', 'provisioning']);
     case 'integrationStatus': return z.enum(['pending', 'active', 'error', 'revoked']);
+    case 'deviceTypeKey': return z.literal('esp32_s3_gpio_light');
     case 'timeFormat': return z.enum(['12h', '24h']);
     case 'temperatureUnit': return z.enum(['celsius', 'fahrenheit']);
     case 'theme': return z.enum(['light', 'dark', 'system']);
@@ -88,6 +89,7 @@ function parseBody(resource: ResourceName, input: unknown, mode: 'create' | 'upd
   if (!inputResult.success) return { ok: false, message: 'Request body must be a JSON object.' };
   const body: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(inputResult.data)) {
+    if (mode === 'update' && key === 'device_type_key') return { ok: false, message: 'Field "device_type_key" is accepted only when creating a device.' };
     const rule = definition.writable[key];
     if (!rule) return { ok: false, message: `Field "${key}" is not writable for this resource.` };
     if (rule === 'object' && containsSensitiveField(value)) {
@@ -105,6 +107,15 @@ function parseBody(resource: ResourceName, input: unknown, mode: 'create' | 'upd
   }
   if (resource === 'schedules' && mode === 'create' && !body.automation_id && !body.scene_id) {
     return { ok: false, message: 'A schedule must reference an automation_id or scene_id.' };
+  }
+  if (resource === 'devices') {
+    if (mode === 'create' && Boolean(body.device_type_id) === Boolean(body.device_type_key)) {
+      return { ok: false, message: 'Provide exactly one of device_type_id or device_type_key.' };
+    }
+    const config = body.config as Record<string, unknown> | undefined;
+    if ((body.device_type_key === 'esp32_s3_gpio_light' || config?.hardware === 'esp32_s3_gpio_light') && !isValidEsp32S3LightConfig(config)) {
+      return { ok: false, message: 'GPIO light config must use a supported ESP32-S3 output pin and a boolean desired_on value.' };
+    }
   }
   return { ok: true, value: body };
 }
@@ -194,6 +205,61 @@ function requestClient(resource: ResourceName, request: RequestWithAuth, integra
   return integration.requestClient(request.accessToken ?? '');
 }
 
+async function resolveGpioLightTypeId(request: RequestWithAuth, reply: FastifyReply, integration: SupabaseIntegration): Promise<string | null> {
+  const userClient = requestClient('device_types', request, integration);
+  if (!userClient) {
+    errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+    return null;
+  }
+  const key = 'esp32_s3_gpio_light';
+  const existing = await userClient.from('device_types').select('id').eq('key', key).eq('is_active', true).maybeSingle();
+  if (existing.error) {
+    reportDatabaseError(request, reply, 'device_type_lookup', existing.error);
+    return null;
+  }
+  if (existing.data?.id) return String(existing.data.id);
+
+  // This is a shared, idempotent catalog bootstrap only; tenant-owned data remains caller-JWT/RLS scoped.
+  const service = integration.serviceClient;
+  if (!service) {
+    errorResponse(reply, 503, 'DEVICE_TYPE_NOT_CONFIGURED', 'The GPIO light device type is not configured on the server.');
+    return null;
+  }
+  const created = await service.from('device_types').upsert({
+    key,
+    name: 'ESP32-S3 GPIO Light',
+    category: 'lighting',
+    manufacturer: 'ISYEN',
+    capabilities: { switch: true, gpio_output: true },
+    default_config: { hardware: 'esp32_s3_gpio_light', gpio: 4, desired_on: false, active_low: false },
+    is_active: true,
+  }, { onConflict: 'key' }).select('id').single();
+  if (created.error || !created.data?.id) {
+    reportDatabaseError(request, reply, 'device_type_bootstrap', created.error ?? { code: 'unknown' });
+    return null;
+  }
+  return String(created.data.id);
+}
+
+async function gpioAlreadyAssigned(
+  client: NonNullable<ReturnType<typeof requestClient>>,
+  isyenId: string,
+  gpio: number,
+  excludeDeviceId?: string,
+): Promise<{ conflict: boolean; error?: unknown }> {
+  const { data, error } = await client.from('devices')
+    .select('id,config')
+    .eq('isyen_id', isyenId)
+    .eq('config->>hardware', 'esp32_s3_gpio_light')
+    .limit(1000);
+  if (error) return { conflict: false, error };
+  const conflict = (data ?? []).some((row) => {
+    const config = row.config as Record<string, unknown> | null;
+    return row.id !== excludeDeviceId && config?.gpio === gpio;
+  });
+  return { conflict };
+}
+
 export function registerDatabaseRoutes(app: FastifyInstance, integration: SupabaseIntegration): void {
   app.addHook('preHandler', async (request, reply) => {
     const routeResource = (request.params as { resource?: string } | undefined)?.resource;
@@ -280,8 +346,21 @@ export function registerDatabaseRoutes(app: FastifyInstance, integration: Supaba
     const client = requestClient(resource, requestWithAuth, integration);
     if (!client || !tenant) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
 
+    const insertBody = { ...body.value };
+    if (resource === 'devices' && insertBody.device_type_key === 'esp32_s3_gpio_light') {
+      const typeId = await resolveGpioLightTypeId(requestWithAuth, reply, integration);
+      if (!typeId) return reply;
+      delete insertBody.device_type_key;
+      insertBody.device_type_id = typeId;
+    }
+    if (resource === 'devices' && isValidEsp32S3LightConfig(insertBody.config)) {
+      const pinCheck = await gpioAlreadyAssigned(client, tenant.isyenId, (insertBody.config as { gpio: number }).gpio);
+      if (pinCheck.error) return reportDatabaseError(request, reply, 'gpio_conflict_lookup', pinCheck.error);
+      if (pinCheck.conflict) return errorResponse(reply, 409, 'GPIO_ALREADY_ASSIGNED', 'This GPIO pin is already assigned to another light in this ISYEN account.');
+    }
+
     const { data, error } = await client.from(resource)
-      .insert({ ...body.value, isyen_id: tenant.isyenId })
+      .insert({ ...insertBody, isyen_id: tenant.isyenId })
       .select(definition.select)
       .single();
     if (error) return reportDatabaseError(request, reply, 'insert', error);
@@ -300,6 +379,12 @@ export function registerDatabaseRoutes(app: FastifyInstance, integration: Supaba
     const tenant = requestWithAuth.tenant;
     const client = requestClient(resource, requestWithAuth, integration);
     if (!client || !tenant) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+
+    if (resource === 'devices' && isValidEsp32S3LightConfig(body.value.config)) {
+      const pinCheck = await gpioAlreadyAssigned(client, tenant.isyenId, (body.value.config as { gpio: number }).gpio, parsed.data.id);
+      if (pinCheck.error) return reportDatabaseError(request, reply, 'gpio_conflict_lookup', pinCheck.error);
+      if (pinCheck.conflict) return errorResponse(reply, 409, 'GPIO_ALREADY_ASSIGNED', 'This GPIO pin is already assigned to another light in this ISYEN account.');
+    }
 
     let query = client.from(resource).update(body.value).eq('id', parsed.data.id);
     query = scopedQuery(query, resource, tenant);
@@ -328,5 +413,80 @@ export function registerDatabaseRoutes(app: FastifyInstance, integration: Supaba
     if (error) return reportDatabaseError(request, reply, 'delete', error);
     if (!data) return errorResponse(reply, 404, 'NOT_FOUND', 'Resource row not found.');
     return reply.code(204).send();
+  });
+
+  app.get('/api/v1/device-runtime/identity', async (request, reply) => {
+    const requestWithAuth = request as RequestWithAuth;
+    const tenant = await requireTenant(requestWithAuth, reply, integration);
+    if (!tenant) return reply;
+    return reply.send({ data: { isyen_id: tenant.isyenId } });
+  });
+
+  app.get('/api/v1/device-runtime/lights', async (request, reply) => {
+    const paging = paginationQuery.safeParse(request.query);
+    if (!paging.success) return errorResponse(reply, 400, 'INVALID_QUERY', 'Invalid device-list pagination.');
+    const requestWithAuth = request as RequestWithAuth;
+    const tenant = await requireTenant(requestWithAuth, reply, integration);
+    if (!tenant) return reply;
+    const client = requestClient('devices', requestWithAuth, integration);
+    if (!client) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+    const { data, error, count } = await client.from('devices')
+      .select('id,config,created_at', { count: 'planned' })
+      .eq('isyen_id', tenant.isyenId)
+      .eq('config->>hardware', 'esp32_s3_gpio_light')
+      .order('created_at', { ascending: paging.data.order === 'asc' })
+      .range(paging.data.offset, paging.data.offset + paging.data.limit - 1);
+    if (error) return reportDatabaseError(request, reply, 'device_runtime_light_list', error);
+    return reply.send({
+      data: data ?? [],
+      pagination: {
+        limit: paging.data.limit,
+        offset: paging.data.offset,
+        total: count ?? data?.length ?? 0,
+        total_is_estimate: true,
+        has_more: (data?.length ?? 0) === paging.data.limit,
+      },
+    });
+  });
+
+  app.post('/api/v1/device-runtime/:id/state', async (request, reply) => {
+    const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return errorResponse(reply, 400, 'INVALID_DEVICE_ID', 'A valid device ID is required.');
+    const payload = z.object({
+      gpio: z.number().int(),
+      relay_on: z.boolean(),
+      rssi: z.number().int().min(-127).max(0).optional(),
+    }).strict().safeParse(request.body);
+    if (!payload.success || !isSafeEsp32S3OutputPin(payload.data.gpio)) {
+      return errorResponse(reply, 400, 'INVALID_DEVICE_STATE', 'Reported state or GPIO pin is invalid.');
+    }
+    const requestWithAuth = request as RequestWithAuth;
+    const tenant = await requireTenant(requestWithAuth, reply, integration);
+    if (!tenant) return reply;
+    const client = requestClient('devices', requestWithAuth, integration);
+    if (!client) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+
+    const deviceResult = await client.from('devices').select('id,config').eq('id', params.data.id).eq('isyen_id', tenant.isyenId).maybeSingle();
+    if (deviceResult.error) return reportDatabaseError(request, reply, 'device_state_device_lookup', deviceResult.error);
+    if (!deviceResult.data) return errorResponse(reply, 404, 'NOT_FOUND', 'Device row not found.');
+    const config = deviceResult.data.config as Record<string, unknown> | null;
+    if (!isValidEsp32S3LightConfig(config) || config.gpio !== payload.data.gpio) {
+      return errorResponse(reply, 409, 'DEVICE_CONFIG_MISMATCH', 'Reported GPIO does not match the configured device.');
+    }
+
+    const now = new Date().toISOString();
+    const deviceUpdate = await client.from('devices').update({ status: 'online', last_seen_at: now })
+      .eq('id', params.data.id).eq('isyen_id', tenant.isyenId).select('id').maybeSingle();
+    if (deviceUpdate.error) return reportDatabaseError(request, reply, 'device_heartbeat', deviceUpdate.error);
+    const stateUpdate = await client.from('device_states').upsert({
+      isyen_id: tenant.isyenId,
+      device_id: params.data.id,
+      state: { hardware: 'esp32_s3_gpio_light', gpio: payload.data.gpio, relay_on: payload.data.relay_on, rssi: payload.data.rssi ?? null },
+      reported_at: now,
+      received_at: now,
+      source: 'esp32_s3',
+    }, { onConflict: 'isyen_id,device_id' }).select('id,device_id,state,reported_at,received_at,source').single();
+    if (stateUpdate.error) return reportDatabaseError(request, reply, 'device_state_upsert', stateUpdate.error);
+    return reply.send({ data: stateUpdate.data });
   });
 }

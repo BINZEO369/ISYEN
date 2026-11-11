@@ -608,3 +608,42 @@ button { color: inherit; }
 .topbar-account { align-items: center; gap: 8px; color: #536757; }
 .topbar-account-name { max-width: 150px; overflow: hidden; font-size: 9px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 620px) { .topbar-account-name { display: none; } }
+
+
+/* ESP32-S3 GPIO light controls */
+.gpio-light-card { min-width: 0; padding: 17px; border: 1px solid #e2e9d9; border-radius: 14px; background: linear-gradient(155deg,#fffefa 0%,#f8fbf3 100%); box-shadow: 0 8px 22px rgba(43,67,49,.045); }
+.gpio-light-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.gpio-light-icon { width: 35px; height: 35px; display: grid; place-items: center; border-radius: 11px; background: #f5edda; color: #ae8a49; font-size: 19px; }
+.gpio-light-card h3 { margin: 14px 0 4px; color: #354d3d; font-size: 14px; letter-spacing: -.025em; }
+.gpio-light-room { margin: 0 0 14px; color: #8d988d; font-size: 9px; }
+.gpio-pin-row { display: grid; grid-template-columns: 1fr 85px auto; align-items: center; gap: 7px; padding: 10px 0; border-top: 1px solid #edf0e9; }
+.gpio-pin-row label { color: #7e8b7e; font-size: 9px; font-weight: 700; }
+.gpio-pin-row select { min-height: 33px; padding: 0 8px; border: 1px solid #e3e8df; border-radius: 8px; background: #fff; color: #4d6251; font-size: 9px; }
+.gpio-save-button { min-height: 33px; padding: 0 9px; border: 1px solid #dfe7d8; border-radius: 8px; background: #f4f7ee; color: #587151; font-size: 9px; font-weight: 800; cursor: pointer; }
+.gpio-save-button:disabled { opacity: .5; cursor: default; }
+.gpio-switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; padding: 11px 0; border-top: 1px solid #edf0e9; }
+.gpio-switch-row > div { display: flex; flex-direction: column; gap: 4px; }
+.gpio-switch-row strong { color: #435b47; font-size: 11px; }
+.gpio-switch-row small { color: #929c91; font-size: 8px; }
+.gpio-switch { width: 45px; height: 25px; position: relative; flex: 0 0 auto; padding: 0; border: 0; border-radius: 99px; background: #d8ded5; cursor: pointer; transition: background .18s; }
+.gpio-switch i { position: absolute; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.16); transition: transform .18s; }
+.gpio-switch.is-on { background: #7d9a6d; }
+.gpio-switch.is-on i { transform: translateX(20px); }
+.gpio-switch:disabled { opacity: .65; cursor: wait; }
+.gpio-card-error { margin: 3px 0 0; color: #a65f47; font-size: 9px; line-height: 1.6; }
+.gpio-device-details { margin-top: 12px; padding-top: 10px; border-top: 1px solid #edf0e9; color: #778478; font-size: 8px; }
+.gpio-device-details summary { cursor: pointer; font-weight: 750; }
+.gpio-device-details code { display: block; margin: 8px 0; padding: 8px; border-radius: 7px; background: #f3f5ef; color: #546655; font-size: 8px; overflow-wrap: anywhere; }
+.gpio-device-details button { padding: 0; border: 0; background: transparent; color: #54714f; font-size: 8px; font-weight: 800; cursor: pointer; }
+.light-modal .field-note { margin: 0; }
+@media (max-width: 760px) {
+  .home-toolbar { align-items: flex-start; flex-direction: column; }
+  .home-toolbar-actions { width: 100%; flex-wrap: wrap; }
+  .home-toolbar-actions .outline-action { flex: 1 1 auto; }
+}
+@media (max-width: 480px) {
+  .gpio-light-card { padding: 14px; }
+  .gpio-pin-row { grid-template-columns: 1fr 75px auto; gap: 5px; }
+  .gpio-save-button { padding-inline: 7px; }
+  .home-toolbar-actions .outline-action { min-width: calc(50% - 5px); }
+}

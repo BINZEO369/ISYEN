@@ -48,7 +48,18 @@ export type Home = {
 };
 
 export type Room = { id: string; home_id: string; name: string; room_type: string | null };
-export type Device = { id: string; home_id: string; room_id: string | null; name: string; status: string; device_type_id: string };
+export type Device = {
+  id: string;
+  home_id: string;
+  room_id: string | null;
+  name: string;
+  status: string;
+  device_type_id: string;
+  config: Record<string, unknown>;
+  last_seen_at: string | null;
+};
+export type DeviceState = { id: string; device_id: string; state: Record<string, unknown>; reported_at: string; received_at: string; source: string };
+export const ESP32_S3_OUTPUT_GPIO_PINS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 38, 39, 40, 41, 42, 47, 48] as const;
 export type Gateway = { id: string; home_id: string; name: string; gateway_type: string; status: string; last_seen_at: string | null };
 export type Scene = { id: string; home_id: string; name: string; description: string | null; icon: string | null; is_enabled: boolean };
 export type Automation = { id: string; home_id: string; name: string; description: string | null; is_enabled: boolean };
@@ -83,14 +94,41 @@ export async function loadProfile(accessToken: string): Promise<Profile> {
   return rows[0];
 }
 
+export async function loadDeviceIdentity(accessToken: string): Promise<{ isyen_id: string }> {
+  return requestJson<{ isyen_id: string }>("/api/device-runtime/identity", accessToken);
+}
+
 export async function loadResource<T>(resource: string, accessToken: string): Promise<T[]> {
-  const rows = await requestJson<T[]>(`/api/resources/${resource}?limit=100&order=desc`, accessToken);
-  return rows ?? [];
+  const rows: T[] = [];
+  for (let offset = 0; offset <= 1_000_000; offset += 100) {
+    const page = await requestJson<T[]>(`/api/resources/${resource}?limit=100&offset=${offset}&order=desc`, accessToken);
+    rows.push(...(page ?? []));
+    if (!page || page.length < 100) break;
+  }
+  return rows;
 }
 
 export async function createHome(input: { name: string; timezone: string; address: Record<string, unknown> }, accessToken: string): Promise<Home> {
   return requestJson<Home>("/api/resources/homes", accessToken, {
     method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function createGpioLight(input: { home_id: string; room_id: string | null; name: string; gpio: number }, accessToken: string): Promise<Device> {
+  return requestJson<Device>("/api/resources/devices", accessToken, {
+    method: "POST",
+    body: JSON.stringify({
+      ...input,
+      device_type_key: "esp32_s3_gpio_light",
+      config: { hardware: "esp32_s3_gpio_light", gpio: input.gpio, desired_on: false, active_low: false },
+    }),
+  });
+}
+
+export async function updateDevice(deviceId: string, input: { config: Record<string, unknown> }, accessToken: string): Promise<Device> {
+  return requestJson<Device>(`/api/resources/devices/${encodeURIComponent(deviceId)}`, accessToken, {
+    method: "PATCH",
     body: JSON.stringify(input),
   });
 }

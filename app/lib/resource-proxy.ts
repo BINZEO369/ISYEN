@@ -2,15 +2,18 @@ export const dashboardReadableResources = new Set([
   "homes",
   "rooms",
   "devices",
+  "device_states",
   "gateways",
   "scenes",
   "automations",
 ]);
 
-const supportedQueryParameters = ["limit", "offset", "order_by", "order", "home_id", "status"] as const;
+const supportedQueryParameters = ["limit", "offset", "order_by", "order", "home_id", "room_id", "device_id", "gateway_id", "status"] as const;
 
-export function isAllowedDashboardResource(resource: string, method: "GET" | "POST"): boolean {
-  return dashboardReadableResources.has(resource) && (method === "GET" || resource === "homes");
+export function isAllowedDashboardResource(resource: string, method: "GET" | "POST" | "PATCH"): boolean {
+  if (method === "GET") return dashboardReadableResources.has(resource);
+  if (method === "POST") return resource === "homes" || resource === "devices";
+  return method === "PATCH" && resource === "devices";
 }
 
 export function getBearerAuthorization(request: Request): string | null {

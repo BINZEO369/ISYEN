@@ -4,7 +4,7 @@ export type FieldRule =
   | 'integer' | 'nullableInteger'
   | 'number' | 'nullableNumber'
   | 'boolean' | 'object'
-  | 'homeStatus' | 'gatewayStatus' | 'deviceStatus' | 'integrationStatus'
+  | 'homeStatus' | 'gatewayStatus' | 'deviceStatus' | 'integrationStatus' | 'deviceTypeKey'
   | 'timeFormat' | 'temperatureUnit' | 'theme' | 'deviceView'
   | 'date' | 'nullableDate' | 'dateTime' | 'nullableDateTime';
 
@@ -37,6 +37,22 @@ const nullableInteger = 'nullableInteger' satisfies FieldRule;
 const nullableNumber = 'nullableNumber' satisfies FieldRule;
 const boolean = 'boolean' satisfies FieldRule;
 const object = 'object' satisfies FieldRule;
+
+export const ESP32_S3_OUTPUT_GPIO_PINS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 38, 39, 40, 41, 42, 47, 48] as const;
+const safeEsp32S3OutputPins = new Set<number>(ESP32_S3_OUTPUT_GPIO_PINS);
+
+export function isSafeEsp32S3OutputPin(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && safeEsp32S3OutputPins.has(value);
+}
+
+export function isValidEsp32S3LightConfig(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const config = value as Record<string, unknown>;
+  return config.hardware === 'esp32_s3_gpio_light'
+    && isSafeEsp32S3OutputPin(config.gpio)
+    && typeof config.desired_on === 'boolean'
+    && (config.active_low === undefined || typeof config.active_low === 'boolean');
+}
 
 const resourceDefinitions = {
   homes: {
@@ -76,8 +92,8 @@ const resourceDefinitions = {
   },
   devices: {
     select: 'id,home_id,room_id,zone_id,gateway_id,device_type_id,name,external_id,status,config,metadata,last_seen_at,created_at,updated_at',
-    writable: { home_id: uuid, room_id: nullableUuid, zone_id: nullableUuid, gateway_id: nullableUuid, device_type_id: uuid, name: requiredText, external_id: nullableText, config: object, metadata: object },
-    requiredOnCreate: ['home_id', 'device_type_id', 'name'],
+    writable: { home_id: uuid, room_id: nullableUuid, zone_id: nullableUuid, gateway_id: nullableUuid, device_type_id: uuid, device_type_key: 'deviceTypeKey', name: requiredText, external_id: nullableText, config: object, metadata: object },
+    requiredOnCreate: ['home_id', 'name'],
     filters: { home_id: uuid, room_id: uuid, zone_id: uuid, gateway_id: uuid, device_type_id: uuid, status: 'deviceStatus' },
     orderBy: ['created_at', 'updated_at', 'name', 'status', 'last_seen_at'], defaultOrderBy: 'created_at', write: true,
   },
