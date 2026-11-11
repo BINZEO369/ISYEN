@@ -141,10 +141,10 @@ export function RegisterForm() {
             <legend><span className="step-number">01</span> অ্যাকাউন্ট তথ্য</legend>
             <div className="form-grid">
               <label className="form-field form-field-wide"><span>ইমেইল ঠিকানা <b>*</b></span><input autoComplete="email" type="email" inputMode="email" placeholder="name@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
-              <label className="form-field"><span>পাসওয়ার্ড <b>*</b></span><span className="password-control"><input autoComplete="new-password" type={showPassword ? "text" : "password"} placeholder="কমপক্ষে ৮ অক্ষর" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required /><button className="password-toggle" type="button" onClick={() => setShowPassword((value) => !value)}>{showPassword ? "লুকান" : "দেখুন"}</button></span></label>
-              <label className="form-field"><span>পাসওয়ার্ড নিশ্চিত করুন <b>*</b></span><input autoComplete="new-password" type="password" placeholder="আবার লিখুন" minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required /></label>
+              <label className="form-field"><span>পাসওয়ার্ড <b>*</b></span><span className="password-control"><input autoComplete="new-password" type={showPassword ? "text" : "password"} placeholder="৮–৭২ অক্ষর" minLength={8} maxLength={72} value={password} onChange={(event) => setPassword(event.target.value)} required /><button className="password-toggle" type="button" onClick={() => setShowPassword((value) => !value)}>{showPassword ? "লুকান" : "দেখুন"}</button></span></label>
+              <label className="form-field"><span>পাসওয়ার্ড নিশ্চিত করুন <b>*</b></span><input autoComplete="new-password" type="password" placeholder="আবার লিখুন" minLength={8} maxLength={72} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required /></label>
             </div>
-            <p className="field-note">এই MVP-তে email/OTP verification ধাপ নেই।</p>
+            <p className="field-note">পাসওয়ার্ড ৮–৭২ অক্ষরের হবে। এই MVP-তে email/OTP verification ধাপ নেই।</p>
           </fieldset>
 
           <fieldset className="form-section">
