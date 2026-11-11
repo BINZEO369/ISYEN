@@ -1,0 +1,37 @@
+# ISYEN Repository Development Report
+
+**যাচাইয়ের তারিখ:** ১১ নভেম্বর ২০২৬  
+**Status:** নতুন, code-ready repository scaffold প্রস্তুত; product feature implementation scope-এর বাইরে।
+
+## লক্ষ্য ও folder structure
+
+এই deliverable নতুন ISYEN প্রোগ্রামে coding শুরু করার উপযোগী করে repository, programming language/framework configuration, package scripts এবং starter entrypoint সাজায়। তিনটি primary code folder আলাদা:
+
+```text
+ISYEN/
+├── app/          # Next.js + React user-application scaffold
+├── management/   # Next.js + React admin/management scaffold
+└── server/       # Node.js + TypeScript + Fastify backend scaffold
+```
+
+Root-level `package.json`, `pnpm-workspace.yaml`, `.nvmrc`, `.gitignore`, `.editorconfig` এবং pnpm lockfile workspace/toolchain পরিচালনা করে। App ও Management-এ Next.js 15, React 19, TypeScript, Tailwind CSS v3, HTML/CSS starter এবং public environment examples আছে। Backend-এ Node.js 22, TypeScript, Fastify, REST/WebSocket/Supabase-সংশ্লিষ্ট package configuration এবং minimal liveness endpoint আছে। JavaScript configuration files-ও অন্তর্ভুক্ত। Development port: App 3000, Management 3001, Server 4000।
+
+প্রতিটি UI-তে কেবল বাংলা placeholder starter page আছে; কোনো dashboard, device-control feature, admin workflow বা business logic নেই। Backend-এ শুধু `GET /health` liveness endpoint; future REST, WebSocket ও Supabase integration-এর স্থান/documentation আছে, কিন্তু live connection নেই। MQTT সম্পূর্ণ বাদ।
+
+## ইনস্টল ও যাচাই
+
+Node.js `v22.23.4` এবং pnpm `11.25.0` দিয়ে যাচাই করা হয়েছে। Root থেকে `pnpm install --frozen-lockfile` সফল; সব তিনটি package workspace-এ resolve হয়েছে। pnpm dependency postinstall allowlist-এ শুধু প্রয়োজনীয় `esbuild` ও `sharp` রাখা হয়েছে। প্রাথমিক install output-এ কিছু deprecated ESLint/transitive package warning ছিল; ইনস্টল ব্যর্থ হয়নি।
+
+`pnpm check` সফল হয়েছে। এতে তিন package-এর lint ও TypeScript typecheck পাস করেছে, production build পাস করেছে (দুটি Next.js app এবং TypeScript backend), server-এর ১টি health test পাস করেছে। App ও Management-এ এখনো কোনো feature/test নেই বলে তাদের test command empty-suite সফল করে; এটিকে feature coverage হিসেবে ধরা যাবে না।
+
+README-র নির্দেশ অনুযায়ী placeholder `.env.example`-গুলি local ignored env file-এ কপি করার পর root `pnpm dev` দিয়ে তিনটি service একসঙ্গে চালু হয়েছে। App `http://127.0.0.1:3000`, Management `http://127.0.0.1:3001` এবং Server `http://127.0.0.1:4000/health`—তিনটিতেই HTTP 200 smoke test পাওয়া গেছে। কোনো local credential ব্যবহার করা হয়নি। Dockerfile root workspace context-এর জন্য প্রস্তুত, তবে এই পরিবেশে Docker executable নেই, তাই container image build যাচাই করা হয়নি।
+
+## ইচ্ছাকৃতভাবে deferred
+
+Supabase project এই repository-তে সংযুক্ত নয়। Environment example-এ placeholder ছাড়া credential নেই; কোনো database, schema, migration, Auth setting বা Storage policy-তে পরিবর্তন হয়নি। উপলভ্য Supabase account-এর একমাত্র দৃশ্যমান project ISYEN হিসেবে চিহ্নিত নয় এবং তাতে unrelated বিদ্যমান data আছে, তাই সেটিকে স্পর্শ করা হয়নি।
+
+Sandbox-এ আগে থেকে ISYEN checkout বা remote URL ছিল না। `/home/ubuntu/ISYEN`-কে local Git `main` repository হিসেবে initialize করা হয়েছে, কিন্তু কোনো Git remote যোগ করা বা GitHub-এ push/sync করা হয়নি।
+
+## চালানোর নির্দেশনা
+
+Root README-তে install ও dev কমান্ড আছে। দ্রুত শুরু: `pnpm install`, তারপর প্রতিটি `.env.example` কপি করে `pnpm dev`; আলাদাভাবে চালাতে `pnpm dev:app`, `pnpm dev:management`, `pnpm dev:server`। বাস্তব Supabase ও API credential পাওয়ার পরেই সংশ্লিষ্ট integration configure করা উচিত।

@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --ink: #17231f;
+  --muted: #6f7c72;
+  --canvas: #f4f5f0;
+  --moss: #536e5c;
+  --lime: #d8ed9b;
+}
+
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: Arial, "Noto Sans Bengali", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.scaffold {
+  width: min(100% - 32px, 620px);
+  min-height: 100vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+.brand-mark {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px 18px 18px 6px;
+  background: var(--lime);
+  color: #304638;
+  font-size: 25px;
+  font-weight: 700;
+}
+.eyebrow { margin: 23px 0 10px; color: var(--moss); font-size: 12px; font-weight: 700; letter-spacing: .09em; }
+h1 { max-width: 520px; margin: 0; font-size: clamp(25px, 5vw, 38px); line-height: 1.35; letter-spacing: -.035em; }
+.intro { max-width: 420px; margin: 15px 0 22px; color: var(--muted); font-size: 14px; line-height: 1.8; }
+.status { padding: 8px 13px; border: 1px solid #dce5d7; border-radius: 99px; background: #edf2e9; color: #536e5c; font-size: 12px; }

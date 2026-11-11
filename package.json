@@ -1,0 +1,23 @@
+{
+  "name": "isyen-smart-home",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=11.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @isyen/app --filter @isyen/management --filter @isyen/server dev",
+    "dev:app": "pnpm --filter @isyen/app dev",
+    "dev:management": "pnpm --filter @isyen/management dev",
+    "dev:server": "pnpm --filter @isyen/server dev",
+    "build": "pnpm --recursive --if-present build",
+    "start": "pnpm --parallel --filter @isyen/app --filter @isyen/management --filter @isyen/server start",
+    "lint": "pnpm --recursive --if-present lint",
+    "typecheck": "pnpm --recursive --if-present typecheck",
+    "test": "pnpm --recursive --if-present test",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "clean": "pnpm --recursive --if-present clean && node -e \"for(const p of ['app/.next','management/.next','server/dist'])require('node:fs').rmSync(p,{recursive:true,force:true})\""
+  }
+}

@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --ink: #15221e;
+  --paper: #f4f6f2;
+  --lime: #b7ed69;
+  --muted: #707a74;
+}
+
+* { box-sizing: border-box; }
+html { min-height: 100%; scroll-behavior: smooth; }
+body { min-height: 100vh; margin: 0; background: var(--paper); color: var(--ink); font-family: Arial, "Noto Sans Bengali", sans-serif; }
+.shell { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 20px 22px; }
+.placeholder { width: min(100%, 610px); padding: clamp(30px, 7vw, 64px); border: 1px solid #e2e7df; border-radius: 18px; background: #fff; box-shadow: 0 24px 70px rgb(21 34 30 / 7%); }
+.brand-mark { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 38px; border-radius: 14px; background: var(--ink); color: var(--lime); font-size: 28px; font-weight: 800; letter-spacing: -3px; }
+.brand-mark span { color: #fff; }
+.eyebrow { margin: 0 0 10px; color: #65746b; font-size: 11px; font-weight: 700; letter-spacing: .14em; }
+h1 { margin: 0; font-size: clamp(30px, 6vw, 42px); line-height: 1.25; letter-spacing: -.035em; }
+.description { max-width: 440px; margin: 18px 0 26px; color: var(--muted); font-size: 15px; line-height: 1.85; }
+.status-label { display: inline-flex; align-items: center; gap: 9px; padding: 9px 12px; border: 1px solid #dce6d4; border-radius: 999px; background: #f6faef; color: #3b5b2d; font-size: 12px; font-weight: 700; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #81b84c; }
+footer { margin-top: 28px; color: #778078; font-size: 11px; text-align: center; }
+footer span { padding: 0 5px; color: #aab1ab; }
+@media (max-width: 480px) { .placeholder { border-radius: 14px; } .brand-mark { margin-bottom: 30px; } footer { max-width: 300px; line-height: 2; } }

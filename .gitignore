@@ -1,0 +1,27 @@
+# Dependencies and build outputs
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+**/dist/
+coverage/
+.turbo/
+**/tsconfig.tsbuildinfo
+.pnpm-store/
+
+# Local environment secrets (examples are committed)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Logs and editor/system artifacts
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
