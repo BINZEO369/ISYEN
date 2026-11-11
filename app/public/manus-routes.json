@@ -1,1 +1,1 @@
-{"routes":[{"path":"/","title":"ISYEN home"},{"path":"/sign-in","title":"Sign in"},{"path":"/register","title":"Register"},{"path":"/dashboard","title":"Dashboard"}]}
+{"routes":[{"path":"/","title":"ISYEN home"},{"path":"/sign-in","title":"Sign in"},{"path":"/register","title":"Register"},{"path":"/dashboard","title":"Dashboard"},{"path":"/account","title":"Account"}]}

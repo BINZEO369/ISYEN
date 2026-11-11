@@ -1,6 +1,6 @@
 # `@isyen/app` — ISYEN user application
 
-বাংলা-ভিত্তিক Next.js 15/React 19 user app। আলাদা `/sign-in` ও `/register` পেজ, Supabase Auth password login, user profile onboarding এবং `/dashboard`-এ নিজের database profile read অন্তর্ভুক্ত। Email/OTP verification ধাপ এই MVP-তে নেই।
+বাংলা-ভিত্তিক Next.js 15/React 19 user app। আলাদা `/sign-in` ও `/register` পেজ, Supabase Auth password login, user profile onboarding, `/dashboard`-এ মূল smart-home interface এবং `/account`-এ পৃথক account details অন্তর্ভুক্ত। Email/OTP verification ধাপ এই MVP-তে নেই।
 
 ## চালানো
 
@@ -30,6 +30,12 @@ ISYEN_API_BASE_URL=https://isyen-api.vercel.app
 Form-এ বর্তমান `user_profiles` schema-র সব ব্যবহারকারী-সম্পাদনাযোগ্য columns বিভাগভিত্তিক আছে: personal info, address/coordinates, locale/preferences এবং six notification flags. `default_home_id`, `default_room_id` ও `preferred_device_view` সক্রিয় schema-তে নেই, তাই form/API-তেও নেই. `email` Auth identity-এর সঙ্গে মেলে. `id` Postgres default, `auth_user_id` Supabase Auth, `isyen_id` trusted backend তৈরি করে. `profile_status`/`profile_completion` backend নির্ধারণ করে; creation/update timestamps database-managed. নতুন account confirmed হিসেবে তৈরি হয় বলে আলাদা verification ধাপ লাগে না.
 
 Form browser থেকে service-role operation করে না: `/api/auth/register` server-side proxy হয়ে `isyen-api`-র `POST /auth/register`-এ যায়। Sign-in Supabase Auth browser SDK-এ হয়; `/api/profile` একই-origin server proxy দিয়ে JWT-সহ self-only `user_profiles` resource-টি load করে.
+
+## Dashboard and account
+
+`/dashboard` is the main home-control overview. It loads the signed-in user's homes, rooms, devices, gateways, scenes and automations through authenticated REST requests. When no home exists, the user can create one from the dashboard; the server API derives tenant ownership from the verified access token. Empty device, scene and automation states are shown instead of sample data. `/account` is an independent top-level page that displays the user's own profile, address, preferences, notification settings and account metadata.
+
+The same-origin `/api/resources/:resource` route only proxies reads for the dashboard's allowlisted resources and permits creation for `homes` only. Requests require the current Supabase bearer token; the backend remains responsible for authentication, tenant scoping and request validation.
 
 ## Checks
 
