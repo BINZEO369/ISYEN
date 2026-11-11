@@ -27,10 +27,12 @@ pnpm dev
 
 আলাদা package চালাতে `pnpm dev:app`, `pnpm dev:management`, `pnpm dev:server`; code checks-এর জন্য `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` বা `pnpm check`। Example environment files-এ placeholder থাকবে; local credential `.env*`-এ রাখুন এবং commit করবেন না।
 
+## Agent ও developer নির্দেশনা
+
+পরবর্তী coding শুরু করার আগে root [AGENTS.md](AGENTS.md) এবং সংশ্লিষ্ট package-এর `AGENTS.md` পড়ুন। English ownership map ও approved language boundaries [ARCHITECTURE.md](ARCHITECTURE.md)-এ আছে।
+
 ## Supabase ও remote repository
 
 Supabase এখনো এই repository-তে connect বা provision করা হয়নি। `.env.example`-এর value placeholder মাত্র; কোনো database/schema/auth/storage পরিবর্তন করা হয়নি। সঠিক ISYEN project পরে যুক্ত করে সিদ্ধান্ত নেওয়া যাবে।
 
-এই task environment-এ কোনো ISYEN checkout বা Git remote পাওয়া যায়নি। তাই নতুন workspace `/home/ubuntu/ISYEN`-এ তৈরি হচ্ছে, remote-এ push/sync নয়।
-
-Setup-এর সীমা ও যাচাইকৃত ফলাফল [Development Report](DEVELOPMENT_REPORT.md)-এ আছে।
+Repository: [github.com/BINZEO369/ISYEN](https://github.com/BINZEO369/ISYEN), `main` branch। Setup-এর সীমা ও যাচাইকৃত ফলাফল [Development Report](DEVELOPMENT_REPORT.md)-এ আছে।
