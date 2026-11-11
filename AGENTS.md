@@ -10,7 +10,9 @@ The repository has exactly three application code areas:
 - `server/` owns the backend: API endpoints, server runtime and deployment configuration, request validation, authentication/authorization enforcement, REST handlers, and WebSocket handlers.
 - `management/` owns the complete administrator/management interface: admin pages, components, styles, client-side behavior, and admin navigation.
 
-Keep each feature in its responsible folder. Do not add another top-level product/application folder. Root-level files are limited to repository-wide tooling, dependency/workspace configuration, and documentation. Do not move admin pages into `app/`, user pages into `management/`, or backend endpoints into either frontend package.
+Keep each feature in its responsible folder. The four tracked top-level folders are exactly `app/`, `server/`, `management/`, and `docs/`; `docs/` is for long-form documentation only. Do not add another tracked top-level folder. Keep package instructions within their package. Do not move admin pages into `app/`, user pages into `management/`, or backend endpoints into either frontend package.
+
+Keep tool-discovered root files at the root: `README.md`, this `AGENTS.md`, `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `.gitignore`, `.dockerignore`, `.editorconfig`, and `.nvmrc`. Package managers, GitHub, editors, and coding agents expect these files there; moving them into `docs/` or a config subfolder can break tooling. Put long-form documents such as architecture, contribution, security, and development reports in `docs/`.
 
 ## Approved technology and language boundary
 

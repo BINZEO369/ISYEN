@@ -7,16 +7,17 @@ This document defines where future work belongs. The repository is a starter sca
 ```text
 ISYEN/
 ├── app/                 # Complete end-user interface package
-├── management/          # Complete administrator/management interface package
 ├── server/              # Backend endpoints and server configuration package
+├── management/          # Complete administrator/management interface package
+├── docs/                # Long-form documentation only
 ├── AGENTS.md            # Rules for all coding agents and contributors
-├── ARCHITECTURE.md      # This ownership and integration map
+├── README.md            # GitHub/repository entry point
 ├── package.json         # Root pnpm orchestration
 ├── pnpm-workspace.yaml  # The three-package workspace definition
 └── pnpm-lock.yaml       # Single repository dependency lockfile
 ```
 
-The only top-level product/code folders are `app/`, `management/`, and `server/`. Repository-wide configuration and documentation may remain at the root; do not create a fourth application package there.
+There are exactly four tracked top-level folders: the three code packages `app/`, `server/`, and `management/`, plus documentation-only `docs/`. Do not add a fifth tracked top-level folder. Keep long-form documents in `docs/`. Required tool-discovered files such as `README.md`, `AGENTS.md`, `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `.gitignore`, `.dockerignore`, `.editorconfig`, and `.nvmrc` remain at the root because moving them may break package, Git, editor, or agent tooling.
 
 ## Ownership
 

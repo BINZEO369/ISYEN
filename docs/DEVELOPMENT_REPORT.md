@@ -5,18 +5,19 @@
 
 ## লক্ষ্য ও folder structure
 
-এই deliverable নতুন ISYEN প্রোগ্রামে coding শুরু করার উপযোগী করে repository, programming language/framework configuration, package scripts এবং starter entrypoint সাজায়। তিনটি primary code folder আলাদা:
+এই deliverable নতুন ISYEN প্রোগ্রামে coding শুরু করার উপযোগী করে repository, programming language/framework configuration, package scripts এবং starter entrypoint সাজায়। তিনটি primary code folder আলাদা; চতুর্থ tracked top-level folder `docs/` long-form documentation-এর জন্য:
 
 ```text
 ISYEN/
 ├── app/          # Next.js + React user-application scaffold
+├── server/       # Node.js + TypeScript + Fastify backend scaffold
 ├── management/   # Next.js + React admin/management scaffold
-└── server/       # Node.js + TypeScript + Fastify backend scaffold
+└── docs/         # Architecture, contribution, security and development report
 ```
 
-Root-level `package.json`, `pnpm-workspace.yaml`, `.nvmrc`, `.gitignore`, `.editorconfig` এবং pnpm lockfile workspace/toolchain পরিচালনা করে। App ও Management-এ Next.js 15, React 19, TypeScript, Tailwind CSS v3, HTML/CSS starter এবং public environment examples আছে। Backend-এ Node.js 22, TypeScript, Fastify, REST/WebSocket/Supabase-সংশ্লিষ্ট package configuration এবং minimal liveness endpoint আছে। JavaScript configuration files-ও অন্তর্ভুক্ত। Development port: App 3000, Management 3001, Server 4000।
+Root-level `package.json`, `pnpm-workspace.yaml`, `.nvmrc`, `.gitignore`, `.editorconfig` এবং pnpm lockfile workspace/toolchain পরিচালনা করে; tooling-এর জন্য এগুলো root-এ রাখা হয়েছে। `docs/`-এ long-form architecture, contribution, security এবং development report রাখা হয়েছে। App ও Management-এ Next.js 15, React 19, TypeScript, Tailwind CSS v3, HTML/CSS starter এবং public environment examples আছে। Backend-এ Node.js 22, TypeScript, Fastify, REST/WebSocket/Supabase-সংশ্লিষ্ট package configuration এবং minimal liveness endpoint আছে। JavaScript configuration files-ও অন্তর্ভুক্ত। Development port: App 3000, Management 3001, Server 4000।
 
-প্রতিটি UI-তে কেবল বাংলা placeholder starter page আছে; কোনো dashboard, device-control feature, admin workflow বা business logic নেই। Backend-এ শুধু `GET /health` liveness endpoint; future REST, WebSocket ও Supabase integration-এর স্থান/documentation আছে, কিন্তু live connection নেই। MQTT সম্পূর্ণ বাদ। English future-agent ownership rules `AGENTS.md` এবং architecture map `ARCHITECTURE.md`-এ রাখা হয়েছে; package-ভিত্তিক নির্দেশনা সংশ্লিষ্ট folder-এর `AGENTS.md`-এ আছে।
+প্রতিটি UI-তে কেবল বাংলা placeholder starter page আছে; কোনো dashboard, device-control feature, admin workflow বা business logic নেই। Backend-এ শুধু `GET /health` liveness endpoint; future REST, WebSocket ও Supabase integration-এর স্থান/documentation আছে, কিন্তু live connection নেই। MQTT সম্পূর্ণ বাদ। English future-agent ownership rules `AGENTS.md` এবং architecture map `docs/ARCHITECTURE.md`-এ রাখা হয়েছে; package-ভিত্তিক নির্দেশনা সংশ্লিষ্ট folder-এর `AGENTS.md`-এ আছে।
 
 ## ইনস্টল ও যাচাই
 

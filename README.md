@@ -7,11 +7,12 @@
 ```text
 ISYEN/
 ├── app/          # User application: Next.js + React + TypeScript + Tailwind
-├── management/   # Management panel: Next.js + React + TypeScript + Tailwind
-└── server/       # Node.js + TypeScript service scaffold
+├── server/       # API endpoints and Node.js + TypeScript server configuration
+├── management/   # Admin pages and interface: Next.js + React + TypeScript + Tailwind
+└── docs/         # Architecture, contribution, security and development report
 ```
 
-**শুধু এই তিনটিই মূল code folder।** Root-level `package.json`, `pnpm-workspace.yaml` এবং toolchain files তিনটি package-কে এক জায়গা থেকে configure ও চালায়। HTML5/CSS3 Next.js starter page-এ, JavaScript TypeScript-সহ, আর REST/WebSocket/Supabase-এর dependency/configuration ভবিষ্যৎ implementation-এর জন্য রাখা হচ্ছে—এগুলো এখনো live service connection বা product feature নয়।
+**মোট চারটি tracked top-level folder:** `app/`, `server/`, `management/` এবং documentation-only `docs/`। প্রথম তিনটি code package; `docs/`-এ long-form documentation রাখা হয়। `package.json`, `pnpm-workspace.yaml`, lockfile, `.gitignore`, `.nvmrc`, root `README.md` ও `AGENTS.md`-এর মতো standard tool-discovered file root-এ রাখতে হয়—অন্য folder-এ সরালে package manager, Git বা coding-agent tooling ভাঙতে পারে। HTML5/CSS3 Next.js starter page-এ, JavaScript TypeScript-সহ, আর REST/WebSocket/Supabase-এর dependency/configuration ভবিষ্যৎ implementation-এর জন্য রাখা হচ্ছে—এগুলো এখনো live service connection বা product feature নয়।
 
 ## চালানো
 
@@ -29,10 +30,10 @@ pnpm dev
 
 ## Agent ও developer নির্দেশনা
 
-পরবর্তী coding শুরু করার আগে root [AGENTS.md](AGENTS.md) এবং সংশ্লিষ্ট package-এর `AGENTS.md` পড়ুন। English ownership map ও approved language boundaries [ARCHITECTURE.md](ARCHITECTURE.md)-এ আছে।
+পরবর্তী coding শুরু করার আগে root [AGENTS.md](AGENTS.md) এবং সংশ্লিষ্ট package-এর `AGENTS.md` পড়ুন। English ownership map ও approved language boundaries [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)-এ আছে।
 
 ## Supabase ও remote repository
 
 Supabase এখনো এই repository-তে connect বা provision করা হয়নি। `.env.example`-এর value placeholder মাত্র; কোনো database/schema/auth/storage পরিবর্তন করা হয়নি। সঠিক ISYEN project পরে যুক্ত করে সিদ্ধান্ত নেওয়া যাবে।
 
-Repository: [github.com/BINZEO369/ISYEN](https://github.com/BINZEO369/ISYEN), `main` branch। Setup-এর সীমা ও যাচাইকৃত ফলাফল [Development Report](DEVELOPMENT_REPORT.md)-এ আছে।
+Repository: [github.com/BINZEO369/ISYEN](https://github.com/BINZEO369/ISYEN), `main` branch। Setup-এর সীমা ও যাচাইকৃত ফলাফল [Development Report](docs/DEVELOPMENT_REPORT.md)-এ আছে।
