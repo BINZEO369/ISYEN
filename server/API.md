@@ -1,25 +1,35 @@
 # ISYEN server API and environment configuration
 
+The API is aligned with the existing `ISYEN HOME` Supabase schema. All tenant tables are accessed with the caller's Supabase JWT and PostgreSQL RLS remains enabled. No service-role key is required by the current user-facing REST routes.
+
 ## Environment variables
 
 | Variable | Required | Purpose |
 |---|---:|---|
 | `NODE_ENV` | no | `development`, `test` or `production` |
 | `HOST` | no | Bind address; default `0.0.0.0` |
-| `PORT` | no | Fastify port; default `4000` |
+| `PORT` | no | Listen port; default `4000`; hosting providers may supply it |
 | `LOG_LEVEL` | no | Fastify log level |
-| `CORS_ORIGIN` | yes in production | Allowed frontend origin; avoid `*` with credentials |
-| `RATE_LIMIT_MAX` | no | Requests per window; default `120` |
+| `CORS_ORIGIN` | production | Comma-separated allowed frontend origins; wildcard is rejected in production |
+| `RATE_LIMIT_MAX` | no | Requests per token/IP per window; default `120` |
 | `RATE_LIMIT_WINDOW` | no | Rate-limit window; default `1 minute` |
-| `SUPABASE_URL` | yes for API | `https://fabasazefdnkpygglajz.supabase.co` |
-| `SUPABASE_ANON_KEY` | yes for API | Public anon/publishable key; used with the caller Bearer token |
-| `SUPABASE_SERVICE_ROLE_KEY` | yes for readiness/tenant resolution | Server-only key; never send to browsers or commit to Git |
+| `SUPABASE_URL` | yes for authenticated API/readiness | `https://fabasazefdnkpygglajz.supabase.co` |
+| `SUPABASE_ANON_KEY` | yes for authenticated API/readiness | Supabase publishable/anon key; server runtime only |
+| `SUPABASE_SERVICE_ROLE_KEY` | no | Optional future server-only privileged jobs; current REST routes do not use it |
 
-The client sends `Authorization: Bearer <Supabase access token>`. The server validates the token with Supabase Auth, resolves `user_profiles.isyen_id`, then queries through a user-scoped Supabase client. RLS remains the database-level defense-in-depth layer.
+The client sends `Authorization: Bearer <Supabase access token>`. The server verifies it with Supabase Auth and resolves the active/incomplete `user_profiles.isyen_id` using the same caller JWT. Tenant data queries are always scoped to that `isyen_id`; profile/admin records are additionally scoped by `auth_user_id`. Keep PostgreSQL RLS enabled.
 
-## Generic endpoint contract
+## Health and operational endpoints
 
-All database resources use the following routes:
+- `GET /`, `GET /health`, `GET /healthz` — unauthenticated process liveness; each returns HTTP 200 without requiring Supabase.
+- `GET /ready` — unauthenticated Supabase Auth connectivity check; returns 200 when configured and reachable, otherwise 503. Database table grants/RLS are evaluated on each authenticated resource request.
+- Docker exposes port 4000 and uses `/health` for its container health check. The runtime honors the supplied `PORT`.
+
+## Generic resource endpoints
+
+`GET /api/v1` returns the supported resource names and generic route patterns; it does not return database content and does not require a token.
+
+All table resources use the following routes:
 
 ```text
 GET    /api/v1/:resource
@@ -29,43 +39,55 @@ PATCH  /api/v1/:resource/:id
 DELETE /api/v1/:resource/:id
 ```
 
-List query parameters: `limit` (1–100), `offset`, `order_by`, `order`, `home_id`, `room_id`, `device_id`, `is_read`, and `status`. Responses use `{ data }`; list responses also include `{ pagination: { limit, offset, total } }`.
+Every resource endpoint requires a verified Bearer token. List parameters are `limit` (1–100, default 50), `offset` (0–1,000,000, default 0), `order_by`, and `order` (`asc` or `desc`). Only table-specific filters and sort columns are accepted; unsupported names/values return HTTP 400. List responses are `{ data, pagination: { limit, offset, total, total_is_estimate, has_more } }`. The database count is planner-estimated to avoid an exact-count scan on high-volume tables.
 
-## Resource matrix
+Responses use explicit safe column projections: internal `isyen_id` is omitted; gateway `connection_config`, integration `config` and `credentials_ref` are never returned. Unsupported request fields are rejected instead of sent to PostgreSQL.
 
-| Resource | Read | User write | Service-only notes |
+## Resource permissions
+
+| Resource | Read | User write | Scope / notes |
 |---|---:|---:|---|
 | `homes` | yes | CRUD | Tenant-scoped |
-| `home_settings` | yes | CRUD | One row per home |
+| `home_settings` | yes | CRUD | Tenant-scoped; one row per home |
 | `rooms` | yes | CRUD | Tenant-scoped |
 | `zones` | yes | CRUD | Tenant-scoped |
-| `devices` | yes | CRUD | Device configuration |
-| `device_types` | yes | no | Shared reference data |
-| `device_states` | yes | no | Gateway/device reported state |
+| `devices` | yes | CRUD | Device configuration; status and last-seen are server-managed |
+| `device_types` | yes | no | Shared authenticated reference data |
+| `gateways` | yes | CRUD | Connection secrets/config are not exposed or user-writable |
+| `device_states` | yes | no | Device/gateway-reported state |
 | `device_logs` | yes | no | Append-only operational history |
-| `gateways` | yes | CRUD | Gateway registry |
-| `automations` | yes | CRUD | Trigger/condition/action JSONB |
+| `automations` | yes | CRUD | Trigger/condition/action JSON objects |
 | `automation_logs` | yes | no | Execution history |
 | `scenes` | yes | CRUD | Scene definitions |
 | `scene_devices` | yes | CRUD | Scene-to-device commands |
-| `schedules` | yes | CRUD | Automation/scene schedules |
-| `sensor_data` | yes | no | High-volume telemetry ingestion |
+| `schedules` | yes | CRUD | Must reference a scene or automation |
+| `sensor_data` | yes | no | High-volume telemetry; server-managed |
 | `notifications` | yes | no | Server-created notifications |
-| `integrations` | yes | CRUD | Never put provider secrets in `config` |
+| `integrations` | yes | limited CRUD | Provider/account identifiers only; provider config/credentials are backend-managed |
 | `firmware_updates` | yes | no | Server/gateway controlled |
 | `security_events` | yes | no | Server-created security events |
-| `admin_users` | self only | no | Role changes remain service-role/backend-only |
-| `user_profiles` | self/tenant | update | Creation/status changes remain backend-controlled |
+| `admin_users` | self only | no | Own active record only; role changes remain backend-controlled |
+| `user_profiles` | self only | update | Profile creation/status changes remain backend-controlled |
 
-## Operational endpoints
+Service-managed write resources return HTTP 403 from user CRUD routes. Profile and admin queries are explicitly restricted to the authenticated `auth_user_id`, as well as tenant scoping and RLS.
 
-- `GET /health` — process liveness; no external dependency claim.
-- `GET /ready` — checks Supabase configuration and connectivity; returns `503` until configured.
+## HTTP error behavior
+
+- `400` — invalid request body, filter, pagination or sort field.
+- `401` — missing/invalid token or no eligible profile.
+- `403` — user API attempts to write a service-managed resource.
+- `404` — unknown resource or row outside the caller's visible scope.
+- `409` — unique constraint conflict.
+- `422` — invalid foreign-key reference or database check constraint.
+- `503` — Supabase/auth provider unavailable or server integration not configured.
+
+Database error text and credentials are not returned to clients or logged; only the database error code and operation are recorded.
 
 ## Security rules
 
-- Never put `SUPABASE_SERVICE_ROLE_KEY` in `app/`, `management/`, a browser bundle, `.env.example` with a real value, or Git history.
-- The API strips protected fields (`id`, `auth_user_id`, `isyen_id`, timestamps) from request bodies and writes `isyen_id` from the resolved profile.
-- Database RLS policies compare trusted JWT `app_metadata.isyen_id` with each row's `isyen_id`.
-- Use pagination for all list reads and keep `limit <= 100`.
-- High-volume telemetry/log writes should use a gateway ingestion worker rather than browser CRUD.
+- Never put `SUPABASE_SERVICE_ROLE_KEY` in `app/`, `management/`, browser bundles, `.env.example` with a real value, logs, or Git history.
+- The API sets `isyen_id` from the resolved caller profile and rejects protected/internal fields from request bodies.
+- Shared and tenant-scoped reads both use the caller JWT; the server does not use a service-role client for normal REST requests.
+- Admin/profile reads are self-only. User profile creation/deletion and account status are backend-controlled.
+- Use pagination for every list read; `limit` is capped at 100.
+- High-volume telemetry/log writes remain server-managed; do not expose direct user CRUD writes for those tables.
