@@ -6,6 +6,7 @@ import Fastify from 'fastify';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { loadConfig, type AppConfig } from './config.js';
 import { createSupabaseIntegration, type SupabaseIntegration } from './integrations/supabase.js';
+import { registerAuthRoutes } from './routes/auth.js';
 import { registerDatabaseRoutes } from './routes/database.js';
 
 export function buildApp(config: AppConfig, integration: SupabaseIntegration = createSupabaseIntegration(config)) {
@@ -71,6 +72,7 @@ export function buildApp(config: AppConfig, integration: SupabaseIntegration = c
     return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'The request could not be completed.' } });
   });
 
+  registerAuthRoutes(app, integration);
   registerDatabaseRoutes(app, integration);
   return app;
 }

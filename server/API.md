@@ -1,6 +1,6 @@
 # ISYEN server API and environment configuration
 
-The API is aligned with the existing `ISYEN HOME` Supabase schema. All tenant tables are accessed with the caller's Supabase JWT and PostgreSQL RLS remains enabled. No service-role key is required by the current user-facing REST routes.
+The API is aligned with the existing `ISYEN HOME` Supabase schema. All tenant tables are accessed with the caller's Supabase JWT and PostgreSQL RLS remains enabled. The isolated public registration route uses the service-role key only to create the Auth/profile pair; normal REST routes never use it.
 
 ## Environment variables
 
@@ -15,7 +15,7 @@ The API is aligned with the existing `ISYEN HOME` Supabase schema. All tenant ta
 | `RATE_LIMIT_WINDOW` | no | Rate-limit window; default `1 minute` |
 | `SUPABASE_URL` | yes for authenticated API/readiness | `https://fabasazefdnkpygglajz.supabase.co` |
 | `SUPABASE_ANON_KEY` | yes for authenticated API/readiness | Supabase publishable/anon key; server runtime only |
-| `SUPABASE_SERVICE_ROLE_KEY` | no | Optional future server-only privileged jobs; current REST routes do not use it |
+| `SUPABASE_SERVICE_ROLE_KEY` | yes for registration | Server-only key used exclusively by `POST /auth/register` to create the auth user and protected profile; never expose it to a browser |
 
 The client sends `Authorization: Bearer <Supabase access token>`. The server verifies it with Supabase Auth and resolves the active/incomplete `user_profiles.isyen_id` using the same caller JWT. Tenant data queries are always scoped to that `isyen_id`; profile/admin records are additionally scoped by `auth_user_id`. Keep PostgreSQL RLS enabled.
 
@@ -24,6 +24,12 @@ The client sends `Authorization: Bearer <Supabase access token>`. The server ver
 - `GET /`, `GET /health`, `GET /healthz` — unauthenticated process liveness; each returns HTTP 200 without requiring Supabase.
 - `GET /ready` — unauthenticated Supabase Auth connectivity check; returns 200 when configured and reachable, otherwise 503. Database table grants/RLS are evaluated on each authenticated resource request.
 - Docker exposes port 4000 and uses `/health` for its container health check. The runtime honors the supplied `PORT`.
+
+## Account registration
+
+`POST /auth/register` is the public signup endpoint. It accepts top-level `email`, `password` (8–72 characters), and `profile` containing every other user-editable column in the current `user_profiles` table. Home/room preference columns are intentionally absent from the active schema. The handler explicitly sets `email_confirm: true`, so this MVP does not send or require an email-verification step. The server assigns `auth_user_id`, a unique `isyen_id` (also added to the new auth user's `app_metadata`), and `profile_status`/`profile_completion`; PostgreSQL generates the profile `id` and timestamps.
+
+The handler inserts the profile with the server-only service client because RLS intentionally forbids browser profile creation. If the profile insert fails after Auth creation, it attempts to delete the partial Auth user. Success returns HTTP 201 with the generated profile `id`, completion status and `verification_required: false`. Duplicate email returns 409. Registration requires all of `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` in the backend runtime.
 
 ## Generic resource endpoints
 
@@ -41,7 +47,7 @@ DELETE /api/v1/:resource/:id
 
 Every resource endpoint requires a verified Bearer token. List parameters are `limit` (1–100, default 50), `offset` (0–1,000,000, default 0), `order_by`, and `order` (`asc` or `desc`). Only table-specific filters and sort columns are accepted; unsupported names/values return HTTP 400. List responses are `{ data, pagination: { limit, offset, total, total_is_estimate, has_more } }`. The database count is planner-estimated to avoid an exact-count scan on high-volume tables.
 
-Responses use explicit safe column projections: internal `isyen_id` is omitted; gateway `connection_config`, integration `config` and `credentials_ref` are never returned. Unsupported request fields are rejected instead of sent to PostgreSQL.
+Responses use explicit safe column projections: internal `auth_user_id`/`isyen_id` are omitted; gateway `connection_config`, integration `config` and `credentials_ref` are never returned. Profile projection/writes follow the active table columns; unsupported request fields are rejected instead of sent to PostgreSQL.
 
 ## Resource permissions
 

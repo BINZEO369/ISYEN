@@ -13,7 +13,7 @@ cp server/.env.example server/.env
 pnpm --filter @isyen/server dev
 ```
 
-Backend default `http://localhost:4000`-এ চলে। `/`, `/health` এবং `/healthz`—সবগুলো HTTP 200 liveness response দেয়। `GET /ready` Supabase Auth endpoint connectivity যাচাই করে; Supabase settings অনুপস্থিত বা unreachable হলে 503 দেয়। Database table permissions প্রতিটি authenticated request-এ RLS/grants দিয়ে যাচাই হয়। Authenticated database routes-এর জন্য `Authorization: Bearer <Supabase access token>` পাঠাতে হবে।
+Backend default `http://localhost:4000`-এ চলে। `/`, `/health` এবং `/healthz`—সবগুলো HTTP 200 liveness response দেয়। `GET /ready` Supabase Auth endpoint connectivity যাচাই করে; Supabase settings অনুপস্থিত বা unreachable হলে 503 দেয়। `POST /auth/register` no-email-verification signup সম্পন্ন করে; service-role key শুধু server runtime-এ লাগবে। Database table permissions প্রতিটি authenticated request-এ RLS/grants দিয়ে যাচাই হয়। Authenticated database routes-এর জন্য `Authorization: Bearer <Supabase access token>` পাঠাতে হবে।
 
 ## API
 
@@ -27,7 +27,7 @@ PATCH  /api/v1/:resource/:id
 DELETE /api/v1/:resource/:id
 ```
 
-Resource-specific read/write permissions, supported filters, error behavior ও security rules [API.md](API.md)-এ আছে। Tenant queries caller JWT এবং RLS-সহ চলে; current REST API-র জন্য service-role key আবশ্যক নয়।
+Account registration এবং resource-specific read/write permissions, supported filters, error behavior ও security rules [API.md](API.md)-এ আছে। Tenant queries caller JWT এবং RLS-সহ চলে; service-role key কেবল dedicated registration/profile creation path ব্যবহার করে।
 
 ## Environment
 
@@ -39,7 +39,7 @@ SUPABASE_ANON_KEY
 CORS_ORIGIN  # production-এ explicit frontend origins
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` কেবল ভবিষ্যতের trusted server-only privileged jobs-এর জন্য optional; current REST endpoints এটি ব্যবহার করে না. কোনো service-role value frontend, mobile bundle, GitHub বা logs-এ রাখা যাবে না.
+`SUPABASE_SERVICE_ROLE_KEY` registration-এ server-side Auth user/profile creation-এর জন্য প্রয়োজন। কোনো service-role value frontend, mobile bundle, GitHub বা logs-এ রাখা যাবে না.
 
 ## যাচাই
 

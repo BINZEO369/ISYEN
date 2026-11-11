@@ -153,13 +153,12 @@ const resourceDefinitions = {
     write: false, serviceOnly: true, selfOnly: true,
   },
   user_profiles: {
-    select: 'id,first_name,last_name,full_name,profile_photo,date_of_birth,gender,phone_number,email,bio,country,state,city,postal_code,address_line_1,address_line_2,latitude,longitude,language,currency,timezone,date_format,time_format,temperature_unit,theme,default_home_id,default_room_id,preferred_device_view,push_notifications,email_notifications,sms_notifications,security_alerts,device_alerts,automation_alerts,profile_status,profile_completion,created_at,updated_at',
+    select: 'id,first_name,last_name,full_name,profile_photo,date_of_birth,gender,phone_number,email,bio,country,state,city,postal_code,address_line_1,address_line_2,latitude,longitude,language,currency,timezone,date_format,time_format,temperature_unit,theme,push_notifications,email_notifications,sms_notifications,security_alerts,device_alerts,automation_alerts,profile_status,profile_completion,created_at,updated_at',
     writable: {
       first_name: nullableText, last_name: nullableText, full_name: nullableText, profile_photo: nullableText, date_of_birth: 'nullableDate', gender: nullableText, phone_number: nullableText, bio: nullableText,
       country: nullableText, state: nullableText, city: nullableText, postal_code: nullableText, address_line_1: nullableText, address_line_2: nullableText,
       latitude: nullableNumber, longitude: nullableNumber, language: requiredText, currency: requiredText, timezone: requiredText,
       date_format: requiredText, time_format: 'timeFormat', temperature_unit: 'temperatureUnit', theme: 'theme',
-      default_home_id: nullableUuid, default_room_id: nullableUuid, preferred_device_view: 'deviceView',
       push_notifications: boolean, email_notifications: boolean, sms_notifications: boolean, security_alerts: boolean,
       device_alerts: boolean, automation_alerts: boolean,
     },
