@@ -84,7 +84,7 @@ export function registerDatabaseRoutes(app: FastifyInstance, integration: Supaba
     if (!integration.configured || !integration.publicClient) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase server integration is not configured.');
     const requestWithAuth = request as RequestWithAuth;
     const client = resources[resource].shared
-      ? integration.publicClient
+      ? (integration.serviceClient ?? integration.publicClient)
       : integration.requestClient(requestWithAuth.accessToken ?? '');
     if (!client) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
     const { limit, offset, order_by, order, home_id, room_id, device_id, is_read, status } = parsedQuery.data;
@@ -107,7 +107,9 @@ export function registerDatabaseRoutes(app: FastifyInstance, integration: Supaba
     const resource = parsed.data.resource;
     if (!integration.configured || !integration.publicClient) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase server integration is not configured.');
     const requestWithAuth = request as RequestWithAuth;
-    const client = resources[resource].shared ? integration.publicClient : integration.requestClient(requestWithAuth.accessToken ?? '');
+    const client = resources[resource].shared
+      ? (integration.serviceClient ?? integration.publicClient)
+      : integration.requestClient(requestWithAuth.accessToken ?? '');
     if (!client) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
     let query = client.from(resource).select('*').eq('id', parsed.data.id);
     if (!resources[resource].shared) query = query.eq('isyen_id', requestWithAuth.tenant?.isyenId ?? '');
