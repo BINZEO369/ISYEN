@@ -2,7 +2,7 @@
 
 ISYEN is a Next.js user dashboard, a Fastify REST API, and a separate management app. The dashboard supports tenant-scoped homes/devices, raw ESP32-S3 GPIO sensors, and configuration for DHT11/DHT22 and BMP180/BMP280/BMP388/BMP390. MQTT is not used.
 
-**Sensor hardware note:** DHT/BMP model, wiring, sampling interval, I²C address and temperature unit can be saved in the shared catalog and tenant device configuration. Live readings require the matching ESP32 firmware drivers and telemetry update; until then the dashboard marks these sensors as firmware-waiting and does not invent readings. Raw GPIO telemetry is separate.
+**Sensor hardware note:** DHT/BMP model, wiring, sampling interval, I²C address and temperature unit can be saved in the shared catalog and tenant device configuration. The API, database ingestion and per-metric realtime dashboard path are implemented. Physical readings still require matching ESP32 firmware drivers to read the sensor and send authenticated telemetry; until then the dashboard shows waiting/stale status and does not invent values. Raw GPIO telemetry remains separate.
 
 ## মূল folder
 

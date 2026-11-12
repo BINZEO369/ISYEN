@@ -20,6 +20,10 @@ const sensorMeasurementBody = z.object({
   value: z.union([z.number().finite(), z.boolean()]),
   reported_at: z.string().datetime({ offset: true }).optional(),
 }).strict();
+const protocolSensorMeasurementBody = z.object({
+  values: z.record(z.string(), z.number().finite()).refine((values) => Object.keys(values).length > 0 && Object.keys(values).length <= 2),
+  reported_at: z.string().datetime({ offset: true }).optional(),
+}).strict();
 
 type Tenant = { authUserId: string; isyenId: string };
 type RequestWithAuth = FastifyRequest & { tenant?: Tenant; accessToken?: string };
@@ -496,7 +500,7 @@ export function registerDatabaseRoutes(app: FastifyInstance, integration: Supaba
     let query = client.from('devices')
       .select('id,home_id,room_id,name,config,status,last_seen_at,created_at', { count: 'planned' })
       .eq('isyen_id', tenant.isyenId)
-      .eq('config->>hardware', 'esp32_s3_gpio_sensor');
+      .or('config->>hardware.eq.esp32_s3_gpio_sensor,config->>hardware.eq.isyen_protocol_sensor');
     if (paging.data.home_id) query = query.eq('home_id', paging.data.home_id);
     const { data, error, count } = await query.order('created_at', { ascending: true })
       .range(paging.data.offset, paging.data.offset + paging.data.limit - 1);
@@ -574,6 +578,37 @@ export function registerDatabaseRoutes(app: FastifyInstance, integration: Supaba
     return reply.code(201).send({ data: reading });
   });
 
+  app.post('/api/v1/device-runtime/:id/protocol-readings', async (request, reply) => {
+    const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return errorResponse(reply, 400, 'INVALID_DEVICE_ID', 'A valid device ID is required.');
+    const payload = protocolSensorMeasurementBody.safeParse(request.body);
+    if (!payload.success) return errorResponse(reply, 400, 'INVALID_SENSOR_READING', 'Provide one or two finite numeric values and an optional ISO reported_at timestamp.');
+    const requestWithAuth = request as RequestWithAuth;
+    const tenant = await requireTenant(requestWithAuth, reply, integration);
+    if (!tenant) return reply;
+    const client = requestClient('devices', requestWithAuth, integration);
+    if (!client) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+    const device = await client.from('devices').select('id,config').eq('id', params.data.id).eq('isyen_id', tenant.isyenId).maybeSingle();
+    if (device.error) return reportDatabaseError(request, reply, 'sensor_device_lookup', device.error);
+    if (!device.data) return errorResponse(reply, 404, 'NOT_FOUND', 'Sensor device not found.');
+    const config = device.data.config as Record<string, unknown> | null;
+    if (!isValidProtocolSensorConfig(config) || config.enabled !== true) return errorResponse(reply, 409, 'SENSOR_NOT_CONFIGURED', 'This device is not an enabled DHT/BMP protocol sensor.');
+    const expectedMetrics = String(config.sensor_key).startsWith('dht') ? ['temperature', 'humidity'] : ['temperature', 'pressure'];
+    if (Object.keys(payload.data.values).some((metric) => !expectedMetrics.includes(metric))) return errorResponse(reply, 400, 'INVALID_SENSOR_READING', `This sensor accepts only ${expectedMetrics.join(' and ')} values.`);
+    const result = await client.rpc('record_protocol_sensor_readings', {
+      p_device_id: params.data.id,
+      p_values: payload.data.values,
+      p_reported_at: payload.data.reported_at ? new Date(payload.data.reported_at).toISOString() : null,
+    });
+    if (result.error) {
+      if (result.error.code === '22023') return errorResponse(reply, 400, 'INVALID_SENSOR_READING', 'One or more readings are outside the selected sensor model’s valid range.');
+      return reportDatabaseError(request, reply, 'record_protocol_sensor_readings', result.error);
+    }
+    if (!Array.isArray(result.data) || result.data.length === 0) return errorResponse(reply, 503, 'SENSOR_WRITE_FAILED', 'The sensor readings could not be saved.');
+    const heartbeat = await client.from('devices').update({ status: 'online', last_seen_at: new Date().toISOString() }).eq('id', params.data.id).eq('isyen_id', tenant.isyenId);
+    if (heartbeat.error) request.log.warn({ databaseCode: heartbeat.error.code ?? 'unknown' }, 'Sensor heartbeat update failed');
+    return reply.code(201).send({ data: result.data });
+  });
   app.post('/api/v1/device-runtime/:id/state', async (request, reply) => {
     const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
     if (!params.success) return errorResponse(reply, 400, 'INVALID_DEVICE_ID', 'A valid device ID is required.');

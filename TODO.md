@@ -28,6 +28,9 @@
 - [x] Add canonical DHT11/DHT22 and BMP180/BMP280/BMP388/BMP390 entries and model defaults to the shared sensor catalog.
 - [x] Add model-specific dashboard configuration for DHT GPIO, BMP I²C pins/address, sampling interval, and temperature unit.
 - [x] Validate protocol model, connection, sampling limits, pin safety, and I²C address in the server before saving.
-- [x] Clearly mark protocol sensor readings as firmware-dependent; do not synthesize readings or claim the sensor is live before firmware support exists.
-- [ ] Update ESP32 firmware drivers and multi-metric telemetry ingestion to produce live DHT/BMP readings (explicitly deferred per user request).
-- [ ] Configure/verify production hosting deployment for the dashboard and API; hosting provider credentials/settings are not present in this repository.
+- [x] Add tenant-scoped multi-metric telemetry ingestion and model/range validation for DHT temperature+humidity and BMP temperature+pressure.
+- [x] Extend latest-reading queries and dashboard rendering to show the latest value per metric, timestamps, and stale/live status with Supabase Realtime refresh.
+- [x] Clearly mark missing/partial/stale readings; never synthesize data or claim hardware is live without fresh samples.
+- [ ] Update ESP32 firmware drivers to read physical DHT/BMP modules and POST the documented protocol payload (explicitly deferred per user request).
+- [ ] Trigger and verify the updated API deployment at `isyen-api.vercel.app` using authorized Vercel access; the old production endpoint still returns 404 for `/protocol-readings`.
+- [ ] Identify and verify the public production dashboard host; no frontend domain or deployment target is configured in this repository.

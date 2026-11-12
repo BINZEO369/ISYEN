@@ -24,7 +24,7 @@ function fakeIntegration(client: Record<string, unknown>): SupabaseIntegration {
 function fakeClient(options: { sensorConfig?: Record<string, unknown>; latest?: unknown[]; rows?: unknown[]; calls?: Array<{ name: string; args: Record<string, unknown> }> } = {}) {
   const calls = options.calls ?? [];
   const builder: Record<string, unknown> = {};
-  for (const method of ['select', 'eq', 'update', 'order', 'range']) {
+  for (const method of ['select', 'eq', 'or', 'update', 'order', 'range']) {
     builder[method] = (...args: unknown[]) => {
       calls.push({ name: `query.${method}`, args: { args } });
       return builder;
@@ -53,6 +53,7 @@ test('sensor runtime endpoints require a verified bearer token', async () => {
       { method: 'GET' as const, url: '/api/v1/device-runtime/sensors' },
       { method: 'GET' as const, url: `/api/v1/device-runtime/sensor-readings/latest?home_id=${homeId}` },
       { method: 'POST' as const, url: `/api/v1/device-runtime/${deviceId}/readings`, payload: { value: 1 } },
+      { method: 'POST' as const, url: `/api/v1/device-runtime/${deviceId}/protocol-readings`, payload: { values: { temperature: 22.5, humidity: 48 } } },
     ]) {
       const response = await app.inject(request);
       assert.equal(response.statusCode, 401);
@@ -109,6 +110,23 @@ test('sensor telemetry derives tenant/device config in the server and rejects ou
 });
 
 
+test('DHT/BMP protocol telemetry stores multiple allowed metrics through a tenant-scoped RPC', async () => {
+  const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  const protocolConfig = { hardware: 'isyen_protocol_sensor', sensor_key: 'dht22_temperature_humidity', connection: 'gpio', data_gpio: 4, sampling_interval_seconds: 10, temperature_unit: 'celsius', enabled: true };
+  const { client } = fakeClient({ calls, sensorConfig: protocolConfig });
+  const app = buildApp(config, fakeIntegration(client));
+  try {
+    const response = await app.inject({ method: 'POST', url: `/api/v1/device-runtime/${deviceId}/protocol-readings`, headers: { authorization: 'Bearer valid-token' }, payload: { values: { temperature: 22.5, humidity: 48 }, reported_at: '2026-11-12T04:00:00.000Z' } });
+    assert.equal(response.statusCode, 201);
+    assert.deepEqual(calls.find((call) => call.name === 'record_protocol_sensor_readings')?.args, { p_device_id: deviceId, p_values: { temperature: 22.5, humidity: 48 }, p_reported_at: '2026-11-12T04:00:00.000Z' });
+    assert.equal(Object.hasOwn(calls.find((call) => call.name === 'record_protocol_sensor_readings')?.args ?? {}, 'isyen_id'), false);
+    const invalid = await app.inject({ method: 'POST', url: `/api/v1/device-runtime/${deviceId}/protocol-readings`, headers: { authorization: 'Bearer valid-token' }, payload: { values: { pressure: 1000 } } });
+    assert.equal(invalid.statusCode, 400);
+    assert.equal(invalid.json().error.code, 'INVALID_SENSOR_READING');
+    assert.equal(calls.filter((call) => call.name === 'record_protocol_sensor_readings').length, 1);
+  } finally { await app.close(); }
+});
+
 test('sensor inventory is tenant-filtered and does not expose the internal tenant identifier', async () => {
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
   const row = { id: deviceId, home_id: homeId, room_id: null, name: 'Soil sensor', config: sensorConfig, status: 'online', last_seen_at: '2026-11-12T04:00:00.000Z', created_at: '2026-11-12T03:00:00.000Z' };
@@ -120,7 +138,7 @@ test('sensor inventory is tenant-filtered and does not expose the internal tenan
     assert.deepEqual(response.json().data, [row]);
     assert.equal(Object.hasOwn(response.json().data[0], 'isyen_id'), false);
     assert.equal(calls.some((call) => call.name === 'query.eq' && JSON.stringify(call.args.args) === JSON.stringify(['isyen_id', tenant.isyenId])), true);
-    assert.equal(calls.some((call) => call.name === 'query.eq' && JSON.stringify(call.args.args) === JSON.stringify(['config->>hardware', 'esp32_s3_gpio_sensor'])), true);
+    assert.equal(calls.some((call) => call.name === 'query.or' && String(call.args.args).includes('isyen_protocol_sensor')), true);
   } finally {
     await app.close();
   }

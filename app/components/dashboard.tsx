@@ -323,7 +323,7 @@ export function Dashboard() {
 
           <section className="dashboard-panel sensor-panel" id="sensors">
             <div className="dashboard-panel-heading"><div><span className="panel-eyebrow">REAL-TIME SENSOR DATA</span><h2>সেন্সর ও লাইভ ডেটা</h2></div><div className="sensor-heading-actions"><span className={`sensor-live-pill${sensorLive ? " sensor-live-on" : ""}`}><i />{sensorLive ? "লাইভ" : "সংযোগ হচ্ছে"}</span><span className="panel-count">{homeSensors.length} সেন্সর</span></div></div>
-            {homeSensors.length ? <div className="sensor-grid">{homeSensors.map((device) => isProtocolSensor(device) ? <ProtocolSensorCard key={device.id} device={device} /> : <GpioSensorCard key={device.id} device={device} usedPins={Array.from(usedGpioPins).filter((pin) => pin !== device.config.gpio)} reading={homeReadings.find((reading) => reading.device_id === device.id)} onUpdate={(config) => handleUpdateDevice(device.id, config)} />)}</div> : <div className="sensor-empty-state"><div><span className="sensor-empty-icon" aria-hidden="true">◉</span><strong>এই Home-এ এখনো কোনো sensor configured নেই</strong><p>Pin, sensor mode, metric ও sampling interval নির্ধারণ করুন। আসল value firmware রিপোর্ট করলেই এখানে live দেখা যাবে—ডেমো বা default readings দেখানো হবে না।</p></div><button className="primary-button" type="button" onClick={() => { setSensorCreateError(""); setSensorDraft(emptySensorDraft); setSensorCreateOpen(true); }} disabled={!hasAvailableSensorPin}>＋ সেন্সর কনফিগার করুন</button></div>}
+            {homeSensors.length ? <div className="sensor-grid">{homeSensors.map((device) => isProtocolSensor(device) ? <ProtocolSensorCard key={device.id} device={device} readings={homeReadings.filter((reading) => reading.device_id === device.id)} /> : <GpioSensorCard key={device.id} device={device} usedPins={Array.from(usedGpioPins).filter((pin) => pin !== device.config.gpio)} reading={homeReadings.find((reading) => reading.device_id === device.id)} onUpdate={(config) => handleUpdateDevice(device.id, config)} />)}</div> : <div className="sensor-empty-state"><div><span className="sensor-empty-icon" aria-hidden="true">◉</span><strong>এই Home-এ এখনো কোনো sensor configured নেই</strong><p>Pin, sensor mode, metric ও sampling interval নির্ধারণ করুন। আসল value firmware রিপোর্ট করলেই এখানে live দেখা যাবে—ডেমো বা default readings দেখানো হবে না।</p></div><button className="primary-button" type="button" onClick={() => { setSensorCreateError(""); setSensorDraft(emptySensorDraft); setSensorCreateOpen(true); }} disabled={!hasAvailableSensorPin}>＋ সেন্সর কনফিগার করুন</button></div>}
           </section>
 
           <section className="dashboard-panel" id="devices">
@@ -403,11 +403,25 @@ function GpioLightCard({ device, isyenId, usedPins, report, onUpdate }: { device
   </article>;
 }
 
-function ProtocolSensorCard({ device }: { device: Device }) {
+function ProtocolSensorCard({ device, readings }: { device: Device; readings: SensorReading[] }) {
   const config = device.config ?? {};
   const model = String(config.sensor_key ?? "Sensor").replaceAll("_", " ").toUpperCase();
   const wiring = config.connection === "i2c" ? `I²C · SDA GPIO ${config.sda_gpio} / SCL GPIO ${config.scl_gpio} · ${config.i2c_address}` : `GPIO ${config.data_gpio}`;
-  return <article className="sensor-card"><div className="sensor-card-top"><span className="sensor-card-icon" aria-hidden="true">◉</span><span className="sensor-state-pill"><i />{config.enabled === true ? "Firmware অপেক্ষমাণ" : "বন্ধ"}</span></div><div className="sensor-card-title"><h3>{device.name}</h3><p>{model} · {wiring}</p></div><div className="sensor-reading-display sensor-reading-empty"><span>সর্বশেষ রিডিং</span><strong>Firmware protocol update-এর অপেক্ষায়</strong><small>Model-specific config সংরক্ষিত; এখনো live value নেই।</small></div><div className="sensor-enable-row"><span><strong>Sampling interval</strong><small>প্রতি {String(config.sampling_interval_seconds)} সেকেন্ড · {config.temperature_unit === "fahrenheit" ? "°F" : "°C"}</small></span><span className="sensor-state-pill">{config.enabled === true ? "চালু" : "বন্ধ"}</span></div></article>;
+  const intervalMs = Math.max(2, Number(config.sampling_interval_seconds) || 10) * 1000;
+  const metrics = String(config.sensor_key ?? "").startsWith("dht") ? ["temperature", "humidity"] : ["temperature", "pressure"];
+  const isFresh = metrics.every((metric) => {
+    const reading = readings.find((item) => item.metric === metric);
+    return Boolean(reading) && Date.now() - Date.parse(reading!.recorded_at) <= Math.max(intervalMs * 3, 60_000);
+  });
+  const state = config.enabled !== true ? "বন্ধ" : readings.length === 0 ? "Firmware/ডেটার অপেক্ষায়" : isFresh ? "লাইভ" : "ডেটা পুরোনো";
+  return <article className="sensor-card"><div className="sensor-card-top"><span className="sensor-card-icon" aria-hidden="true">◉</span><span className={`sensor-state-pill${isFresh ? " sensor-live-on" : ""}`}><i />{state}</span></div><div className="sensor-card-title"><h3>{device.name}</h3><p>{model} · {wiring}</p></div><div className="sensor-reading-display sensor-reading-empty"><span>সর্বশেষ রিডিং</span>{metrics.map((metric) => {
+    const reading = readings.find((item) => item.metric === metric);
+    const numeric = reading?.value_numeric;
+    const fahrenheit = metric === "temperature" && config.temperature_unit === "fahrenheit";
+    const value = typeof numeric === "number" ? (fahrenheit ? numeric * 9 / 5 + 32 : numeric).toLocaleString("bn-BD", { maximumFractionDigits: 2 }) : null;
+    const unit = metric === "temperature" ? (fahrenheit ? "°F" : "°C") : metric === "humidity" ? "% RH" : "hPa";
+    return <div key={metric}><small>{metric === "temperature" ? "তাপমাত্রা" : metric === "humidity" ? "আর্দ্রতা" : "বায়ুচাপ"}</small><strong>{value === null ? "—" : `${value} ${unit}`}</strong>{reading && <small>{new Date(reading.recorded_at).toLocaleTimeString("bn-BD")}</small>}</div>;
+  })}</div><div className="sensor-enable-row"><span><strong>Sampling interval</strong><small>প্রতি {String(config.sampling_interval_seconds)} সেকেন্ড · {config.temperature_unit === "fahrenheit" ? "°F" : "°C"}</small></span><span className="sensor-state-pill">{config.enabled === true ? "চালু" : "বন্ধ"}</span></div></article>;
 }
 function GpioSensorCard({ device, usedPins, reading, onUpdate }: { device: Device; usedPins: number[]; reading?: SensorReading; onUpdate: (config: Record<string, unknown>) => Promise<Device> }) {
   const config = device.config ?? {};
