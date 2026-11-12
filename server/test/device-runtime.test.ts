@@ -143,3 +143,98 @@ test('sensor inventory is tenant-filtered and does not expose the internal tenan
     await app.close();
   }
 });
+
+
+test('ESP32 gateway heartbeat registers a board per tenant and accumulates request sequences', async () => {
+  const gatewayId = '33333333-3333-4333-8333-333333333333';
+  let stored: Record<string, unknown> | null = null;
+  let pending: Record<string, unknown> | null = null;
+  const client: Record<string, unknown> = {
+    from: (table: string) => {
+      const builder: Record<string, unknown> = {};
+      builder.select = () => builder;
+      builder.eq = () => builder;
+      builder.order = () => builder;
+      builder.limit = () => builder;
+      builder.maybeSingle = async () => table === 'homes'
+        ? { data: { id: homeId }, error: null }
+        : { data: stored, error: null };
+      builder.insert = (values: Record<string, unknown>) => { pending = { ...values, id: gatewayId }; return builder; };
+      builder.update = (values: Record<string, unknown>) => { pending = { ...(stored ?? {}), ...values }; return builder; };
+      builder.single = async () => {
+        stored = pending;
+        return { data: stored, error: null };
+      };
+      return builder;
+    },
+  };
+  const app = buildApp(config, fakeIntegration(client));
+  const heartbeat = (sequence: number) => app.inject({
+    method: 'POST',
+    url: '/api/v1/device-runtime/gateways/heartbeat',
+    headers: { authorization: 'Bearer valid-token' },
+    payload: { serial_number: 'aabbccddeeff', boot_id: 'boot-1', request_sequence: sequence, firmware_version: '4.1.0', wifi_rssi: -54 },
+  });
+  try {
+    const first = await heartbeat(10);
+    assert.equal(first.statusCode, 200);
+    assert.equal(first.json().data.serial_number, 'AABBCCDDEEFF');
+    assert.equal(first.json().data.metadata.requests_total, 10);
+    assert.equal(stored?.isyen_id, tenant.isyenId);
+
+    const second = await heartbeat(15);
+    assert.equal(second.statusCode, 200);
+    assert.equal(second.json().data.metadata.requests_total, 15);
+    assert.equal(second.json().data.metadata.request_sequence, 15);
+  } finally {
+    await app.close();
+  }
+});
+
+test('ESP32 gateway heartbeat rejects malformed serials and unauthenticated callers', async () => {
+  const app = buildApp(config, fakeIntegration({}));
+  try {
+    const invalid = await app.inject({ method: 'POST', url: '/api/v1/device-runtime/gateways/heartbeat', headers: { authorization: 'Bearer valid-token' }, payload: { serial_number: 'not-a-mac', boot_id: 'b1', request_sequence: 2, firmware_version: '4.1.0' } });
+    assert.equal(invalid.statusCode, 400);
+    assert.equal(invalid.json().error.code, 'INVALID_GATEWAY_HEARTBEAT');
+    const unauthenticated = await app.inject({ method: 'POST', url: '/api/v1/device-runtime/gateways/heartbeat', payload: { serial_number: 'AABBCCDDEEFF', boot_id: 'b1', request_sequence: 2, firmware_version: '4.1.0' } });
+    assert.equal(unauthenticated.statusCode, 401);
+  } finally {
+    await app.close();
+  }
+});
+
+
+test('gateway status returns tenant-scoped board counts and server-computed live state', async () => {
+  const calls: Array<{ table: string; args: unknown[] }> = [];
+  const board = { id: '44444444-4444-4444-8444-444444444444', home_id: homeId, name: 'ESP32-S3 EEFF', gateway_type: 'esp32_s3_n16r8', serial_number: 'AABBCCDDEEFF', status: 'online', last_seen_at: new Date().toISOString(), metadata: { requests_total: 12, requests_per_minute: 4 } };
+  const client: Record<string, unknown> = {
+    from: (table: string) => {
+      const state = { head: false, online: false };
+      const builder: Record<string, unknown> = {};
+      builder.select = (...args: unknown[]) => { calls.push({ table, args }); state.head = Boolean((args[1] as { head?: boolean } | undefined)?.head); return builder; };
+      builder.eq = (...args: unknown[]) => { calls.push({ table, args }); return builder; };
+      builder.gte = (...args: unknown[]) => { calls.push({ table, args }); state.online = true; return builder; };
+      builder.order = () => builder;
+      builder.range = () => builder;
+      builder.then = (resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) => Promise.resolve({
+        data: state.head ? null : [board],
+        error: null,
+        count: state.head ? (state.online ? 2 : 3) : 1,
+      }).then(resolve, reject);
+      return builder;
+    },
+  };
+  const app = buildApp(config, fakeIntegration(client));
+  try {
+    const response = await app.inject({ method: 'GET', url: '/api/v1/device-runtime/gateways/status?limit=1&offset=0', headers: { authorization: 'Bearer valid-token' } });
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(response.json().summary, { total: 3, online: 2, offline: 1 });
+    assert.equal(response.json().data[0].is_online, true);
+    assert.equal(response.json().online_threshold_seconds, 45);
+    assert.equal(calls.some((call) => call.args[0] === 'isyen_id' && call.args[1] === tenant.isyenId), true);
+    assert.equal(calls.some((call) => call.args[0] === 'gateway_type' && call.args[1] === 'esp32_s3_n16r8'), true);
+  } finally {
+    await app.close();
+  }
+});

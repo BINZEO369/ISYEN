@@ -51,6 +51,24 @@ The signed-in dashboard can create a light with `POST /api/v1/devices` using `ho
 
 Firmware setup asks once for Wi-Fi, account email/password and ISYEN ID. After sign-in, it verifies the entered tenant with `GET /api/v1/device-runtime/identity` and pages through `GET /api/v1/device-runtime/lights?limit=100&offset=N&order=asc` using that caller's JWT. The endpoint returns only that tenant's GPIO light rows. Firmware automatically applies each row's GPIO/desired state; no Device ID is entered for any individual light. Device IDs are read from the database response and used internally to report each output to `POST /api/v1/device-runtime/:id/state` with `{ "gpio": 4, "relay_on": false, "rssi": -55 }`. The runtime endpoint verifies that each device belongs to the JWT tenant and that the reported pin matches the stored config before updating `devices.last_seen_at` and `device_states` through the caller JWT/RLS. It does not use the service-role key for tenant data. This automatic all-lights mode assumes one ESP32 controller per ISYEN account; using multiple controllers for one account requires a future controller-to-light assignment rule.
 
+## ESP32-S3 N16R8 board status in account Settings
+
+After the user's ISYEN ID is verified and a Home exists, firmware registers/refreshes the board with `POST /api/v1/device-runtime/gateways/heartbeat` using the same verified Bearer token:
+
+```json
+{
+  "serial_number": "AABBCCDDEEFF",
+  "boot_id": "A1B2C3D4-boot-random",
+  "request_sequence": 125,
+  "firmware_version": "4.1.0",
+  "wifi_rssi": -54
+}
+```
+
+`serial_number` is the ESP32 Wi-Fi MAC without separators and is unique within the authenticated `isyen_id`; the API derives tenant ownership from the verified token and the account's existing Home. The server registers or refreshes a row in the existing `gateways` table through the caller JWT/RLS; no schema migration or service-role write is needed. The monotonically increasing request sequence and boot ID make retries idempotent. `gateways.metadata` stores hardware, firmware version, current request rate (requests/minute, estimated between heartbeats), cumulative request count, RSSI and heartbeat time. The dashboard considers a board online only while its last heartbeat is within 45 seconds.
+
+The authenticated Settings page reads `GET /api/v1/device-runtime/gateways/status?limit=50&offset=0`. The response includes tenant-scoped online/offline/total counts and a paginated list of recent ESP32-S3 N16R8 gateways with their safe telemetry projection. No credentials or internal tenant IDs are returned. The app refreshes the view every eight seconds; boards that stop heartbeating appear offline after the 45-second threshold.
+
 ## ESP32-S3 GPIO sensors and live readings
 
 Create one sensor channel from the signed-in home dashboard using `POST /api/v1/devices` with `device_type_key: "esp32_s3_gpio_sensor"` and a complete config such as `{ "hardware": "esp32_s3_gpio_sensor", "gpio": 4, "input_mode": "digital", "metric": "door_open", "unit": "", "sample_interval_ms": 5000, "pull_mode": "up", "enabled": true }`. Each sensor channel is stored as a tenant-owned `devices` row, linked to one `home_id`, the shared sensor device type, its unique GPIO, and the sampling/metric configuration. Analog inputs are restricted to ADC1 GPIO 1, 2 and 4–10; digital inputs use the safe GPIO list (GPIO 1, 2, 4–18, 21, 38–42, 47, 48). A pin cannot be assigned to both a light and a sensor in the same ISYEN account. The dashboard can change a sensor's pin or enable/disable sampling; the backend validates each change, and a database unique index also protects concurrent writes.

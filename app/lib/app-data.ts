@@ -63,7 +63,8 @@ export type SensorReading = { id: string; home_id: string; device_id: string; me
 export const ESP32_S3_OUTPUT_GPIO_PINS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 38, 39, 40, 41, 42, 47, 48] as const;
 export const ESP32_S3_DIGITAL_INPUT_GPIO_PINS = [1, 2, ...ESP32_S3_OUTPUT_GPIO_PINS] as const;
 export const ESP32_S3_ANALOG_INPUT_GPIO_PINS = [1, 2, 4, 5, 6, 7, 8, 9, 10] as const;
-export type Gateway = { id: string; home_id: string; name: string; gateway_type: string; status: string; last_seen_at: string | null };
+export type Gateway = { id: string; home_id: string; name: string; gateway_type: string; serial_number: string | null; status: string; last_seen_at: string | null; metadata: Record<string, unknown>; is_online?: boolean };
+export type GatewayStatus = { data: Gateway[]; summary: { total: number; online: number; offline: number }; pagination: { limit: number; offset: number; total: number; has_more: boolean }; online_threshold_seconds: number };
 export type Scene = { id: string; home_id: string; name: string; description: string | null; icon: string | null; is_enabled: boolean };
 export type Automation = { id: string; home_id: string; name: string; description: string | null; is_enabled: boolean };
 
@@ -107,6 +108,15 @@ export async function loadDeviceIdentity(accessToken: string): Promise<{ isyen_i
 export async function loadLatestSensorReadings(homeId: string, accessToken: string): Promise<SensorReading[]> {
   const query = new URLSearchParams({ home_id: homeId });
   return requestJson<SensorReading[]>(`/api/device-runtime/sensors/latest?${query.toString()}`, accessToken);
+}
+
+export async function loadGatewayStatus(accessToken: string, offset = 0): Promise<GatewayStatus> {
+  const query = new URLSearchParams({ limit: "50", offset: String(offset) });
+  const response = await fetch(`/api/device-runtime/gateways/status?${query.toString()}`, { headers: { authorization: `Bearer ${accessToken}` }, cache: "no-store" });
+  const payload = await response.json().catch(() => null) as (GatewayStatus & { error?: { message?: string } }) | null;
+  if (!response.ok) throw new ApiRequestError(payload?.error?.message ?? "বোর্ডের অবস্থা আনা যায়নি।", response.status);
+  if (!payload || !Array.isArray(payload.data) || !payload.summary || !payload.pagination) throw new ApiRequestError("বোর্ডের স্ট্যাটাস সার্ভার থেকে সঠিকভাবে আসেনি।", 502);
+  return payload;
 }
 
 export async function loadResource<T>(resource: string, accessToken: string): Promise<T[]> {

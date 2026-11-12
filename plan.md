@@ -40,3 +40,12 @@
 
 - No account registration/login tables or ESP32 firmware are added here.
 - Dashboard writes require a valid authenticated Supabase session; without one, the UI remains a safe preview and explains the missing connection.
+
+
+## Board health and account Settings continuation (2026-11-12)
+
+- Add an account Settings panel for authenticated ESP32-S3 N16R8 board totals, online/offline state, request rate, cumulative API requests, RSSI, firmware version and last heartbeat.
+- Reuse the current `gateways` table and its tenant-scoped RLS; do not add migrations or write production data.
+- Add a bearer-authenticated runtime heartbeat that derives `isyen_id` from the verified session, registers by the board MAC, and stores counter/timing data in existing gateway metadata.
+- Keep the Settings summary/counts paginated and scoped to the signed-in account; a board is online only when its heartbeat is no older than 45 seconds.
+- Update ESP32 firmware only for board heartbeat/request-sequence telemetry in this phase. Sensor support remains at the existing GPIO analog/digital contract; DHT/BMP physical drivers and per-board device assignment are not introduced here.

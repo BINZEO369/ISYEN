@@ -698,3 +698,46 @@ button { color: inherit; }
   .sensor-empty-state .primary-button { align-self: flex-start; }
   .sensor-modal { max-height: calc(100vh - 20px); padding: 22px 16px 17px; }
 }
+
+
+/* ESP32-S3 account board status */
+.board-status-panel { margin: 18px 0; padding: 20px; border: 1px solid #e4eadf; border-radius: 16px; background: linear-gradient(145deg,#fffefa 0%,#f7faf3 100%); box-shadow: 0 8px 24px rgba(43,67,49,.04); }
+.board-status-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+.board-status-heading h2 { margin: 5px 0 4px; color: #38503e; font-size: 17px; letter-spacing: -.035em; }
+.board-status-heading p { margin: 0; color: #8c988c; font-size: 9px; line-height: 1.7; }
+.board-refresh-label { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; padding: 7px 9px; border: 1px solid #e2eadd; border-radius: 99px; background: #fff; color: #82917f; font-size: 8px; font-weight: 700; }
+.board-refresh-label i,.board-state-badge i { width: 6px; height: 6px; border-radius: 50%; background: #aab3a6; }
+.board-summary-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin-bottom: 12px; }
+.board-summary-card { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 12px 14px; border: 1px solid #e8ede4; border-radius: 11px; background: rgba(255,255,255,.84); }
+.board-summary-card > span { color: #8e998c; font-size: 8px; font-weight: 700; }
+.board-summary-card > strong { color: #425a45; font-size: 22px; line-height: 1.1; }
+.board-summary-card > small { color: #a0a99e; font-size: 7px; }
+.board-summary-active > strong { color: #648557; }
+.board-list { display: grid; gap: 9px; }
+.board-card { padding: 14px; border: 1px solid #e6ebdf; border-radius: 11px; background: #fff; }
+.board-card-main { display: flex; align-items: center; gap: 9px; }
+.board-state-dot { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 50%; background: #c4c9c1; }
+.board-state-online { background: #7fa56e; box-shadow: 0 0 0 4px #edf4e8; }
+.board-card-name { min-width: 0; flex: 1 1 auto; }
+.board-card-name h3 { overflow: hidden; margin: 0 0 3px; color: #435a46; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.board-card-name p { margin: 0; color: #9aa399; font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size: 8px; }
+.board-state-badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid #ecefe9; border-radius: 99px; background: #f7f8f5; color: #879185; font-size: 8px; font-weight: 750; }
+.board-state-badge-online { border-color: #dce9d4; background: #f1f6ed; color: #668459; }
+.board-state-badge-online i { background: #7fa56e; }
+.board-card-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; margin-top: 13px; }
+.board-card-metrics > div { display: flex; flex-direction: column; gap: 5px; min-width: 0; padding: 9px; border-radius: 8px; background: #f8faf6; }
+.board-card-metrics span { overflow: hidden; color: #929c91; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.board-card-metrics strong { overflow-wrap: anywhere; color: #536a53; font-size: 10px; }
+.board-card-metrics strong small { color: #9aa399; font-size: 7px; font-weight: 500; }
+.board-last-seen { margin: 10px 0 0; color: #9aa399; font-size: 8px; }
+.board-empty-state { display: flex; align-items: center; gap: 12px; padding: 15px; border: 1px dashed #dfe7d9; border-radius: 10px; background: #fbfcf9; }
+.board-empty-state > span { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border-radius: 10px; background: #eef3e9; color: #73906a; font-size: 19px; }
+.board-empty-state strong { color: #5a6e59; font-size: 9px; }
+.board-empty-state p { margin: 4px 0 0; color: #929c91; font-size: 8px; line-height: 1.7; }
+.board-status-error { margin: 10px 0; color: #a65f47; font-size: 9px; }
+.board-pagination { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; color: #899588; font-size: 8px; }
+.board-pagination > div { display: flex; gap: 6px; }
+.board-pagination button { min-height: 30px; padding: 0 10px; border: 1px solid #e1e8dd; border-radius: 7px; background: #fff; color: #5c7355; font-size: 8px; font-weight: 750; cursor: pointer; }
+.board-pagination button:disabled { opacity: .45; cursor: default; }
+@media (max-width: 760px) { .board-card-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 620px) { .board-status-panel { padding: 15px; } .board-status-heading { flex-direction: column; } .board-summary-grid { gap: 6px; } .board-summary-card { padding: 10px 9px; } .board-summary-card > strong { font-size: 18px; } }

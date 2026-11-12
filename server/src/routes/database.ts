@@ -24,6 +24,17 @@ const protocolSensorMeasurementBody = z.object({
   values: z.record(z.string(), z.number().finite()).refine((values) => Object.keys(values).length > 0 && Object.keys(values).length <= 2),
   reported_at: z.string().datetime({ offset: true }).optional(),
 }).strict();
+const gatewayHeartbeatBody = z.object({
+  serial_number: z.string().regex(/^[0-9A-Fa-f]{12}$/, 'ESP32 MAC address required.'),
+  boot_id: z.string().trim().min(1).max(64),
+  request_sequence: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+  firmware_version: z.string().trim().min(1).max(32),
+  wifi_rssi: z.number().int().min(-127).max(0).optional(),
+}).strict();
+const gatewayStatusQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).max(1_000_000).default(0),
+}).strict();
 
 type Tenant = { authUserId: string; isyenId: string };
 type RequestWithAuth = FastifyRequest & { tenant?: Tenant; accessToken?: string };
@@ -460,6 +471,96 @@ export function registerDatabaseRoutes(app: FastifyInstance, integration: Supaba
     const tenant = await requireTenant(requestWithAuth, reply, integration);
     if (!tenant) return reply;
     return reply.send({ data: { isyen_id: tenant.isyenId } });
+  });
+
+  app.post('/api/v1/device-runtime/gateways/heartbeat', async (request, reply) => {
+    const payload = gatewayHeartbeatBody.safeParse(request.body);
+    if (!payload.success) return errorResponse(reply, 400, 'INVALID_GATEWAY_HEARTBEAT', 'Provide an ESP32 MAC address, boot ID, request sequence and firmware version.');
+    const requestWithAuth = request as RequestWithAuth;
+    const tenant = await requireTenant(requestWithAuth, reply, integration);
+    if (!tenant) return reply;
+    const client = requestClient('gateways', requestWithAuth, integration);
+    if (!client) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+
+    const homeResult = await client.from('homes').select('id').eq('isyen_id', tenant.isyenId).order('created_at', { ascending: true }).limit(1).maybeSingle();
+    if (homeResult.error) return reportDatabaseError(request, reply, 'gateway_home_lookup', homeResult.error);
+    if (!homeResult.data) return errorResponse(reply, 409, 'HOME_REQUIRED', 'Create a home in the dashboard before connecting an ESP32 board.');
+
+    const serialNumber = payload.data.serial_number.toUpperCase();
+    const existing = await client.from('gateways').select('id,metadata').eq('isyen_id', tenant.isyenId).eq('serial_number', serialNumber).maybeSingle();
+    if (existing.error) return reportDatabaseError(request, reply, 'gateway_lookup', existing.error);
+
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const previous = (existing.data?.metadata ?? {}) as Record<string, unknown>;
+    const previousBoot = typeof previous.boot_id === 'string' ? previous.boot_id : '';
+    const previousSequence = typeof previous.request_sequence === 'number' ? previous.request_sequence : 0;
+    const previousTotal = typeof previous.requests_total === 'number' ? previous.requests_total : 0;
+    const previousHeartbeat = typeof previous.heartbeat_at === 'string' ? Date.parse(previous.heartbeat_at) : Number.NaN;
+    const sameBoot = previousBoot === payload.data.boot_id;
+    const requestDelta = sameBoot ? Math.max(0, payload.data.request_sequence - previousSequence) : payload.data.request_sequence;
+    const requestSequence = sameBoot ? Math.max(previousSequence, payload.data.request_sequence) : payload.data.request_sequence;
+    const elapsedMs = Number.isFinite(previousHeartbeat) ? now.getTime() - previousHeartbeat : 0;
+    const requestsPerMinute = elapsedMs > 0 && elapsedMs <= 90_000 ? Math.round(requestDelta * 60_000 / elapsedMs) : 0;
+    const metadata = {
+      ...previous,
+      hardware: 'ESP32-S3-N16R8',
+      firmware_version: payload.data.firmware_version,
+      boot_id: payload.data.boot_id,
+      request_sequence: requestSequence,
+      requests_total: previousTotal + requestDelta,
+      requests_per_minute: requestsPerMinute,
+      wifi_rssi: payload.data.wifi_rssi ?? null,
+      heartbeat_at: nowIso,
+    };
+    const values = {
+      home_id: homeResult.data.id,
+      name: `ESP32-S3 ${serialNumber.slice(-6)}`,
+      gateway_type: 'esp32_s3_n16r8',
+      serial_number: serialNumber,
+      status: 'online',
+      last_seen_at: nowIso,
+      metadata,
+      updated_at: nowIso,
+    };
+    const saved = existing.data
+      ? await client.from('gateways').update(values).eq('id', existing.data.id).eq('isyen_id', tenant.isyenId).select('id,home_id,name,gateway_type,serial_number,status,last_seen_at,metadata').single()
+      : await client.from('gateways').insert({ ...values, isyen_id: tenant.isyenId }).select('id,home_id,name,gateway_type,serial_number,status,last_seen_at,metadata').single();
+    if (saved.error) return reportDatabaseError(request, reply, 'gateway_heartbeat_write', saved.error);
+    return reply.send({ data: redactSensitiveFields(saved.data) });
+  });
+
+  app.get('/api/v1/device-runtime/gateways/status', async (request, reply) => {
+    const paging = gatewayStatusQuery.safeParse(request.query);
+    if (!paging.success) return errorResponse(reply, 400, 'INVALID_GATEWAY_STATUS_QUERY', 'Invalid gateway status pagination.');
+    const requestWithAuth = request as RequestWithAuth;
+    const tenant = await requireTenant(requestWithAuth, reply, integration);
+    if (!tenant) return reply;
+    const client = requestClient('gateways', requestWithAuth, integration);
+    if (!client) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+    const onlineAfter = new Date(Date.now() - 45_000).toISOString();
+    const [total, online, boards] = await Promise.all([
+      client.from('gateways').select('id', { count: 'planned', head: true }).eq('isyen_id', tenant.isyenId).eq('gateway_type', 'esp32_s3_n16r8'),
+      client.from('gateways').select('id', { count: 'planned', head: true }).eq('isyen_id', tenant.isyenId).eq('gateway_type', 'esp32_s3_n16r8').gte('last_seen_at', onlineAfter),
+      client.from('gateways').select('id,home_id,name,gateway_type,serial_number,status,last_seen_at,metadata', { count: 'planned' })
+        .eq('isyen_id', tenant.isyenId).eq('gateway_type', 'esp32_s3_n16r8').order('last_seen_at', { ascending: false, nullsFirst: false })
+        .range(paging.data.offset, paging.data.offset + paging.data.limit - 1),
+    ]);
+    if (total.error) return reportDatabaseError(request, reply, 'gateway_total_count', total.error);
+    if (online.error) return reportDatabaseError(request, reply, 'gateway_online_count', online.error);
+    if (boards.error) return reportDatabaseError(request, reply, 'gateway_status_list', boards.error);
+    const rows = boards.data ?? [];
+    const safeRows = rows.map((row) => {
+      const safe = redactSensitiveFields(row) as Record<string, unknown>;
+      const lastSeen = typeof safe.last_seen_at === 'string' ? Date.parse(safe.last_seen_at) : Number.NaN;
+      return { ...safe, is_online: Number.isFinite(lastSeen) && lastSeen >= Date.now() - 45_000 };
+    });
+    return reply.send({
+      data: safeRows,
+      summary: { total: total.count ?? 0, online: online.count ?? 0, offline: Math.max(0, (total.count ?? 0) - (online.count ?? 0)) },
+      pagination: { limit: paging.data.limit, offset: paging.data.offset, total: boards.count ?? total.count ?? 0, has_more: rows.length === paging.data.limit },
+      online_threshold_seconds: 45,
+    });
   });
 
   app.get('/api/v1/device-runtime/lights', async (request, reply) => {

@@ -35,3 +35,13 @@
 - [x] Deploy API and dashboard through their existing Vercel projects from GitHub commit `175706d`; production aliases are `isyen-api.vercel.app` and `isyen-app.vercel.app`.
 - [x] Verify dashboard HTTP 200, API `/health` and `/ready` HTTP 200, and protocol ingestion route returns the expected HTTP 401 without a Bearer token (route is live and remains authenticated).
 - [ ] Configure a real DHT/BMP device and add firmware polling/upload; Supabase currently has zero configured DHT/BMP device rows, so no physical readings are being collected yet.
+
+
+## ESP32 board status and Settings (2026-11-12)
+
+- [x] Add authenticated tenant-scoped gateway heartbeat and account status/count endpoints using existing `gateways` fields and metadata; no DDL.
+- [x] Add same-origin app proxies and a paginated Settings panel with total/online/offline counts, last heartbeat, firmware, RSSI, request rate and total requests.
+- [x] Add tests for tenant-derived board registration, monotonic request-sequence totals, invalid board identifiers and unauthenticated access.
+- [x] Prepare ESP32-S3 N16R8 firmware v4.1 to heartbeat every 15 seconds and report an API request sequence.
+- [x] Run frozen install, lint, typecheck, tests and builds; all passed.
+- [ ] Deploy/push only after explicit user request; production data and schema remain unchanged.

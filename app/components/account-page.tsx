@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "./app-shell";
+import { BoardStatusPanel } from "./board-status-panel";
 import { ApiRequestError, loadProfile, type Profile } from "../lib/app-data";
 import { getSupabaseBrowserClient } from "../lib/supabase-browser";
 
@@ -116,6 +117,8 @@ export function AccountPage() {
           </div>
         </section>
       </div>
+
+      <BoardStatusPanel />
 
       <section className="account-metadata-card">
         <div><span className="account-card-icon">✓</span><div><h3>অ্যাকাউন্ট স্ট্যাটাস</h3><p>আপনার অ্যাকাউন্ট নিরাপদভাবে সংরক্ষিত</p></div></div>
