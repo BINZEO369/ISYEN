@@ -14,10 +14,11 @@
 - [x] Show sensor metrics for temperature, humidity, gas/air quality, motion, light, soil moisture, smoke, flame, pressure, and distance when available.
 - [x] Provide an automation builder with explicit WHEN sensor trigger, IF condition, THEN action fields, enabled state, and save/update affordance.
 - [x] Explain that authenticated Supabase/API credentials are required for live writes while keeping the preview safe without credentials.
+- [x] Add an authenticated dashboard link to the dedicated `/sensors` workspace while preserving the landing, sign-in, registration, profile and GPIO work from the other agent.
 
 ## Delivery
 
 - [x] Apply and verify the Supabase migration.
-- [x] Run app, management, and server typecheck/lint/build/test checks.
-- [ ] Push the completed update to GitHub `main` with a focused commit.
+- [x] Run app, management, and server typecheck/lint/build/test checks after merging the remote agent commits.
+- [x] Push the completed update to GitHub `main` with a focused merge commit.
 - [x] Do not modify ESP32 firmware in this update.

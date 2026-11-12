@@ -25,7 +25,7 @@ Do not introduce another programming language, runtime, framework, or service wi
 - `app/` and `management/` communicate with backend capabilities through contracts owned by `server/`, using REST and/or authenticated WebSocket. Do not import source files across packages.
 - `server/` is the sole authority for server-side validation, authentication, authorization, and privileged operations. Never trust a role or permission supplied only by a browser.
 - Do not connect frontend code directly to privileged database operations. Browser-visible environment variables may contain only public configuration; server-only secrets must never use a `NEXT_PUBLIC_` prefix.
-- Supabase is not connected or provisioned yet. Keep example environment values as placeholders. Do not connect a project, apply migrations, change Auth settings, or change Storage policies unless the user explicitly requests that database work.
+- The ISYEN HOME Supabase project is connected for schema inspection and the user-approved Auth/profile flows. Keep example environment values as placeholders. Do not apply migrations, alter project-wide Auth/Storage settings, or write unrelated production data unless the user explicitly requests that database work.
 - Keep package implementation inside its designated folder. Do not add a new top-level app, shared code package, or language-specific sidecar without user approval.
 
 ## Repository workflow

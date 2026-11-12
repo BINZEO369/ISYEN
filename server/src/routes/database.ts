@@ -1,25 +1,18 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { SupabaseIntegration } from '../integrations/supabase.js';
-import { allowedOrderFields, isResourceName, protectedFields, resources } from './resources.js';
+import { isResourceName, isSafeEsp32S3OutputPin, isValidEsp32S3LightConfig, resourceNames, resources, type FieldRule, type ResourceName } from './resources.js';
 
 const idParams = z.object({ resource: z.string(), id: z.string().uuid() });
 const resourceParams = z.object({ resource: z.string() });
-const listQuery = z.object({
+const paginationQuery = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
-  offset: z.coerce.number().int().min(0).default(0),
-  order_by: z.string().default('created_at'),
+  offset: z.coerce.number().int().min(0).max(1_000_000).default(0),
+  order_by: z.string().min(1).max(64).optional(),
   order: z.enum(['asc', 'desc']).default('desc'),
-  home_id: z.string().uuid().optional(),
-  room_id: z.string().uuid().optional(),
-  device_id: z.string().uuid().optional(),
-  is_read: z.enum(['true', 'false']).optional(),
-  status: z.string().max(40).optional(),
-});
-const jsonObject = z.record(z.unknown());
+}).passthrough();
 
 type Tenant = { authUserId: string; isyenId: string };
-
 type RequestWithAuth = FastifyRequest & { tenant?: Tenant; accessToken?: string };
 
 function bearerToken(request: FastifyRequest): string | null {
@@ -33,14 +26,144 @@ function errorResponse(reply: FastifyReply, statusCode: number, code: string, me
   return reply.code(statusCode).send({ error: { code, message } });
 }
 
-function sanitizeBody(input: unknown): Record<string, unknown> | null {
-  const parsed = jsonObject.safeParse(input);
-  if (!parsed.success) return null;
-  const output: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(parsed.data)) {
-    if (!protectedFields.has(key)) output[key] = value;
+function schemaFor(rule: FieldRule, queryValue = false): z.ZodTypeAny {
+  switch (rule) {
+    case 'text': return z.string().trim().min(1).max(4_000);
+    case 'requiredText': return z.string().trim().min(1).max(500);
+    case 'nullableText': return z.string().trim().max(4_000).nullable();
+    case 'uuid': return z.string().uuid();
+    case 'nullableUuid': return z.string().uuid().nullable();
+    case 'integer': return queryValue ? z.coerce.number().int() : z.number().int();
+    case 'nullableInteger': return (queryValue ? z.coerce.number().int() : z.number().int()).nullable();
+    case 'number': return queryValue ? z.coerce.number().finite() : z.number().finite();
+    case 'nullableNumber': return (queryValue ? z.coerce.number().finite() : z.number().finite()).nullable();
+    case 'boolean': return queryValue
+      ? z.union([z.literal('true'), z.literal('false')]).transform((value) => value === 'true')
+      : z.boolean();
+    case 'object': return z.record(z.unknown());
+    case 'homeStatus': return z.enum(['active', 'inactive', 'archived']);
+    case 'gatewayStatus': return z.enum(['online', 'offline', 'degraded', 'provisioning']);
+    case 'deviceStatus': return z.enum(['online', 'offline', 'unavailable', 'provisioning']);
+    case 'integrationStatus': return z.enum(['pending', 'active', 'error', 'revoked']);
+    case 'deviceTypeKey': return z.literal('esp32_s3_gpio_light');
+    case 'timeFormat': return z.enum(['12h', '24h']);
+    case 'temperatureUnit': return z.enum(['celsius', 'fahrenheit']);
+    case 'theme': return z.enum(['light', 'dark', 'system']);
+    case 'deviceView': return z.enum(['grid', 'list', 'compact']);
+    case 'date': return z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
+      const parsed = new Date(`${value}T00:00:00.000Z`);
+      return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
+    });
+    case 'nullableDate': return z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
+      const parsed = new Date(`${value}T00:00:00.000Z`);
+      return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
+    }).nullable();
+    case 'dateTime': return z.string().datetime({ offset: true });
+    case 'nullableDateTime': return z.string().datetime({ offset: true }).nullable();
   }
-  return output;
+}
+
+const sensitiveFieldName = /(password|passwd|secret|token|api[_-]?key|private[_-]?key|credential|authorization|access[_-]?key)/i;
+
+function containsSensitiveField(value: unknown, depth = 0): boolean {
+  if (depth > 12) return true;
+  if (Array.isArray(value)) return value.some((entry) => containsSensitiveField(entry, depth + 1));
+  if (!value || typeof value !== 'object') return false;
+  return Object.entries(value).some(([key, entry]) => sensitiveFieldName.test(key) || containsSensitiveField(entry, depth + 1));
+}
+
+function redactSensitiveFields(value: unknown, depth = 0): unknown {
+  if (depth > 12) return undefined;
+  if (Array.isArray(value)) return value.map((entry) => redactSensitiveFields(entry, depth + 1));
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => !sensitiveFieldName.test(key))
+    .map(([key, entry]) => [key, redactSensitiveFields(entry, depth + 1)]));
+}
+
+function parseBody(resource: ResourceName, input: unknown, mode: 'create' | 'update'):
+  | { ok: true; value: Record<string, unknown> }
+  | { ok: false; message: string } {
+  const definition = resources[resource];
+  const inputResult = z.record(z.unknown()).safeParse(input);
+  if (!inputResult.success) return { ok: false, message: 'Request body must be a JSON object.' };
+  const body: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(inputResult.data)) {
+    if (mode === 'update' && key === 'device_type_key') return { ok: false, message: 'Field "device_type_key" is accepted only when creating a device.' };
+    const rule = definition.writable[key];
+    if (!rule) return { ok: false, message: `Field "${key}" is not writable for this resource.` };
+    if (rule === 'object' && containsSensitiveField(value)) {
+      return { ok: false, message: `Field "${key}" must not contain credentials or secret values.` };
+    }
+    const parsed = schemaFor(rule).safeParse(value);
+    if (!parsed.success) return { ok: false, message: `Field "${key}" has an invalid value.` };
+    body[key] = parsed.data;
+  }
+  if (mode === 'create') {
+    const missing = definition.requiredOnCreate.filter((field) => body[field] === undefined);
+    if (missing.length) return { ok: false, message: `Required fields are missing: ${missing.join(', ')}.` };
+  } else if (!Object.keys(body).length) {
+    return { ok: false, message: 'At least one writable field is required.' };
+  }
+  if (resource === 'schedules' && mode === 'create' && !body.automation_id && !body.scene_id) {
+    return { ok: false, message: 'A schedule must reference an automation_id or scene_id.' };
+  }
+  if (resource === 'devices') {
+    if (mode === 'create' && Boolean(body.device_type_id) === Boolean(body.device_type_key)) {
+      return { ok: false, message: 'Provide exactly one of device_type_id or device_type_key.' };
+    }
+    const config = body.config as Record<string, unknown> | undefined;
+    if ((body.device_type_key === 'esp32_s3_gpio_light' || config?.hardware === 'esp32_s3_gpio_light') && !isValidEsp32S3LightConfig(config)) {
+      return { ok: false, message: 'GPIO light config must use a supported ESP32-S3 output pin and a boolean desired_on value.' };
+    }
+  }
+  return { ok: true, value: body };
+}
+
+function parseFilters(resource: ResourceName, rawQuery: unknown):
+  | { ok: true; filters: Record<string, string | number | boolean> }
+  | { ok: false; message: string } {
+  if (!rawQuery || typeof rawQuery !== 'object' || Array.isArray(rawQuery)) {
+    return { ok: false, message: 'Query parameters are invalid.' };
+  }
+  const input = rawQuery as Record<string, unknown>;
+  const definition = resources[resource];
+  const allowedKeys = new Set(['limit', 'offset', 'order_by', 'order', ...Object.keys(definition.filters)]);
+  const unsupported = Object.keys(input).find((key) => !allowedKeys.has(key));
+  if (unsupported) return { ok: false, message: `Query parameter "${unsupported}" is not supported for this resource.` };
+  const paging = paginationQuery.safeParse({ limit: input.limit, offset: input.offset, order_by: input.order_by, order: input.order });
+  if (!paging.success) return { ok: false, message: 'Pagination or ordering parameters are invalid.' };
+  const orderBy = paging.data.order_by ?? definition.defaultOrderBy;
+  if (!definition.orderBy.includes(orderBy)) return { ok: false, message: 'The requested order_by field is not supported for this resource.' };
+  const filters: Record<string, string | number | boolean> = {};
+  for (const [key, rule] of Object.entries(definition.filters)) {
+    if (input[key] === undefined) continue;
+    const parsed = schemaFor(rule, true).safeParse(input[key]);
+    if (!parsed.success) return { ok: false, message: `Filter "${key}" has an invalid value.` };
+    filters[key] = parsed.data as string | number | boolean;
+  }
+  return { ok: true, filters };
+}
+
+function databaseErrorStatus(error: { code?: string }): number {
+  if (error.code === '23505') return 409;
+  if (error.code === '23503' || error.code === '23514') return 422;
+  if (error.code === '22P02' || error.code === '22001') return 400;
+  return 503;
+}
+
+function reportDatabaseError(request: FastifyRequest, reply: FastifyReply, operation: string, error: { code?: string }) {
+  request.log.warn({ databaseCode: error.code ?? 'unknown', operation }, 'Supabase request failed');
+  const statusCode = databaseErrorStatus(error);
+  const code = statusCode === 409 ? 'CONFLICT' : statusCode === 422 ? 'INVALID_REFERENCE' : statusCode === 400 ? 'INVALID_VALUE' : 'DATABASE_UNAVAILABLE';
+  const message = statusCode === 409
+    ? 'A resource with the same unique value already exists.'
+    : statusCode === 422
+      ? 'A referenced resource or value is invalid.'
+      : statusCode === 400
+        ? 'A field value is invalid.'
+        : 'The database request could not be completed.';
+  return errorResponse(reply, statusCode, code, message);
 }
 
 async function requireTenant(request: RequestWithAuth, reply: FastifyReply, integration: SupabaseIntegration): Promise<Tenant | null> {
@@ -49,118 +172,321 @@ async function requireTenant(request: RequestWithAuth, reply: FastifyReply, inte
     errorResponse(reply, 401, 'AUTH_REQUIRED', 'A valid Bearer access token is required.');
     return null;
   }
-  if (!integration.configured || !integration.serviceClient) {
+  if (!integration.configured || !integration.publicClient) {
     errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase server integration is not configured.');
     return null;
   }
-  const tenant = await integration.resolveTenant(token);
-  if (!tenant) {
-    errorResponse(reply, 401, 'TENANT_NOT_RESOLVED', 'Authenticated user has no active user profile.');
+  try {
+    const tenant = await integration.resolveTenant(token);
+    if (!tenant) {
+      errorResponse(reply, 401, 'TENANT_NOT_RESOLVED', 'The authenticated user has no active ISYEN profile.');
+      return null;
+    }
+    request.accessToken = token;
+    request.tenant = tenant;
+    return tenant;
+  } catch {
+    errorResponse(reply, 503, 'AUTH_PROVIDER_UNAVAILABLE', 'Authentication could not be verified right now.');
     return null;
   }
-  request.accessToken = token;
-  request.tenant = tenant;
-  return tenant;
+}
+
+function scopedQuery<T>(query: T, resource: ResourceName, tenant: Tenant): T {
+  const definition = resources[resource];
+  let scoped = query;
+  if (!definition.shared) scoped = (scoped as { eq(column: string, value: string): T }).eq('isyen_id', tenant.isyenId);
+  if (definition.selfOnly) scoped = (scoped as { eq(column: string, value: string): T }).eq('auth_user_id', tenant.authUserId);
+  return scoped;
+}
+
+function requestClient(resource: ResourceName, request: RequestWithAuth, integration: SupabaseIntegration) {
+  if (!integration.configured) return undefined;
+  // Every user and shared-table query uses the caller JWT so PostgreSQL RLS remains active.
+  return integration.requestClient(request.accessToken ?? '');
+}
+
+async function resolveGpioLightTypeId(request: RequestWithAuth, reply: FastifyReply, integration: SupabaseIntegration): Promise<string | null> {
+  const userClient = requestClient('device_types', request, integration);
+  if (!userClient) {
+    errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+    return null;
+  }
+  const key = 'esp32_s3_gpio_light';
+  const existing = await userClient.from('device_types').select('id').eq('key', key).eq('is_active', true).maybeSingle();
+  if (existing.error) {
+    reportDatabaseError(request, reply, 'device_type_lookup', existing.error);
+    return null;
+  }
+  if (existing.data?.id) return String(existing.data.id);
+
+  // This is a shared, idempotent catalog bootstrap only; tenant-owned data remains caller-JWT/RLS scoped.
+  const service = integration.serviceClient;
+  if (!service) {
+    errorResponse(reply, 503, 'DEVICE_TYPE_NOT_CONFIGURED', 'The GPIO light device type is not configured on the server.');
+    return null;
+  }
+  const created = await service.from('device_types').upsert({
+    key,
+    name: 'ESP32-S3 GPIO Light',
+    category: 'lighting',
+    manufacturer: 'ISYEN',
+    capabilities: { switch: true, gpio_output: true },
+    default_config: { hardware: 'esp32_s3_gpio_light', gpio: 4, desired_on: false, active_low: false },
+    is_active: true,
+  }, { onConflict: 'key' }).select('id').single();
+  if (created.error || !created.data?.id) {
+    reportDatabaseError(request, reply, 'device_type_bootstrap', created.error ?? { code: 'unknown' });
+    return null;
+  }
+  return String(created.data.id);
+}
+
+async function gpioAlreadyAssigned(
+  client: NonNullable<ReturnType<typeof requestClient>>,
+  isyenId: string,
+  gpio: number,
+  excludeDeviceId?: string,
+): Promise<{ conflict: boolean; error?: unknown }> {
+  const { data, error } = await client.from('devices')
+    .select('id,config')
+    .eq('isyen_id', isyenId)
+    .eq('config->>hardware', 'esp32_s3_gpio_light')
+    .limit(1000);
+  if (error) return { conflict: false, error };
+  const conflict = (data ?? []).some((row) => {
+    const config = row.config as Record<string, unknown> | null;
+    return row.id !== excludeDeviceId && config?.gpio === gpio;
+  });
+  return { conflict };
 }
 
 export function registerDatabaseRoutes(app: FastifyInstance, integration: SupabaseIntegration): void {
   app.addHook('preHandler', async (request, reply) => {
-    if (request.url.startsWith('/health') || request.url.startsWith('/ready')) return;
-    const resource = (request.params as { resource?: string } | undefined)?.resource;
-    if (!resource || !isResourceName(resource)) return;
-    if (resources[resource].shared && request.method === 'GET') return;
-    const tenant = await requireTenant(request as RequestWithAuth, reply, integration);
+    const routeResource = (request.params as { resource?: string } | undefined)?.resource;
+    if (!routeResource || !isResourceName(routeResource)) return;
+    const requestWithAuth = request as RequestWithAuth;
+    const tenant = await requireTenant(requestWithAuth, reply, integration);
     if (!tenant) return reply;
   });
 
+  app.get('/api/v1', async () => ({
+    version: 'v1',
+    authentication: 'Bearer Supabase access token required for resource endpoints',
+    resources: resourceNames,
+    endpoints: ['GET /api/v1/:resource', 'GET /api/v1/:resource/:id', 'POST /api/v1/:resource', 'PATCH /api/v1/:resource/:id', 'DELETE /api/v1/:resource/:id'],
+  }));
+
   app.get('/api/v1/:resource', async (request, reply) => {
     const parsedParams = resourceParams.safeParse(request.params);
-    const parsedQuery = listQuery.safeParse(request.query);
     if (!parsedParams.success || !isResourceName(parsedParams.data.resource)) {
       return errorResponse(reply, 404, 'RESOURCE_NOT_FOUND', 'Unknown database resource.');
     }
-    if (!parsedQuery.success) return errorResponse(reply, 400, 'INVALID_QUERY', parsedQuery.error.message);
     const resource = parsedParams.data.resource;
-    if (!integration.configured || !integration.publicClient) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase server integration is not configured.');
+    const parsedFilters = parseFilters(resource, request.query);
+    if (!parsedFilters.ok) return errorResponse(reply, 400, 'INVALID_QUERY', parsedFilters.message);
     const requestWithAuth = request as RequestWithAuth;
-    const client = resources[resource].shared
-      ? (integration.serviceClient ?? integration.publicClient)
-      : integration.requestClient(requestWithAuth.accessToken ?? '');
-    if (!client) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
-    const { limit, offset, order_by, order, home_id, room_id, device_id, is_read, status } = parsedQuery.data;
-    if (!allowedOrderFields.has(order_by)) return errorResponse(reply, 400, 'INVALID_ORDER_BY', 'Unsupported order_by field.');
-    let query = client.from(resource).select('*', { count: 'exact' }).range(offset, offset + limit - 1).order(order_by, { ascending: order === 'asc', nullsFirst: false });
-    if (!resources[resource].shared) query = query.eq('isyen_id', requestWithAuth.tenant?.isyenId ?? '');
-    if (home_id) query = query.eq('home_id', home_id);
-    if (room_id) query = query.eq('room_id', room_id);
-    if (device_id) query = query.eq('device_id', device_id);
-    if (is_read) query = query.eq('is_read', is_read === 'true');
-    if (status) query = query.eq('status', status);
+    const tenant = requestWithAuth.tenant;
+    const client = requestClient(resource, requestWithAuth, integration);
+    if (!client || !tenant) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+
+    const paging = paginationQuery.parse(request.query);
+    const orderBy = paging.order_by ?? resources[resource].defaultOrderBy;
+    let query = client.from(resource).select(resources[resource].select, { count: 'planned' });
+    query = scopedQuery(query, resource, tenant);
+    for (const [column, value] of Object.entries(parsedFilters.filters)) query = query.eq(column, value);
+    query = query
+      .order(orderBy, { ascending: paging.order === 'asc', nullsFirst: false })
+      .range(paging.offset, paging.offset + paging.limit - 1);
+
     const { data, error, count } = await query;
-    if (error) return errorResponse(reply, 400, 'DATABASE_QUERY_FAILED', error.message);
-    return reply.send({ data: data ?? [], pagination: { limit, offset, total: count ?? data?.length ?? 0 } });
+    if (error) return reportDatabaseError(request, reply, 'list', error);
+    return reply.send({
+      data: redactSensitiveFields(data ?? []),
+      pagination: {
+        limit: paging.limit,
+        offset: paging.offset,
+        total: count ?? data?.length ?? 0,
+        total_is_estimate: true,
+        has_more: (data?.length ?? 0) === paging.limit,
+      },
+    });
   });
 
   app.get('/api/v1/:resource/:id', async (request, reply) => {
     const parsed = idParams.safeParse(request.params);
-    if (!parsed.success || !isResourceName(parsed.data.resource)) return errorResponse(reply, 404, 'RESOURCE_NOT_FOUND', 'Unknown database resource or invalid id.');
+    if (!parsed.success || !isResourceName(parsed.data.resource)) {
+      return errorResponse(reply, 404, 'RESOURCE_NOT_FOUND', 'Unknown database resource or invalid id.');
+    }
     const resource = parsed.data.resource;
-    if (!integration.configured || !integration.publicClient) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase server integration is not configured.');
     const requestWithAuth = request as RequestWithAuth;
-    const client = resources[resource].shared
-      ? (integration.serviceClient ?? integration.publicClient)
-      : integration.requestClient(requestWithAuth.accessToken ?? '');
-    if (!client) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
-    let query = client.from(resource).select('*').eq('id', parsed.data.id);
-    if (!resources[resource].shared) query = query.eq('isyen_id', requestWithAuth.tenant?.isyenId ?? '');
+    const tenant = requestWithAuth.tenant;
+    const client = requestClient(resource, requestWithAuth, integration);
+    if (!client || !tenant) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+
+    let query = client.from(resource).select(resources[resource].select).eq('id', parsed.data.id);
+    query = scopedQuery(query, resource, tenant);
     const { data, error } = await query.maybeSingle();
-    if (error) return errorResponse(reply, 400, 'DATABASE_QUERY_FAILED', error.message);
+    if (error) return reportDatabaseError(request, reply, 'get', error);
     if (!data) return errorResponse(reply, 404, 'NOT_FOUND', 'Resource row not found.');
-    return reply.send({ data });
+    return reply.send({ data: redactSensitiveFields(data) });
   });
 
   app.post('/api/v1/:resource', async (request, reply) => {
     const parsed = resourceParams.safeParse(request.params);
     if (!parsed.success || !isResourceName(parsed.data.resource)) return errorResponse(reply, 404, 'RESOURCE_NOT_FOUND', 'Unknown database resource.');
     const resource = parsed.data.resource;
-    if (!resources[resource].write || resources[resource].serviceOnly) return errorResponse(reply, 403, 'WRITE_NOT_ALLOWED', 'This resource is read-only or service-managed.');
-    const body = sanitizeBody(request.body);
-    if (!body) return errorResponse(reply, 400, 'INVALID_BODY', 'Request body must be a JSON object.');
+    const definition = resources[resource];
+    if (!definition.write || definition.serviceOnly || definition.selfOnly) {
+      return errorResponse(reply, 403, 'WRITE_NOT_ALLOWED', 'This resource cannot be created by a user API request.');
+    }
+    const body = parseBody(resource, request.body, 'create');
+    if (!body.ok) return errorResponse(reply, 400, 'INVALID_BODY', body.message);
     const requestWithAuth = request as RequestWithAuth;
-    const client = integration.requestClient(requestWithAuth.accessToken ?? '');
-    if (!client) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
-    body.isyen_id = requestWithAuth.tenant?.isyenId;
-    if (resource === 'user_profiles') body.auth_user_id = requestWithAuth.tenant?.authUserId;
-    const { data, error } = await client.from(resource).insert(body).select('*').single();
-    if (error) return errorResponse(reply, 400, 'DATABASE_INSERT_FAILED', error.message);
-    return reply.code(201).send({ data });
+    const tenant = requestWithAuth.tenant;
+    const client = requestClient(resource, requestWithAuth, integration);
+    if (!client || !tenant) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+
+    const insertBody = { ...body.value };
+    if (resource === 'devices' && insertBody.device_type_key === 'esp32_s3_gpio_light') {
+      const typeId = await resolveGpioLightTypeId(requestWithAuth, reply, integration);
+      if (!typeId) return reply;
+      delete insertBody.device_type_key;
+      insertBody.device_type_id = typeId;
+    }
+    if (resource === 'devices' && isValidEsp32S3LightConfig(insertBody.config)) {
+      const pinCheck = await gpioAlreadyAssigned(client, tenant.isyenId, (insertBody.config as { gpio: number }).gpio);
+      if (pinCheck.error) return reportDatabaseError(request, reply, 'gpio_conflict_lookup', pinCheck.error);
+      if (pinCheck.conflict) return errorResponse(reply, 409, 'GPIO_ALREADY_ASSIGNED', 'This GPIO pin is already assigned to another light in this ISYEN account.');
+    }
+
+    const { data, error } = await client.from(resource)
+      .insert({ ...insertBody, isyen_id: tenant.isyenId })
+      .select(definition.select)
+      .single();
+    if (error) return reportDatabaseError(request, reply, 'insert', error);
+    return reply.code(201).send({ data: redactSensitiveFields(data) });
   });
 
   app.patch('/api/v1/:resource/:id', async (request, reply) => {
     const parsed = idParams.safeParse(request.params);
     if (!parsed.success || !isResourceName(parsed.data.resource)) return errorResponse(reply, 404, 'RESOURCE_NOT_FOUND', 'Unknown database resource or invalid id.');
     const resource = parsed.data.resource;
-    if (!resources[resource].write || resources[resource].serviceOnly) return errorResponse(reply, 403, 'WRITE_NOT_ALLOWED', 'This resource is read-only or service-managed.');
-    const body = sanitizeBody(request.body);
-    if (!body) return errorResponse(reply, 400, 'INVALID_BODY', 'Request body must be a JSON object.');
+    const definition = resources[resource];
+    if (!definition.write || definition.serviceOnly) return errorResponse(reply, 403, 'WRITE_NOT_ALLOWED', 'This resource is read-only or service-managed.');
+    const body = parseBody(resource, request.body, 'update');
+    if (!body.ok) return errorResponse(reply, 400, 'INVALID_BODY', body.message);
     const requestWithAuth = request as RequestWithAuth;
-    const client = integration.requestClient(requestWithAuth.accessToken ?? '');
-    if (!client) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
-    const { data, error } = await client.from(resource).update(body).eq('id', parsed.data.id).eq('isyen_id', requestWithAuth.tenant?.isyenId ?? '').select('*').single();
-    if (error) return errorResponse(reply, 400, 'DATABASE_UPDATE_FAILED', error.message);
-    return reply.send({ data });
+    const tenant = requestWithAuth.tenant;
+    const client = requestClient(resource, requestWithAuth, integration);
+    if (!client || !tenant) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+
+    if (resource === 'devices' && isValidEsp32S3LightConfig(body.value.config)) {
+      const pinCheck = await gpioAlreadyAssigned(client, tenant.isyenId, (body.value.config as { gpio: number }).gpio, parsed.data.id);
+      if (pinCheck.error) return reportDatabaseError(request, reply, 'gpio_conflict_lookup', pinCheck.error);
+      if (pinCheck.conflict) return errorResponse(reply, 409, 'GPIO_ALREADY_ASSIGNED', 'This GPIO pin is already assigned to another light in this ISYEN account.');
+    }
+
+    let query = client.from(resource).update(body.value).eq('id', parsed.data.id);
+    query = scopedQuery(query, resource, tenant);
+    const { data, error } = await query.select(definition.select).maybeSingle();
+    if (error) return reportDatabaseError(request, reply, 'update', error);
+    if (!data) return errorResponse(reply, 404, 'NOT_FOUND', 'Resource row not found.');
+    return reply.send({ data: redactSensitiveFields(data) });
   });
 
   app.delete('/api/v1/:resource/:id', async (request, reply) => {
     const parsed = idParams.safeParse(request.params);
     if (!parsed.success || !isResourceName(parsed.data.resource)) return errorResponse(reply, 404, 'RESOURCE_NOT_FOUND', 'Unknown database resource or invalid id.');
     const resource = parsed.data.resource;
-    if (!resources[resource].write || resources[resource].serviceOnly) return errorResponse(reply, 403, 'DELETE_NOT_ALLOWED', 'This resource is read-only or service-managed.');
+    const definition = resources[resource];
+    if (!definition.write || definition.serviceOnly || definition.selfOnly) {
+      return errorResponse(reply, 403, 'DELETE_NOT_ALLOWED', 'This resource cannot be deleted by a user API request.');
+    }
     const requestWithAuth = request as RequestWithAuth;
-    const client = integration.requestClient(requestWithAuth.accessToken ?? '');
-    if (!client) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
-    const { error } = await client.from(resource).delete().eq('id', parsed.data.id).eq('isyen_id', requestWithAuth.tenant?.isyenId ?? '');
-    if (error) return errorResponse(reply, 400, 'DATABASE_DELETE_FAILED', error.message);
+    const tenant = requestWithAuth.tenant;
+    const client = requestClient(resource, requestWithAuth, integration);
+    if (!client || !tenant) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+
+    let query = client.from(resource).delete().eq('id', parsed.data.id);
+    query = scopedQuery(query, resource, tenant);
+    const { data, error } = await query.select('id').maybeSingle();
+    if (error) return reportDatabaseError(request, reply, 'delete', error);
+    if (!data) return errorResponse(reply, 404, 'NOT_FOUND', 'Resource row not found.');
     return reply.code(204).send();
+  });
+
+  app.get('/api/v1/device-runtime/identity', async (request, reply) => {
+    const requestWithAuth = request as RequestWithAuth;
+    const tenant = await requireTenant(requestWithAuth, reply, integration);
+    if (!tenant) return reply;
+    return reply.send({ data: { isyen_id: tenant.isyenId } });
+  });
+
+  app.get('/api/v1/device-runtime/lights', async (request, reply) => {
+    const paging = paginationQuery.safeParse(request.query);
+    if (!paging.success) return errorResponse(reply, 400, 'INVALID_QUERY', 'Invalid device-list pagination.');
+    const requestWithAuth = request as RequestWithAuth;
+    const tenant = await requireTenant(requestWithAuth, reply, integration);
+    if (!tenant) return reply;
+    const client = requestClient('devices', requestWithAuth, integration);
+    if (!client) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+    const { data, error, count } = await client.from('devices')
+      .select('id,config,created_at', { count: 'planned' })
+      .eq('isyen_id', tenant.isyenId)
+      .eq('config->>hardware', 'esp32_s3_gpio_light')
+      .order('created_at', { ascending: paging.data.order === 'asc' })
+      .range(paging.data.offset, paging.data.offset + paging.data.limit - 1);
+    if (error) return reportDatabaseError(request, reply, 'device_runtime_light_list', error);
+    return reply.send({
+      data: data ?? [],
+      pagination: {
+        limit: paging.data.limit,
+        offset: paging.data.offset,
+        total: count ?? data?.length ?? 0,
+        total_is_estimate: true,
+        has_more: (data?.length ?? 0) === paging.data.limit,
+      },
+    });
+  });
+
+  app.post('/api/v1/device-runtime/:id/state', async (request, reply) => {
+    const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return errorResponse(reply, 400, 'INVALID_DEVICE_ID', 'A valid device ID is required.');
+    const payload = z.object({
+      gpio: z.number().int(),
+      relay_on: z.boolean(),
+      rssi: z.number().int().min(-127).max(0).optional(),
+    }).strict().safeParse(request.body);
+    if (!payload.success || !isSafeEsp32S3OutputPin(payload.data.gpio)) {
+      return errorResponse(reply, 400, 'INVALID_DEVICE_STATE', 'Reported state or GPIO pin is invalid.');
+    }
+    const requestWithAuth = request as RequestWithAuth;
+    const tenant = await requireTenant(requestWithAuth, reply, integration);
+    if (!tenant) return reply;
+    const client = requestClient('devices', requestWithAuth, integration);
+    if (!client) return errorResponse(reply, 503, 'SUPABASE_NOT_CONFIGURED', 'Supabase request client is unavailable.');
+
+    const deviceResult = await client.from('devices').select('id,config').eq('id', params.data.id).eq('isyen_id', tenant.isyenId).maybeSingle();
+    if (deviceResult.error) return reportDatabaseError(request, reply, 'device_state_device_lookup', deviceResult.error);
+    if (!deviceResult.data) return errorResponse(reply, 404, 'NOT_FOUND', 'Device row not found.');
+    const config = deviceResult.data.config as Record<string, unknown> | null;
+    if (!isValidEsp32S3LightConfig(config) || config.gpio !== payload.data.gpio) {
+      return errorResponse(reply, 409, 'DEVICE_CONFIG_MISMATCH', 'Reported GPIO does not match the configured device.');
+    }
+
+    const now = new Date().toISOString();
+    const deviceUpdate = await client.from('devices').update({ status: 'online', last_seen_at: now })
+      .eq('id', params.data.id).eq('isyen_id', tenant.isyenId).select('id').maybeSingle();
+    if (deviceUpdate.error) return reportDatabaseError(request, reply, 'device_heartbeat', deviceUpdate.error);
+    const stateUpdate = await client.from('device_states').upsert({
+      isyen_id: tenant.isyenId,
+      device_id: params.data.id,
+      state: { hardware: 'esp32_s3_gpio_light', gpio: payload.data.gpio, relay_on: payload.data.relay_on, rssi: payload.data.rssi ?? null },
+      reported_at: now,
+      received_at: now,
+      source: 'esp32_s3',
+    }, { onConflict: 'isyen_id,device_id' }).select('id,device_id,state,reported_at,received_at,source').single();
+    if (stateUpdate.error) return reportDatabaseError(request, reply, 'device_state_upsert', stateUpdate.error);
+    return reply.send({ data: stateUpdate.data });
   });
 }
