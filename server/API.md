@@ -62,6 +62,56 @@ List query parameters: `limit` (1–100), `offset`, `order_by`, `order`, `home_i
 - `GET /health` — process liveness; no external dependency claim.
 - `GET /ready` — checks Supabase configuration and connectivity; returns `503` until configured.
 
+## Home and sensor model
+
+Each `isyen_id` may own exactly one row in `homes`. This is enforced by the database unique index `homes_one_per_isyen_id_idx`, not only by the dashboard. A device belongs to that home through the tenant-scoped `(isyen_id, home_id)` relationship.
+
+Sensor models are shared rows in `device_types` and tenant-owned installations are rows in `devices`. The catalog includes DHT11/DHT22, MQ-2 gas/smoke, PIR motion, LDR light, soil moisture, smoke, flame, BMP280, ultrasonic, relay and smart-light references. New models can be added to the shared catalog without adding a tenant table.
+
+Example device payload:
+
+```json
+{
+  "home_id": "<home-uuid>",
+  "name": "Kitchen gas watch",
+  "status": "provisioning",
+  "config": {
+    "device_type_key": "sensor_mq2_gas",
+    "room_name": "Kitchen",
+    "sampling_interval_seconds": 10
+  },
+  "metadata": { "dashboard_created": true }
+}
+```
+
+Telemetry is written to `sensor_data` with a metric such as `temperature`, `humidity`, `gas`, `motion`, `smoke`, `flame`, `illuminance`, `soil_moisture`, `pressure` or `distance`. The high-volume table remains partitioned by `recorded_at`.
+
+## Automation builder payload
+
+The dashboard stores a rule in the existing `automations` table. The three JSONB sections are intentionally explicit so a sensor-specific rule can be represented without a new table:
+
+```json
+{
+  "home_id": "<home-uuid>",
+  "name": "Cool the room",
+  "is_enabled": true,
+  "trigger_config": {
+    "type": "sensor",
+    "device_id": "<sensor-uuid>",
+    "metric": "temperature",
+    "operator": "greater_than",
+    "value": 30
+  },
+  "condition_config": {},
+  "action_config": {
+    "device_id": "<actuator-uuid>",
+    "command": { "power": true }
+  }
+}
+```
+
+The dashboard is safe in preview mode without a logged-in token. With `NEXT_PUBLIC_API_BASE_URL` and a Supabase access token stored by the future auth flow, its add-device and create-automation forms call the authenticated API.
+
 ## Security rules
 
 - Never put `SUPABASE_SERVICE_ROLE_KEY` in `app/`, `management/`, a browser bundle, `.env.example` with a real value, or Git history.
