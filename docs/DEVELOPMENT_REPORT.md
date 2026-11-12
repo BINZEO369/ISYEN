@@ -3,6 +3,8 @@
 **যাচাইয়ের তারিখ:** ১১ নভেম্বর ২০২৬  
 **Status:** নতুন, code-ready repository scaffold প্রস্তুত; product feature implementation scope-এর বাইরে।
 
+> **Historical note:** The scaffold-only description below predates the user dashboard, backend APIs, and connected ISYEN HOME database. Current continuation status (12 November 2026): DHT11/DHT22 and BMP180/BMP280/BMP388/BMP390 model configuration is being added to the dashboard and server; the corresponding catalog migration has been applied to the connected Supabase project. Protocol sensor live readings remain deferred until the firmware drivers and ingestion support are updated. No firmware files are changed. A production host/deployment target is not configured in this repository, so a public live deployment cannot be verified from this checkout alone.
+
 ## লক্ষ্য ও folder structure
 
 এই deliverable নতুন ISYEN প্রোগ্রামে coding শুরু করার উপযোগী করে repository, programming language/framework configuration, package scripts এবং starter entrypoint সাজায়। তিনটি primary code folder আলাদা; চতুর্থ tracked top-level folder `docs/` long-form documentation-এর জন্য:

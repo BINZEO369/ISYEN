@@ -156,6 +156,22 @@ export async function createGpioSensor(input: { home_id: string; room_id: string
   });
 }
 
+export type ProtocolSensorKey = "dht11_temperature_humidity" | "dht22_temperature_humidity" | "sensor_bmp180" | "sensor_bmp280" | "sensor_bmp388" | "sensor_bmp390";
+export async function createProtocolSensor(input: { home_id: string; room_id: string | null; name: string; sensor_key: ProtocolSensorKey; data_gpio?: number; sda_gpio?: number; scl_gpio?: number; i2c_address?: "0x76" | "0x77"; sampling_interval_seconds: number; temperature_unit: "celsius" | "fahrenheit" }, accessToken: string): Promise<Device> {
+  const isDht = input.sensor_key.startsWith("dht");
+  const config: Record<string, unknown> = {
+    hardware: "isyen_protocol_sensor", sensor_key: input.sensor_key,
+    connection: isDht ? "gpio" : "i2c", sampling_interval_seconds: input.sampling_interval_seconds,
+    temperature_unit: input.temperature_unit, enabled: true,
+  };
+  if (isDht) config.data_gpio = input.data_gpio;
+  else Object.assign(config, { sda_gpio: input.sda_gpio, scl_gpio: input.scl_gpio, i2c_address: input.i2c_address });
+  return requestJson<Device>("/api/resources/devices", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ home_id: input.home_id, room_id: input.room_id, name: input.name, device_type_key: input.sensor_key, config }),
+  });
+}
+
 export async function updateDevice(deviceId: string, input: { config: Record<string, unknown> }, accessToken: string): Promise<Device> {
   return requestJson<Device>(`/api/resources/devices/${encodeURIComponent(deviceId)}`, accessToken, {
     method: "PATCH",

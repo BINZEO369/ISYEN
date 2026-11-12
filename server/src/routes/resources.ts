@@ -85,6 +85,24 @@ export function isValidEsp32S3SensorConfig(value: unknown): value is Record<stri
     && unitValid;
 }
 
+export const PROTOCOL_SENSOR_KEYS = ['dht11_temperature_humidity', 'dht22_temperature_humidity', 'sensor_bmp180', 'sensor_bmp280', 'sensor_bmp388', 'sensor_bmp390'] as const;
+const safeProtocolPins = new Set<number>(ESP32_S3_DIGITAL_INPUT_GPIO_PINS);
+export function isValidProtocolSensorConfig(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const config = value as Record<string, unknown>;
+  if (config.hardware !== 'isyen_protocol_sensor' || !PROTOCOL_SENSOR_KEYS.includes(config.sensor_key as typeof PROTOCOL_SENSOR_KEYS[number]) || typeof config.enabled !== 'boolean') return false;
+  if (!Number.isInteger(config.sampling_interval_seconds) || Number(config.sampling_interval_seconds) < 2 || Number(config.sampling_interval_seconds) > 86400) return false;
+  if (config.temperature_unit !== 'celsius' && config.temperature_unit !== 'fahrenheit') return false;
+  if (config.sensor_key === 'dht11_temperature_humidity' || config.sensor_key === 'dht22_temperature_humidity') {
+    return config.connection === 'gpio' && typeof config.data_gpio === 'number' && safeProtocolPins.has(config.data_gpio);
+  }
+  return config.connection === 'i2c'
+    && typeof config.sda_gpio === 'number' && safeProtocolPins.has(config.sda_gpio)
+    && typeof config.scl_gpio === 'number' && safeProtocolPins.has(config.scl_gpio)
+    && config.sda_gpio !== config.scl_gpio
+    && (config.i2c_address === '0x76' || config.i2c_address === '0x77');
+}
+
 const resourceDefinitions = {
   homes: {
     select: 'id,name,description,address,timezone,status,metadata,created_at,updated_at',

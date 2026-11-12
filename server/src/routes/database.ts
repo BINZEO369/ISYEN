@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { SupabaseIntegration } from '../integrations/supabase.js';
-import { isResourceName, isSafeEsp32S3OutputPin, isValidEsp32S3LightConfig, isValidEsp32S3SensorConfig, resourceNames, resources, type FieldRule, type ResourceName } from './resources.js';
+import { isResourceName, isSafeEsp32S3OutputPin, isValidEsp32S3LightConfig, isValidEsp32S3SensorConfig, isValidProtocolSensorConfig, PROTOCOL_SENSOR_KEYS, resourceNames, resources, type FieldRule, type ResourceName } from './resources.js';
 
 const idParams = z.object({ resource: z.string(), id: z.string().uuid() });
 const resourceParams = z.object({ resource: z.string() });
@@ -54,7 +54,7 @@ function schemaFor(rule: FieldRule, queryValue = false): z.ZodTypeAny {
     case 'gatewayStatus': return z.enum(['online', 'offline', 'degraded', 'provisioning']);
     case 'deviceStatus': return z.enum(['online', 'offline', 'unavailable', 'provisioning']);
     case 'integrationStatus': return z.enum(['pending', 'active', 'error', 'revoked']);
-    case 'deviceTypeKey': return z.enum(['esp32_s3_gpio_light', 'esp32_s3_gpio_sensor']);
+    case 'deviceTypeKey': return z.enum(['esp32_s3_gpio_light', 'esp32_s3_gpio_sensor', ...PROTOCOL_SENSOR_KEYS]);
     case 'timeFormat': return z.enum(['12h', '24h']);
     case 'temperatureUnit': return z.enum(['celsius', 'fahrenheit']);
     case 'theme': return z.enum(['light', 'dark', 'system']);
@@ -127,6 +127,9 @@ function parseBody(resource: ResourceName, input: unknown, mode: 'create' | 'upd
     }
     if ((body.device_type_key === 'esp32_s3_gpio_sensor' || config?.hardware === 'esp32_s3_gpio_sensor') && !isValidEsp32S3SensorConfig(config)) {
       return { ok: false, message: 'GPIO sensor config must use a supported ESP32-S3 input pin, mode, metric and sample interval.' };
+    }
+    if (PROTOCOL_SENSOR_KEYS.includes(body.device_type_key as typeof PROTOCOL_SENSOR_KEYS[number]) || config?.hardware === 'isyen_protocol_sensor') {
+      if (!isValidProtocolSensorConfig(config) || (body.device_type_key !== undefined && config.sensor_key !== body.device_type_key)) return { ok: false, message: 'DHT/BMP configuration must match the selected model and use valid pins, interval, connection and I2C address.' };
     }
     if (mode === 'create' && (config?.hardware === 'esp32_s3_gpio_light' || config?.hardware === 'esp32_s3_gpio_sensor') && body.device_type_key !== config.hardware) {
       return { ok: false, message: 'The GPIO device type key must match its hardware configuration.' };
@@ -372,6 +375,13 @@ export function registerDatabaseRoutes(app: FastifyInstance, integration: Supaba
       if (!typeId) return reply;
       delete insertBody.device_type_key;
       insertBody.device_type_id = typeId;
+    }
+    if (resource === 'devices' && PROTOCOL_SENSOR_KEYS.includes(insertBody.device_type_key as typeof PROTOCOL_SENSOR_KEYS[number])) {
+      const { data: sensorType, error: sensorTypeError } = await client.from('device_types').select('id').eq('key', insertBody.device_type_key).eq('is_active', true).maybeSingle();
+      if (sensorTypeError) return reportDatabaseError(request, reply, 'sensor_type_lookup', sensorTypeError);
+      if (!sensorType) return errorResponse(reply, 503, 'SENSOR_TYPE_NOT_CONFIGURED', 'The selected DHT/BMP sensor model is not available in the shared catalog.');
+      delete insertBody.device_type_key;
+      insertBody.device_type_id = sensorType.id;
     }
     if (resource === 'devices' && (isValidEsp32S3LightConfig(insertBody.config) || isValidEsp32S3SensorConfig(insertBody.config))) {
       const pinCheck = await gpioAlreadyAssigned(client, tenant.isyenId, (insertBody.config as { gpio: number }).gpio);

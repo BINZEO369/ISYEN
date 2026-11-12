@@ -1,6 +1,8 @@
-# ISYEN — repository scaffold
+# ISYEN — Smart Home Dashboard and API
 
-এটি নতুন ISYEN প্রোগ্রামের coding শুরু করার জন্য প্রস্তুত monorepo scaffold। এখনকার কাজ শুধু folder structure, language/framework setup, package configuration, starter entrypoint ও documentation—কোনো পূর্ণ user feature, admin workflow বা business logic নয়। MQTT অন্তর্ভুক্ত নয়।
+ISYEN is a Next.js user dashboard, a Fastify REST API, and a separate management app. The dashboard supports tenant-scoped homes/devices, raw ESP32-S3 GPIO sensors, and configuration for DHT11/DHT22 and BMP180/BMP280/BMP388/BMP390. MQTT is not used.
+
+**Sensor hardware note:** DHT/BMP model, wiring, sampling interval, I²C address and temperature unit can be saved in the shared catalog and tenant device configuration. Live readings require the matching ESP32 firmware drivers and telemetry update; until then the dashboard marks these sensors as firmware-waiting and does not invent readings. Raw GPIO telemetry is separate.
 
 ## মূল folder
 
@@ -12,7 +14,7 @@ ISYEN/
 └── docs/         # Architecture, contribution, security and development report
 ```
 
-**মোট চারটি tracked top-level folder:** `app/`, `server/`, `management/` এবং documentation-only `docs/`। প্রথম তিনটি code package; `docs/`-এ long-form documentation রাখা হয়। `package.json`, `pnpm-workspace.yaml`, lockfile, `.gitignore`, `.nvmrc`, root `README.md` ও `AGENTS.md`-এর মতো standard tool-discovered file root-এ রাখতে হয়—অন্য folder-এ সরালে package manager, Git বা coding-agent tooling ভাঙতে পারে। HTML5/CSS3 Next.js starter page-এ, JavaScript TypeScript-সহ, আর REST/WebSocket/Supabase-এর dependency/configuration ভবিষ্যৎ implementation-এর জন্য রাখা হচ্ছে—এগুলো এখনো live service connection বা product feature নয়।
+**মোট চারটি tracked top-level folder:** `app/`, `server/`, `management/` এবং documentation-only `docs/`। প্রথম তিনটি code package; `docs/`-এ long-form documentation রাখা হয়। `package.json`, `pnpm-workspace.yaml`, lockfile, `.gitignore`, `.nvmrc`, root `README.md` ও `AGENTS.md`-এর মতো standard tool-discovered file root-এ রাখতে হয়।
 
 ## চালানো
 
@@ -34,6 +36,6 @@ pnpm dev
 
 ## Supabase ও remote repository
 
-Supabase এখনো এই repository-তে connect বা provision করা হয়নি। `.env.example`-এর value placeholder মাত্র; কোনো database/schema/auth/storage পরিবর্তন করা হয়নি। সঠিক ISYEN project পরে যুক্ত করে সিদ্ধান্ত নেওয়া যাবে।
+The configured Supabase project is `ISYEN HOME`. Runtime credentials remain placeholders in `.env.example`; never commit real credentials. Catalog migrations are kept under `server/database/`.
 
 Repository: [github.com/BINZEO369/ISYEN](https://github.com/BINZEO369/ISYEN), `main` branch। Setup-এর সীমা ও যাচাইকৃত ফলাফল [Development Report](docs/DEVELOPMENT_REPORT.md)-এ আছে।

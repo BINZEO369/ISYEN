@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { AppShell } from "./app-shell";
-import { ApiRequestError, createGpioLight, createGpioSensor, createHome, ESP32_S3_ANALOG_INPUT_GPIO_PINS, ESP32_S3_DIGITAL_INPUT_GPIO_PINS, ESP32_S3_OUTPUT_GPIO_PINS, loadDeviceIdentity, loadLatestSensorReadings, loadProfile, loadResource, updateDevice, type Automation, type Device, type DeviceState, type Gateway, type Home, type Profile, type Room, type Scene, type SensorReading } from "../lib/app-data";
+import { ApiRequestError, createGpioLight, createGpioSensor, createProtocolSensor, createHome, ESP32_S3_ANALOG_INPUT_GPIO_PINS, ESP32_S3_DIGITAL_INPUT_GPIO_PINS, ESP32_S3_OUTPUT_GPIO_PINS, loadDeviceIdentity, loadLatestSensorReadings, loadProfile, loadResource, updateDevice, type Automation, type Device, type DeviceState, type Gateway, type Home, type Profile, type ProtocolSensorKey, type Room, type Scene, type SensorReading } from "../lib/app-data";
 import { getSupabaseBrowserClient } from "../lib/supabase-browser";
 
 type DashboardData = {
@@ -22,8 +22,8 @@ type DashboardData = {
 type DraftHome = { name: string; address_line_1: string; city: string; country: string };
 const emptyDraft: DraftHome = { name: "", address_line_1: "", city: "", country: "" };
 type DraftLight = { name: string; room_id: string; gpio: number };
-type DraftSensor = { name: string; room_id: string; input_mode: "" | "analog" | "digital"; gpio: string; metric: string; unit: string; sample_interval_ms: string; pull_mode: "none" | "up" | "down" };
-const emptySensorDraft: DraftSensor = { name: "", room_id: "", input_mode: "", gpio: "", metric: "", unit: "", sample_interval_ms: "5000", pull_mode: "none" };
+type DraftSensor = { name: string; room_id: string; sensor_key: ProtocolSensorKey | "gpio" | ""; input_mode: "" | "analog" | "digital"; gpio: string; sda_gpio: string; scl_gpio: string; i2c_address: "0x76" | "0x77"; metric: string; unit: string; sample_interval_ms: string; sampling_interval_seconds: string; temperature_unit: "celsius" | "fahrenheit"; pull_mode: "none" | "up" | "down" };
+const emptySensorDraft: DraftSensor = { name: "", room_id: "", sensor_key: "", input_mode: "", gpio: "", sda_gpio: "8", scl_gpio: "9", i2c_address: "0x76", metric: "", unit: "", sample_interval_ms: "5000", sampling_interval_seconds: "30", temperature_unit: "celsius", pull_mode: "none" };
 
 export function Dashboard() {
   const router = useRouter();
@@ -175,7 +175,7 @@ export function Dashboard() {
   const homeGateways = useMemo(() => data?.gateways.filter((item) => item.home_id === selectedHome?.id) ?? [], [data?.gateways, selectedHome?.id]);
   const homeScenes = useMemo(() => data?.scenes.filter((item) => item.home_id === selectedHome?.id) ?? [], [data?.scenes, selectedHome?.id]);
   const homeAutomations = useMemo(() => data?.automations.filter((item) => item.home_id === selectedHome?.id) ?? [], [data?.automations, selectedHome?.id]);
-  const homeSensors = useMemo(() => homeDevices.filter(isEsp32S3Sensor), [homeDevices]);
+  const homeSensors = useMemo(() => homeDevices.filter(isSensorDevice), [homeDevices]);
   const homeReadings = useMemo(() => sensorReadings.filter((reading) => reading.home_id === selectedHome?.id), [sensorReadings, selectedHome?.id]);
 
   async function handleCreateHome(event: FormEvent<HTMLFormElement>) {
@@ -233,16 +233,23 @@ export function Dashboard() {
 
   async function handleCreateSensor(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!accessToken || !selectedHome || !sensorDraft.input_mode || !sensorDraft.gpio) return;
+    if (!accessToken || !selectedHome) return;
     setCreatingSensor(true);
     setSensorCreateError("");
     try {
-      const device = await createGpioSensor({
+      const device = sensorDraft.sensor_key && sensorDraft.sensor_key !== "gpio"
+        ? await createProtocolSensor({
+          home_id: selectedHome.id, room_id: sensorDraft.room_id || null, name: sensorDraft.name.trim(),
+          sensor_key: sensorDraft.sensor_key,
+          ...(sensorDraft.sensor_key.startsWith("dht") ? { data_gpio: Number(sensorDraft.gpio) } : { sda_gpio: Number(sensorDraft.sda_gpio), scl_gpio: Number(sensorDraft.scl_gpio), i2c_address: sensorDraft.i2c_address }),
+          sampling_interval_seconds: Number(sensorDraft.sampling_interval_seconds), temperature_unit: sensorDraft.temperature_unit,
+        }, accessToken)
+        : await createGpioSensor({
         home_id: selectedHome.id,
         room_id: sensorDraft.room_id || null,
         name: sensorDraft.name.trim(),
         gpio: Number(sensorDraft.gpio),
-        input_mode: sensorDraft.input_mode,
+        input_mode: sensorDraft.input_mode as "analog" | "digital",
         metric: sensorDraft.metric.trim().toLowerCase(),
         unit: sensorDraft.unit.trim(),
         sample_interval_ms: Number(sensorDraft.sample_interval_ms),
@@ -316,7 +323,7 @@ export function Dashboard() {
 
           <section className="dashboard-panel sensor-panel" id="sensors">
             <div className="dashboard-panel-heading"><div><span className="panel-eyebrow">REAL-TIME SENSOR DATA</span><h2>সেন্সর ও লাইভ ডেটা</h2></div><div className="sensor-heading-actions"><span className={`sensor-live-pill${sensorLive ? " sensor-live-on" : ""}`}><i />{sensorLive ? "লাইভ" : "সংযোগ হচ্ছে"}</span><span className="panel-count">{homeSensors.length} সেন্সর</span></div></div>
-            {homeSensors.length ? <div className="sensor-grid">{homeSensors.map((device) => <GpioSensorCard key={device.id} device={device} usedPins={Array.from(usedGpioPins).filter((pin) => pin !== device.config.gpio)} reading={homeReadings.find((reading) => reading.device_id === device.id)} onUpdate={(config) => handleUpdateDevice(device.id, config)} />)}</div> : <div className="sensor-empty-state"><div><span className="sensor-empty-icon" aria-hidden="true">◉</span><strong>এই Home-এ এখনো কোনো sensor configured নেই</strong><p>Pin, sensor mode, metric ও sampling interval নির্ধারণ করুন। আসল value firmware রিপোর্ট করলেই এখানে live দেখা যাবে—ডেমো বা default readings দেখানো হবে না।</p></div><button className="primary-button" type="button" onClick={() => { setSensorCreateError(""); setSensorDraft(emptySensorDraft); setSensorCreateOpen(true); }} disabled={!hasAvailableSensorPin}>＋ সেন্সর কনফিগার করুন</button></div>}
+            {homeSensors.length ? <div className="sensor-grid">{homeSensors.map((device) => isProtocolSensor(device) ? <ProtocolSensorCard key={device.id} device={device} /> : <GpioSensorCard key={device.id} device={device} usedPins={Array.from(usedGpioPins).filter((pin) => pin !== device.config.gpio)} reading={homeReadings.find((reading) => reading.device_id === device.id)} onUpdate={(config) => handleUpdateDevice(device.id, config)} />)}</div> : <div className="sensor-empty-state"><div><span className="sensor-empty-icon" aria-hidden="true">◉</span><strong>এই Home-এ এখনো কোনো sensor configured নেই</strong><p>Pin, sensor mode, metric ও sampling interval নির্ধারণ করুন। আসল value firmware রিপোর্ট করলেই এখানে live দেখা যাবে—ডেমো বা default readings দেখানো হবে না।</p></div><button className="primary-button" type="button" onClick={() => { setSensorCreateError(""); setSensorDraft(emptySensorDraft); setSensorCreateOpen(true); }} disabled={!hasAvailableSensorPin}>＋ সেন্সর কনফিগার করুন</button></div>}
           </section>
 
           <section className="dashboard-panel" id="devices">
@@ -352,8 +359,10 @@ function isEsp32S3Light(device: Device): boolean {
 }
 
 function isEsp32S3Sensor(device: Device): boolean {
-  return device.config?.hardware === "esp32_s3_gpio_sensor";
+  return device.config?.hardware === "esp32_s3_gpio_sensor" || device.config?.hardware === "isyen_protocol_sensor";
 }
+function isProtocolSensor(device: Device): boolean { return device.config?.hardware === "isyen_protocol_sensor"; }
+function isSensorDevice(device: Device): boolean { return isEsp32S3Sensor(device); }
 
 function isEsp32S3GpioDevice(device: Device): boolean {
   return isEsp32S3Light(device) || isEsp32S3Sensor(device);
@@ -394,6 +403,12 @@ function GpioLightCard({ device, isyenId, usedPins, report, onUpdate }: { device
   </article>;
 }
 
+function ProtocolSensorCard({ device }: { device: Device }) {
+  const config = device.config ?? {};
+  const model = String(config.sensor_key ?? "Sensor").replaceAll("_", " ").toUpperCase();
+  const wiring = config.connection === "i2c" ? `I²C · SDA GPIO ${config.sda_gpio} / SCL GPIO ${config.scl_gpio} · ${config.i2c_address}` : `GPIO ${config.data_gpio}`;
+  return <article className="sensor-card"><div className="sensor-card-top"><span className="sensor-card-icon" aria-hidden="true">◉</span><span className="sensor-state-pill"><i />{config.enabled === true ? "Firmware অপেক্ষমাণ" : "বন্ধ"}</span></div><div className="sensor-card-title"><h3>{device.name}</h3><p>{model} · {wiring}</p></div><div className="sensor-reading-display sensor-reading-empty"><span>সর্বশেষ রিডিং</span><strong>Firmware protocol update-এর অপেক্ষায়</strong><small>Model-specific config সংরক্ষিত; এখনো live value নেই।</small></div><div className="sensor-enable-row"><span><strong>Sampling interval</strong><small>প্রতি {String(config.sampling_interval_seconds)} সেকেন্ড · {config.temperature_unit === "fahrenheit" ? "°F" : "°C"}</small></span><span className="sensor-state-pill">{config.enabled === true ? "চালু" : "বন্ধ"}</span></div></article>;
+}
 function GpioSensorCard({ device, usedPins, reading, onUpdate }: { device: Device; usedPins: number[]; reading?: SensorReading; onUpdate: (config: Record<string, unknown>) => Promise<Device> }) {
   const config = device.config ?? {};
   const configuredPin = typeof config.gpio === "number" ? config.gpio : null;
@@ -457,18 +472,23 @@ function SensorCreateDialog({ draft, rooms, pins, error, loading, onChange, onCl
       <form className="home-create-form" onSubmit={onSubmit}>
         <label className="form-field"><span>সেন্সরের নাম <b>*</b></span><input autoFocus required maxLength={120} value={draft.name} onChange={(event) => onChange({ ...draft, name: event.target.value })} /></label>
         {rooms.length > 0 && <label className="form-field"><span>রুম</span><select value={draft.room_id} onChange={(event) => onChange({ ...draft, room_id: event.target.value })}><option value="">রুম নির্ধারণ করব পরে</option>{rooms.map((room) => <option key={room.id} value={room.id}>{room.name}</option>)}</select></label>}
-        <label className="form-field"><span>সেন্সরের ধরন <b>*</b></span><select required value={draft.input_mode} onChange={(event) => onChange({ ...draft, input_mode: event.target.value as DraftSensor["input_mode"], gpio: "", pull_mode: "none" })}><option value="">Analog বা Digital বাছুন</option><option value="analog">Analog input — ADC</option><option value="digital">Digital input — HIGH / LOW</option></select></label>
-        <label className="form-field"><span>ESP32-S3 GPIO input pin <b>*</b></span><select required disabled={!draft.input_mode || pins.length === 0} value={draft.gpio} onChange={(event) => onChange({ ...draft, gpio: event.target.value })}><option value="">{draft.input_mode ? "খালি pin বাছুন" : "আগে sensor type বাছুন"}</option>{pins.map((pinNumber) => <option key={pinNumber} value={pinNumber}>GPIO {pinNumber}</option>)}</select></label>
-        {draft.input_mode === "digital" && <label className="form-field"><span>Internal pull resistor</span><select value={draft.pull_mode} onChange={(event) => onChange({ ...draft, pull_mode: event.target.value as DraftSensor["pull_mode"] })}><option value="none">None</option><option value="up">Pull-up</option><option value="down">Pull-down</option></select></label>}
-        <div className="form-grid sensor-form-grid">
-          <label className="form-field"><span>Metric key <b>*</b></span><input required maxLength={40} pattern="[a-z][a-z0-9_]{0,39}" autoCapitalize="none" autoCorrect="off" placeholder="soil_moisture" value={draft.metric} onChange={(event) => onChange({ ...draft, metric: event.target.value.toLowerCase() })} /><small>ইংরেজি ছোট হাতের অক্ষর, সংখ্যা ও underscore</small></label>
-          <label className="form-field"><span>Unit</span><input maxLength={20} placeholder="% / °C / raw" value={draft.unit} onChange={(event) => onChange({ ...draft, unit: event.target.value })} /></label>
-        </div>
-        <label className="form-field"><span>Sampling interval (ms) <b>*</b></span><input required type="number" min={1000} max={60000} step={1000} value={draft.sample_interval_ms} onChange={(event) => onChange({ ...draft, sample_interval_ms: event.target.value })} /></label>
+        <label className="form-field"><span>সেন্সরের মডেল <b>*</b></span><select required value={draft.sensor_key} onChange={(event) => onChange({ ...draft, sensor_key: event.target.value as DraftSensor["sensor_key"], input_mode: "", gpio: "" })}><option value="">মডেল বাছুন</option><option value="dht11_temperature_humidity">DHT11 · তাপমাত্রা + আর্দ্রতা</option><option value="dht22_temperature_humidity">DHT22 · তাপমাত্রা + আর্দ্রতা</option><option value="sensor_bmp180">BMP180 · তাপমাত্রা + চাপ</option><option value="sensor_bmp280">BMP280 · তাপমাত্রা + চাপ</option><option value="sensor_bmp388">BMP388 · তাপমাত্রা + চাপ</option><option value="sensor_bmp390">BMP390 · তাপমাত্রা + চাপ</option><option value="">────────</option><option value="gpio">Generic ESP32-S3 GPIO sensor</option></select></label>
+        {draft.sensor_key === "gpio" && <>
+          <label className="form-field"><span>ইনপুট ধরন <b>*</b></span><select required value={draft.input_mode} onChange={(event) => onChange({ ...draft, input_mode: event.target.value as DraftSensor["input_mode"], gpio: "", pull_mode: "none" })}><option value="">Analog বা Digital বাছুন</option><option value="analog">Analog input — ADC</option><option value="digital">Digital input — HIGH / LOW</option></select></label>
+          <label className="form-field"><span>ESP32-S3 GPIO input pin <b>*</b></span><select required disabled={!draft.input_mode || pins.length === 0} value={draft.gpio} onChange={(event) => onChange({ ...draft, gpio: event.target.value })}><option value="">খালি pin বাছুন</option>{pins.map((pinNumber) => <option key={pinNumber} value={pinNumber}>GPIO {pinNumber}</option>)}</select></label>
+          {draft.input_mode === "digital" && <label className="form-field"><span>Internal pull resistor</span><select value={draft.pull_mode} onChange={(event) => onChange({ ...draft, pull_mode: event.target.value as DraftSensor["pull_mode"] })}><option value="none">None</option><option value="up">Pull-up</option><option value="down">Pull-down</option></select></label>}
+          <div className="form-grid sensor-form-grid"><label className="form-field"><span>Metric key <b>*</b></span><input required maxLength={40} pattern="[a-z][a-z0-9_]{0,39}" autoCapitalize="none" autoCorrect="off" placeholder="soil_moisture" value={draft.metric} onChange={(event) => onChange({ ...draft, metric: event.target.value.toLowerCase() })} /></label><label className="form-field"><span>Unit</span><input maxLength={20} placeholder="% / °C / raw" value={draft.unit} onChange={(event) => onChange({ ...draft, unit: event.target.value })} /></label></div>
+          <label className="form-field"><span>Sampling interval (ms) <b>*</b></span><input required type="number" min={1000} max={60000} step={1000} value={draft.sample_interval_ms} onChange={(event) => onChange({ ...draft, sample_interval_ms: event.target.value })} /></label>
+        </>}
+        {draft.sensor_key && draft.sensor_key !== "gpio" && <>
+          {draft.sensor_key.startsWith("dht") ? <label className="form-field"><span>DHT data GPIO <b>*</b></span><select required value={draft.gpio} onChange={(event) => onChange({ ...draft, gpio: event.target.value })}><option value="">Pin বাছুন</option>{pins.map((pinNumber) => <option key={pinNumber} value={pinNumber}>GPIO {pinNumber}</option>)}</select></label> : <div className="form-grid sensor-form-grid"><label className="form-field"><span>I²C SDA GPIO <b>*</b></span><select value={draft.sda_gpio} onChange={(event) => onChange({ ...draft, sda_gpio: event.target.value })}>{pins.map((pin) => <option key={pin} value={pin}>GPIO {pin}</option>)}</select></label><label className="form-field"><span>I²C SCL GPIO <b>*</b></span><select value={draft.scl_gpio} onChange={(event) => onChange({ ...draft, scl_gpio: event.target.value })}>{pins.map((pin) => <option key={pin} value={pin}>GPIO {pin}</option>)}</select></label><label className="form-field"><span>I²C address</span><select value={draft.i2c_address} onChange={(event) => onChange({ ...draft, i2c_address: event.target.value as DraftSensor["i2c_address"] })}><option value="0x76">0x76</option><option value="0x77">0x77</option></select></label></div>}
+          <div className="form-grid sensor-form-grid"><label className="form-field"><span>Sampling interval (seconds) <b>*</b></span><input required type="number" min={2} max={86400} value={draft.sampling_interval_seconds} onChange={(event) => onChange({ ...draft, sampling_interval_seconds: event.target.value })} /></label><label className="form-field"><span>Temperature unit</span><select value={draft.temperature_unit} onChange={(event) => onChange({ ...draft, temperature_unit: event.target.value as DraftSensor["temperature_unit"] })}><option value="celsius">Celsius (°C)</option><option value="fahrenheit">Fahrenheit (°F)</option></select></label></div>
+          <p className="field-note">সেন্সর মডেল ও wiring configuration সংরক্ষণ হবে। আসল রিডিং পেতে firmware-এ সংশ্লিষ্ট protocol driver পরে যোগ/আপডেট করতে হবে।</p>
+        </>}
         {!pins.length && draft.input_mode && <p className="form-alert" role="alert">এই account-এর জন্য এই mode-এ আর খালি pin নেই। অন্য Home-এর lights/sensors-ও একই ESP32 pin ভাগ করে ব্যবহার করতে পারে না।</p>}
         <p className="field-note">Analog mode কেবল GPIO 1, 2 ও 4–10 (ADC1) ব্যবহার করে। 3.3V-এর বেশি voltage সরাসরি ESP32 pin-এ দেবেন না। Sensor-এ কোনো fake/default reading যোগ হবে না।</p>
         {error && <p className="form-alert" role="alert">{error}</p>}
-        <div className="home-modal-actions"><button className="outline-action" type="button" onClick={onClose} disabled={loading}>বাতিল</button><button className="primary-button" type="submit" disabled={loading || !draft.input_mode || !draft.gpio || !pins.length}>{loading ? <><span className="button-spinner" /> সংরক্ষণ হচ্ছে…</> : <>সেন্সর সংরক্ষণ <span aria-hidden="true">→</span></>}</button></div>
+        <div className="home-modal-actions"><button className="outline-action" type="button" onClick={onClose} disabled={loading}>বাতিল</button><button className="primary-button" type="submit" disabled={loading || !draft.sensor_key || (draft.sensor_key === "gpio" && (!draft.input_mode || !draft.gpio)) || (draft.sensor_key.startsWith("dht") && !draft.gpio) || (draft.sensor_key.startsWith("sensor_bmp") && draft.sda_gpio === draft.scl_gpio)}>{loading ? <><span className="button-spinner" /> সংরক্ষণ হচ্ছে…</> : <>সেন্সর সংরক্ষণ <span aria-hidden="true">→</span></>}</button></div>
       </form>
     </section>
   </div>;

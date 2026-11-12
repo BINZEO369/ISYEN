@@ -22,3 +22,12 @@
 - [x] Run app, management, and server typecheck/lint/build/test checks after merging the remote agent commits.
 - [x] Push the completed update to GitHub `main` with a focused merge commit.
 - [x] Do not modify ESP32 firmware in this update.
+
+## DHT/BMP model configuration (this continuation)
+
+- [x] Add canonical DHT11/DHT22 and BMP180/BMP280/BMP388/BMP390 entries and model defaults to the shared sensor catalog.
+- [x] Add model-specific dashboard configuration for DHT GPIO, BMP I²C pins/address, sampling interval, and temperature unit.
+- [x] Validate protocol model, connection, sampling limits, pin safety, and I²C address in the server before saving.
+- [x] Clearly mark protocol sensor readings as firmware-dependent; do not synthesize readings or claim the sensor is live before firmware support exists.
+- [ ] Update ESP32 firmware drivers and multi-metric telemetry ingestion to produce live DHT/BMP readings (explicitly deferred per user request).
+- [ ] Configure/verify production hosting deployment for the dashboard and API; hosting provider credentials/settings are not present in this repository.

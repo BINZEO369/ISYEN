@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ESP32_S3_ANALOG_INPUT_GPIO_PINS, ESP32_S3_DIGITAL_INPUT_GPIO_PINS, ESP32_S3_OUTPUT_GPIO_PINS, isSafeEsp32S3OutputPin, isSafeEsp32S3SensorPin, isValidEsp32S3LightConfig, isValidEsp32S3SensorConfig } from '../src/routes/resources.js';
+import { ESP32_S3_ANALOG_INPUT_GPIO_PINS, ESP32_S3_DIGITAL_INPUT_GPIO_PINS, ESP32_S3_OUTPUT_GPIO_PINS, isSafeEsp32S3OutputPin, isSafeEsp32S3SensorPin, isValidEsp32S3LightConfig, isValidEsp32S3SensorConfig, isValidProtocolSensorConfig } from '../src/routes/resources.js';
 
 test('ESP32-S3 output whitelist contains supported GPIOs and excludes boot, USB and flash/PSRAM pins', () => {
   assert.ok(ESP32_S3_OUTPUT_GPIO_PINS.includes(4));
@@ -40,4 +40,15 @@ test('sensor config requires a named mode, unique metric format, sample interval
   assert.equal(isValidEsp32S3SensorConfig({ ...base, pull_mode: 'down', input_mode: 'analog', gpio: 4 }), false);
   assert.equal(isValidEsp32S3SensorConfig({ ...base, enabled: 'true' }), false);
   assert.equal(isValidEsp32S3SensorConfig(null), false);
+});
+
+test('DHT and BMP protocol config validates model, GPIO/I2C wiring, address and interval', () => {
+  const dht = { hardware: 'isyen_protocol_sensor', sensor_key: 'dht22_temperature_humidity', connection: 'gpio', data_gpio: 4, sampling_interval_seconds: 2, temperature_unit: 'celsius', enabled: true };
+  const bmp = { hardware: 'isyen_protocol_sensor', sensor_key: 'sensor_bmp280', connection: 'i2c', sda_gpio: 8, scl_gpio: 9, i2c_address: '0x76', sampling_interval_seconds: 10, temperature_unit: 'fahrenheit', enabled: true };
+  assert.equal(isValidProtocolSensorConfig(dht), true);
+  assert.equal(isValidProtocolSensorConfig(bmp), true);
+  assert.equal(isValidProtocolSensorConfig({ ...dht, data_gpio: 3 }), false);
+  assert.equal(isValidProtocolSensorConfig({ ...bmp, scl_gpio: 8 }), false);
+  assert.equal(isValidProtocolSensorConfig({ ...bmp, i2c_address: '0x78' }), false);
+  assert.equal(isValidProtocolSensorConfig({ ...bmp, sampling_interval_seconds: 1 }), false);
 });
