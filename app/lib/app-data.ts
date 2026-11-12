@@ -65,9 +65,12 @@ export type Scene = { id: string; home_id: string; name: string; description: st
 export type Automation = { id: string; home_id: string; name: string; description: string | null; is_enabled: boolean };
 
 export class ApiRequestError extends Error {
-  constructor(message: string, readonly status: number) {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
     super(message);
     this.name = "ApiRequestError";
+    this.status = status;
   }
 }
 
@@ -119,7 +122,9 @@ export async function createGpioLight(input: { home_id: string; room_id: string 
   return requestJson<Device>("/api/resources/devices", accessToken, {
     method: "POST",
     body: JSON.stringify({
-      ...input,
+      home_id: input.home_id,
+      room_id: input.room_id,
+      name: input.name,
       device_type_key: "esp32_s3_gpio_light",
       config: { hardware: "esp32_s3_gpio_light", gpio: input.gpio, desired_on: false, active_low: false },
     }),
