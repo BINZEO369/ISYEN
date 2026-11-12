@@ -32,5 +32,6 @@
 - [x] Extend latest-reading queries and dashboard rendering to show the latest value per metric, timestamps, and stale/live status with Supabase Realtime refresh.
 - [x] Clearly mark missing/partial/stale readings; never synthesize data or claim hardware is live without fresh samples.
 - [ ] Update ESP32 firmware drivers to read physical DHT/BMP modules and POST the documented protocol payload (explicitly deferred per user request).
-- [ ] Trigger and verify the updated API deployment at `isyen-api.vercel.app` using authorized Vercel access; the old production endpoint still returns 404 for `/protocol-readings`.
-- [ ] Identify and verify the public production dashboard host; no frontend domain or deployment target is configured in this repository.
+- [x] Deploy API and dashboard through their existing Vercel projects from GitHub commit `175706d`; production aliases are `isyen-api.vercel.app` and `isyen-app.vercel.app`.
+- [x] Verify dashboard HTTP 200, API `/health` and `/ready` HTTP 200, and protocol ingestion route returns the expected HTTP 401 without a Bearer token (route is live and remains authenticated).
+- [ ] Configure a real DHT/BMP device and add firmware polling/upload; Supabase currently has zero configured DHT/BMP device rows, so no physical readings are being collected yet.
