@@ -1,8 +1,0 @@
-packages:
-  - app
-  - management
-  - server
-
-allowBuilds:
-  esbuild: true
-  sharp: true
