@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart Home – Lights</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #0f172a; --card: #1e293b; --accent: #22d3ee; --accent2: #34d399;
+    --danger: #f87171; --text: #e2e8f0; --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: radial-gradient(circle at top left, #1e293b, #0f172a 60%);
+    color: var(--text); min-height: 100vh; padding: 24px;
+  }
+  .container { max-width: 700px; margin: 0 auto; }
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+  h1 { font-size: 24px; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .status { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+  .dot.online { background: var(--accent2); box-shadow: 0 0 10px var(--accent2); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 500px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: linear-gradient(145deg, #1e293b, #273449);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 16px; padding: 24px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .device-header { display: flex; justify-content: space-between; align-items: center; }
+  .device-name { font-size: 20px; font-weight: 600; text-transform: capitalize; }
+  .device-state { font-size: 13px; padding: 4px 12px; border-radius: 20px; background: #334155; color: var(--muted); }
+  .device-state.on { background: rgba(52,211,153,0.15); color: var(--accent2); }
+
+  .toggle {
+    position: relative; width: 70px; height: 38px; border-radius: 20px;
+    background: #334155; cursor: pointer; border: none; transition: background 0.3s;
+    align-self: flex-start;
+  }
+  .toggle::after {
+    content: ""; position: absolute; top: 4px; left: 4px;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #cbd5e1; transition: transform 0.3s;
+  }
+  .toggle.on { background: var(--accent2); }
+  .toggle.on::after { transform: translateX(32px); background: #fff; }
+  .toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>💡 Smart Lights</h1>
+    <div class="status">
+      <span id="statusDot" class="dot"></span>
+      <span id="statusText">সংযোগ হচ্ছে...</span>
+    </div>
+  </header>
+
+  <div id="lightGrid" class="grid">
+    <div class="card">
+      <div class="device-header">
+        <span class="device-name">Light 1</span>
+        <span id="state-light1" class="device-state">--</span>
+      </div>
+      <button id="toggle-light1" class="toggle" data-device="light1" disabled></button>
+    </div>
+    <div class="card">
+      <div class="device-header">
+        <span class="device-name">Light 2</span>
+        <span id="state-light2" class="device-state">--</span>
+      </div>
+      <button id="toggle-light2" class="toggle" data-device="light2" disabled></button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== কনফিগারেশন =====
+const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// DOM
+const statusDot = document.getElementById("statusDot");
+const statusText = document.getElementById("statusText");
+
+const lightState = {
+  light1: { el: document.getElementById("state-light1"), btn: document.getElementById("toggle-light1"), isOn: false },
+  light2: { el: document.getElementById("state-light2"), btn: document.getElementById("toggle-light2"), isOn: false }
+};
+
+// স্ট্যাটাস
+function setStatus(online) {
+  statusDot.classList.toggle("online", online);
+  statusText.textContent = online ? "সংযুক্ত ✓" : "সংযোগ বিচ্ছিন্ন ✗";
+}
+
+// UI আপডেট
+function updateLightUI(device, isOn) {
+  const s = lightState[device];
+  if (!s) return;
+  s.isOn = isOn;
+  s.el.textContent = isOn ? "চালু" : "বন্ধ";
+  s.el.classList.toggle("on", isOn);
+  s.btn.classList.toggle("on", isOn);
+  s.btn.disabled = false;
+}
+
+// Supabase থেকে ডেটা লোড
+async function loadLights() {
+  const { data, error } = await supabaseClient
+    .from("device_states")
+    .select("device_name, is_on")
+    .in("device_name", ["light1", "light2"]);
+
+  if (error) {
+    console.error(error);
+    setStatus(false);
+    return;
+  }
+  data.forEach(row => updateLightUI(row.device_name, row.is_on));
+  setStatus(true);
+}
+
+// টগল ক্লিক
+async function handleToggle(e) {
+  const btn = e.currentTarget;
+  const device = btn.dataset.device;
+  const current = lightState[device].isOn;
+  btn.disabled = true;
+
+  const { error } = await supabaseClient
+    .from("device_states")
+    .update({ is_on: !current, updated_at: new Date().toISOString() })
+    .eq("device_name", device);
+
+  if (error) {
+    console.error("Update failed:", error);
+    alert("আপডেট ব্যর্থ: " + error.message);
+    btn.disabled = false;
+  }
+  // Realtime ইভেন্ট UI আপডেট করবে
+}
+
+// ইভেন্ট লিসেনার
+Object.values(lightState).forEach(s => s.btn.addEventListener("click", handleToggle));
+
+// Realtime সাবস্ক্রিপশন
+function subscribeRealtime() {
+  supabaseClient
+    .channel("lights-realtime")
+    .on("postgres_changes",
+      { event: "UPDATE", schema: "public", table: "device_states" },
+      (payload) => {
+        const row = payload.new;
+        if (row.device_name === "light1" || row.device_name === "light2") {
+          updateLightUI(row.device_name, row.is_on);
+        }
+      }
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") setStatus(true);
+    });
+}
+
+// ইনিশিয়ালাইজ
+loadLights();
+subscribeRealtime();
+</script>
+</body>
+</html>
