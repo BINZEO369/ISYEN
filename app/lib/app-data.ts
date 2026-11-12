@@ -59,7 +59,10 @@ export type Device = {
   last_seen_at: string | null;
 };
 export type DeviceState = { id: string; device_id: string; state: Record<string, unknown>; reported_at: string; received_at: string; source: string };
+export type SensorReading = { id: string; home_id: string; device_id: string; metric: string; value_numeric: number | null; value_text: string | null; unit: string | null; recorded_at: string };
 export const ESP32_S3_OUTPUT_GPIO_PINS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 38, 39, 40, 41, 42, 47, 48] as const;
+export const ESP32_S3_DIGITAL_INPUT_GPIO_PINS = [1, 2, ...ESP32_S3_OUTPUT_GPIO_PINS] as const;
+export const ESP32_S3_ANALOG_INPUT_GPIO_PINS = [1, 2, 4, 5, 6, 7, 8, 9, 10] as const;
 export type Gateway = { id: string; home_id: string; name: string; gateway_type: string; status: string; last_seen_at: string | null };
 export type Scene = { id: string; home_id: string; name: string; description: string | null; icon: string | null; is_enabled: boolean };
 export type Automation = { id: string; home_id: string; name: string; description: string | null; is_enabled: boolean };
@@ -101,6 +104,11 @@ export async function loadDeviceIdentity(accessToken: string): Promise<{ isyen_i
   return requestJson<{ isyen_id: string }>("/api/device-runtime/identity", accessToken);
 }
 
+export async function loadLatestSensorReadings(homeId: string, accessToken: string): Promise<SensorReading[]> {
+  const query = new URLSearchParams({ home_id: homeId });
+  return requestJson<SensorReading[]>(`/api/device-runtime/sensors/latest?${query.toString()}`, accessToken);
+}
+
 export async function loadResource<T>(resource: string, accessToken: string): Promise<T[]> {
   const rows: T[] = [];
   for (let offset = 0; offset <= 1_000_000; offset += 100) {
@@ -128,6 +136,23 @@ export async function createGpioLight(input: { home_id: string; room_id: string 
       device_type_key: "esp32_s3_gpio_light",
       config: { hardware: "esp32_s3_gpio_light", gpio: input.gpio, desired_on: false, active_low: false },
     }),
+  });
+}
+
+export async function createGpioSensor(input: { home_id: string; room_id: string | null; name: string; gpio: number; input_mode: "analog" | "digital"; metric: string; unit: string; sample_interval_ms: number; pull_mode: "none" | "up" | "down" }, accessToken: string): Promise<Device> {
+  const config: Record<string, unknown> = {
+    hardware: "esp32_s3_gpio_sensor",
+    gpio: input.gpio,
+    input_mode: input.input_mode,
+    metric: input.metric,
+    sample_interval_ms: input.sample_interval_ms,
+    pull_mode: input.pull_mode,
+    enabled: true,
+  };
+  if (input.unit.trim()) config.unit = input.unit.trim();
+  return requestJson<Device>("/api/resources/devices", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ home_id: input.home_id, room_id: input.room_id, name: input.name, device_type_key: "esp32_s3_gpio_sensor", config }),
   });
 }
 

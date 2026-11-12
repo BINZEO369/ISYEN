@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import "./sensor-dashboard.css";
 
 export const metadata: Metadata = {
   title: "ISYEN — আপনার ঘরের ছন্দ",

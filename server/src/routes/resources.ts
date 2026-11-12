@@ -40,6 +40,10 @@ const object = 'object' satisfies FieldRule;
 
 export const ESP32_S3_OUTPUT_GPIO_PINS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 38, 39, 40, 41, 42, 47, 48] as const;
 const safeEsp32S3OutputPins = new Set<number>(ESP32_S3_OUTPUT_GPIO_PINS);
+export const ESP32_S3_DIGITAL_INPUT_GPIO_PINS = [1, 2, ...ESP32_S3_OUTPUT_GPIO_PINS] as const;
+export const ESP32_S3_ANALOG_INPUT_GPIO_PINS = [1, 2, 4, 5, 6, 7, 8, 9, 10] as const;
+const safeEsp32S3DigitalInputPins = new Set<number>(ESP32_S3_DIGITAL_INPUT_GPIO_PINS);
+const safeEsp32S3AnalogInputPins = new Set<number>(ESP32_S3_ANALOG_INPUT_GPIO_PINS);
 
 export function isSafeEsp32S3OutputPin(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && safeEsp32S3OutputPins.has(value);
@@ -52,6 +56,33 @@ export function isValidEsp32S3LightConfig(value: unknown): value is Record<strin
     && isSafeEsp32S3OutputPin(config.gpio)
     && typeof config.desired_on === 'boolean'
     && (config.active_low === undefined || typeof config.active_low === 'boolean');
+}
+
+export function isSafeEsp32S3SensorPin(value: unknown, inputMode: unknown): value is number {
+  if (typeof value !== 'number' || !Number.isInteger(value)) return false;
+  if (inputMode === 'analog') return safeEsp32S3AnalogInputPins.has(value);
+  if (inputMode === 'digital') return safeEsp32S3DigitalInputPins.has(value);
+  return false;
+}
+
+export function isValidEsp32S3SensorConfig(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const config = value as Record<string, unknown>;
+  const unitValid = config.unit === undefined || config.unit === null
+    || (typeof config.unit === 'string' && config.unit.trim().length <= 20);
+  const pullValid = config.pull_mode === 'none' || config.pull_mode === 'up' || config.pull_mode === 'down';
+  return config.hardware === 'esp32_s3_gpio_sensor'
+    && (config.input_mode === 'analog' || config.input_mode === 'digital')
+    && isSafeEsp32S3SensorPin(config.gpio, config.input_mode)
+    && typeof config.metric === 'string'
+    && /^[a-z][a-z0-9_]{0,39}$/.test(config.metric)
+    && Number.isInteger(config.sample_interval_ms)
+    && Number(config.sample_interval_ms) >= 1_000
+    && Number(config.sample_interval_ms) <= 60_000
+    && typeof config.enabled === 'boolean'
+    && pullValid
+    && (config.input_mode !== 'analog' || config.pull_mode === 'none')
+    && unitValid;
 }
 
 const resourceDefinitions = {

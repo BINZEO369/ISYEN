@@ -647,3 +647,54 @@ button { color: inherit; }
   .gpio-save-button { padding-inline: 7px; }
   .home-toolbar-actions .outline-action { min-width: calc(50% - 5px); }
 }
+
+
+/* ESP32-S3 sensor configuration and live telemetry */
+.sensor-panel { margin-top: 14px; }
+.sensor-heading-actions { display: flex; align-items: center; gap: 8px; }
+.sensor-live-pill,.sensor-state-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border: 1px solid #e8ece4; border-radius: 99px; background: #f8f9f5; color: #879287; font-size: 8px; font-weight: 750; white-space: nowrap; }
+.sensor-live-pill i,.sensor-state-pill i { width: 6px; height: 6px; border-radius: 50%; background: #c9cfc5; }
+.sensor-live-on,.sensor-state-fresh { border-color: #dbe8d1; background: #eff5e9; color: #68835d; }
+.sensor-live-on i,.sensor-state-fresh i { background: #80a56e; box-shadow: 0 0 0 3px #e0ebd7; }
+.sensor-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 11px; }
+.sensor-card { min-width: 0; padding: 16px; border: 1px solid #e5ebdf; border-radius: 13px; background: linear-gradient(155deg,#fffefa 0%,#f8fbf4 100%); box-shadow: 0 7px 20px rgba(43,67,49,.035); }
+.sensor-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sensor-card-icon,.sensor-empty-icon { width: 35px; height: 35px; display: grid; place-items: center; border-radius: 11px; background: #edf2e7; color: #6f8965; font-size: 17px; }
+.sensor-card-title { min-width: 0; margin: 12px 0 10px; }
+.sensor-card-title h3 { overflow: hidden; margin: 0 0 4px; color: #354d3d; font-size: 13px; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
+.sensor-card-title p { overflow: hidden; margin: 0; color: #929d91; font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.sensor-reading-display { min-height: 86px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 5px; margin-bottom: 9px; padding: 11px 12px; border: 1px solid #edf1e8; border-radius: 10px; background: #fff; }
+.sensor-reading-display > span { color: #929d91; font-size: 8px; }
+.sensor-reading-display > strong { max-width: 100%; overflow-wrap: anywhere; color: #35543c; font-size: 22px; font-weight: 800; letter-spacing: -.05em; }
+.sensor-reading-display > small { color: #9ca69b; font-size: 8px; }
+.sensor-reading-empty > strong { color: #a0a89e; font-size: 10px; font-weight: 600; letter-spacing: 0; }
+.sensor-config-row { display: grid; grid-template-columns: 1fr 80px auto; align-items: center; gap: 6px; padding: 10px 0; border-top: 1px solid #edf0e9; }
+.sensor-config-row label { color: #7e8b7e; font-size: 8px; font-weight: 700; }
+.sensor-config-row select { min-width: 0; min-height: 32px; padding: 0 7px; border: 1px solid #e8ece4; border-radius: 7px; background: #fff; color: #536757; font-size: 8px; }
+.sensor-config-row .gpio-save-button { min-height: 31px; padding: 0 8px; font-size: 8px; }
+.sensor-enable-row { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 10px 0 0; border-top: 1px solid #edf0e9; }
+.sensor-enable-row > span { display: flex; flex-direction: column; gap: 3px; }
+.sensor-enable-row strong { color: #687b68; font-size: 8px; }
+.sensor-enable-row small { color: #9aa498; font-size: 7px; }
+.sensor-empty-state { min-height: 134px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px; border: 1px dashed #e2e8dc; border-radius: 11px; background: #fbfcf8; }
+.sensor-empty-state > div { min-width: 0; display: grid; grid-template-columns: 35px minmax(0,1fr); align-items: center; column-gap: 11px; }
+.sensor-empty-icon { grid-row: span 2; }
+.sensor-empty-state strong { color: #5b6d5b; font-size: 10px; }
+.sensor-empty-state p { margin: 5px 0 0; color: #929c91; font-size: 8px; line-height: 1.7; }
+.sensor-empty-state .primary-button { min-height: 39px; flex: 0 0 auto; padding: 0 13px; font-size: 9px; }
+.sensor-modal { max-height: calc(100vh - 40px); overflow-y: auto; }
+.sensor-modal .form-field > small { color: #9aa399; font-size: 8px; font-weight: 400; }
+.sensor-modal .sensor-form-grid { align-items: start; }
+.sensor-modal .form-field input,.sensor-modal .form-field select { min-height: 42px; font-size: 10px; }
+.sensor-modal .field-note { margin: 0; line-height: 1.75; }
+@media (max-width: 1120px) {
+  .sensor-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 620px) {
+  .sensor-grid { grid-template-columns: 1fr; }
+  .sensor-panel .dashboard-panel-heading { align-items: flex-start; }
+  .sensor-heading-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .sensor-empty-state { align-items: stretch; flex-direction: column; gap: 13px; }
+  .sensor-empty-state .primary-button { align-self: flex-start; }
+  .sensor-modal { max-height: calc(100vh - 20px); padding: 22px 16px 17px; }
+}
