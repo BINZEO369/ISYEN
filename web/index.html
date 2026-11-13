@@ -51,7 +51,7 @@
   .btn-primary { background: var(--accent2); color: #0f172a; border: none; padding: 12px; border-radius: 8px; cursor: pointer; flex: 1; font-weight: bold; }
   .btn-secondary { background: #334155; color: #fff; border: none; padding: 12px; border-radius: 8px; cursor: pointer; flex: 1; }
 
-  .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 20px; border-radius: 8px; border: 1px solid var(--accent2); opacity: 0; transition: 0.3s; transform: translateY(20px); }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 20px; border-radius: 8px; border: 1px solid var(--accent2); opacity: 0; transition: 0.3s; transform: translateY(20px); z-index: 200; }
   .toast.show { opacity: 1; transform: translateY(0); }
 </style>
 </head>
@@ -138,6 +138,17 @@ function openLightModal() { document.getElementById("lightModal").classList.add(
 function openSensorModal() { document.getElementById("sensorModal").classList.add("active"); }
 function closeModal(id) { document.getElementById(id).classList.remove("active"); }
 
+// ==========================================
+// নতুন ফাংশন: Array বা Single Value থেকে লেটেস্ট ডেটা বের করা
+// ==========================================
+function getLatestValue(val) {
+  if (val === null || val === undefined) return null;
+  if (Array.isArray(val)) {
+    return val.length > 0 ? val[val.length - 1] : null;
+  }
+  return val; // পুরোনো ডেটার জন্য
+}
+
 // ===== লাইট লজিক =====
 async function loadLights() {
   const { data } = await sb.from("devices").select("*, device_states(is_on)").order("id");
@@ -187,12 +198,11 @@ async function deleteLight(id) {
   loadLights();
 }
 
-// ===== সেন্সর লজিক (ফিক্স করা হয়েছে) =====
+// ===== সেন্সর লজিক =====
 async function loadSensors() {
   const { data: sensorData, error } = await sb.from("sensors").select("*").order("id");
   if (error || !sensorData) return;
 
-  // সব সেন্সরের সর্বশেষ রিডিং একবারে নিয়ে আসা (ফাস্ট লোডের জন্য)
   const { data: recentReadings } = await sb.from("sensor_readings")
     .select("sensor_id, temperature, humidity")
     .order("created_at", { ascending: false })
@@ -215,7 +225,16 @@ async function loadSensors() {
 }
 
 function renderSensors() {
-  document.getElementById("sensorGrid").innerHTML = sensors.map(s => `
+  document.getElementById("sensorGrid").innerHTML = sensors.map(s => {
+    // অ্যারে বা সিঙ্গেল ভ্যালু থেকে লেটেস্ট ডেটা বের করা
+    const tempVal = getLatestValue(s.lastTemp);
+    const humVal = getLatestValue(s.lastHum);
+    
+    // যদি ডেটা থাকে তবে ডেসিমেল ফরম্যাটে দেখানো
+    const displayTemp = tempVal !== null ? Number(tempVal).toFixed(1) + '°C' : '--';
+    const displayHum = humVal !== null ? Number(humVal).toFixed(1) + '%' : '--';
+
+    return `
     <div class="card">
       <div class="card-header">
         <div><div class="name">${s.sensor_name}</div><span class="badge">GPIO ${s.pin}</span></div>
@@ -223,16 +242,16 @@ function renderSensors() {
       </div>
       <div class="sensor-data">
         <div>
-          <div class="sensor-val">${s.lastTemp !== null && s.lastTemp !== undefined ? s.lastTemp.toFixed(1) + '°C' : '--'}</div>
+          <div class="sensor-val">${displayTemp}</div>
           <div class="sensor-lbl">Temperature</div>
         </div>
         <div>
-          <div class="sensor-val">${s.lastHum !== null && s.lastHum !== undefined ? s.lastHum.toFixed(1) + '%' : '--'}</div>
+          <div class="sensor-val">${displayHum}</div>
           <div class="sensor-lbl">Humidity</div>
         </div>
       </div>
     </div>
-  `).join("");
+  `}).join("");
 }
 
 async function saveSensor() {
@@ -256,8 +275,8 @@ function subscribeRealtime() {
     .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, loadLights)
     .on("postgres_changes", { event: "*", schema: "public", table: "device_states" }, loadLights)
     .on("postgres_changes", { event: "*", schema: "public", table: "sensors" }, loadSensors)
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "sensor_readings" }, (payload) => {
-      // নতুন ডেটা আসলে সাথে সাথে UI আপডেট হবে
+    .on("postgres_changes", { event: "*", schema: "public", table: "sensor_readings" }, (payload) => {
+      // INSERT বা UPDATE যাই হোক, শুধু লেটেস্ট ডেটাটা তুলে নেবে
       const r = payload.new;
       const s = sensors.find(x => x.id === r.sensor_id);
       if (s) {
