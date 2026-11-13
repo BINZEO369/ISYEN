@@ -3,154 +3,104 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Smart Home - Device Manager</title>
+<title>Smart Home Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root {
-    --bg: #0f172a; --card: #1e293b; --accent: #22d3ee; --accent2: #34d399;
-    --danger: #f87171; --warning: #fbbf24; --text: #e2e8f0; --muted: #94a3b8;
-  }
+  :root { --bg: #0f172a; --card: #1e293b; --accent: #22d3ee; --accent2: #34d399; --danger: #f87171; --text: #e2e8f0; --muted: #94a3b8; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: radial-gradient(circle at top left, #1e293b, #0f172a 60%);
-    color: var(--text); min-height: 100vh; padding: 24px;
-  }
-  .container { max-width: 1000px; margin: 0 auto; }
-  header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
-  }
-  h1 {
-    font-size: 26px;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
+  body { font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, #1e293b, #0f172a 60%); color: var(--text); min-height: 100vh; padding: 24px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; }
+  h1 { font-size: 26px; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; color: transparent; }
   .status { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
-  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 8px var(--danger); }
-  .dot.online { background: var(--accent2); box-shadow: 0 0 10px var(--accent2); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); }
+  .dot.online { background: var(--accent2); }
 
-  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
-  .topbar p { color: var(--muted); font-size: 14px; }
-  .add-btn {
-    padding: 10px 22px; background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #0f172a; border: none; border-radius: 10px; font-weight: 600;
-    font-size: 14px; cursor: pointer; transition: transform 0.2s;
-  }
-  .add-btn:hover { transform: translateY(-2px); }
+  .section-title { font-size: 18px; margin: 30px 0 16px; border-left: 4px solid var(--accent); padding-left: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .add-btn { padding: 8px 16px; background: var(--card); color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .add-btn:hover { background: var(--accent); color: #0f172a; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-  .card {
-    background: linear-gradient(145deg, var(--card), #273449);
-    border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;
-    padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    display: flex; flex-direction: column; gap: 14px;
-  }
-  .card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-  .device-name { font-size: 18px; font-weight: 600; word-break: break-word; margin-bottom: 6px; }
-  .pin-badge {
-    display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 12px;
-    background: rgba(34, 211, 238, 0.15); color: var(--accent); font-weight: 600;
-  }
-  .device-state { font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #334155; color: var(--muted); white-space: nowrap; }
-  .device-state.on { background: rgba(52,211,153,0.15); color: var(--accent2); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .card { background: linear-gradient(145deg, var(--card), #273449); border-radius: 16px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 12px; }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .name { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+  .badge { font-size: 11px; padding: 3px 8px; border-radius: 12px; background: rgba(34, 211, 238, 0.15); color: var(--accent); }
+  .state { font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #334155; color: var(--muted); }
+  .state.on { background: rgba(52,211,153,0.15); color: var(--accent2); }
 
-  .card-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  .toggle {
-    position: relative; width: 60px; height: 32px; border-radius: 20px;
-    background: #334155; cursor: pointer; border: none; transition: background 0.3s;
-  }
-  .toggle::after {
-    content: ""; position: absolute; top: 4px; left: 4px;
-    width: 24px; height: 24px; border-radius: 50%;
-    background: #cbd5e1; transition: transform 0.3s;
-  }
+  .sensor-data { display: flex; gap: 24px; margin-top: 8px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; }
+  .sensor-val { font-size: 24px; font-weight: 700; color: var(--accent2); }
+  .sensor-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-top: 4px; }
+
+  .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .toggle { width: 56px; height: 30px; border-radius: 20px; background: #334155; cursor: pointer; border: none; position: relative; transition: 0.3s; }
+  .toggle::after { content: ""; position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%; background: #cbd5e1; transition: 0.3s; }
   .toggle.on { background: var(--accent2); }
-  .toggle.on::after { transform: translateX(28px); background: #fff; }
-  .toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+  .toggle.on::after { transform: translateX(26px); background: #fff; }
 
-  .icon-btn {
-    width: 36px; height: 36px; border-radius: 8px; border: 1px solid #334155;
-    background: transparent; color: var(--muted); cursor: pointer;
-    display: flex; align-items: center; justify-content: center; font-size: 15px;
-    transition: all 0.2s;
-  }
-  .icon-btn:hover { background: #334155; color: var(--text); }
-  .icon-btn.danger:hover { background: var(--danger); color: white; border-color: var(--danger); }
+  .icon-btn { background: transparent; border: 1px solid #334155; color: var(--muted); padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+  .icon-btn:hover { background: var(--danger); color: white; border-color: var(--danger); }
 
-  .empty {
-    grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--muted);
-    background: var(--card); border-radius: 16px; border: 1px dashed #334155;
-    font-size: 14px; line-height: 1.8;
-  }
-
-  .modal {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-    z-index: 100; align-items: center; justify-content: center; padding: 20px;
-  }
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
   .modal.active { display: flex; }
-  .modal-content {
-    background: #1e293b; border-radius: 16px; padding: 24px;
-    max-width: 420px; width: 100%; border: 1px solid #334155;
-    display: flex; flex-direction: column; gap: 8px;
-  }
-  .modal-content h2 { color: var(--accent); font-size: 20px; margin-bottom: 12px; }
-  .modal-content label { font-size: 13px; color: var(--muted); font-weight: 500; margin-top: 8px; }
-  .modal-content input, .modal-content select {
-    padding: 12px; border-radius: 8px; border: 1px solid #334155;
-    background: #0f172a; color: var(--text); font-size: 14px; outline: none;
-  }
-  .modal-content input:focus, .modal-content select:focus { border-color: var(--accent); }
+  .modal-content { background: #1e293b; border-radius: 16px; padding: 24px; max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 12px; }
+  .modal-content h2 { color: var(--accent); font-size: 20px; margin-bottom: 8px; }
+  .modal-content label { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .modal-content input, .modal-content select { padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #fff; width: 100%; }
   .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
-  .modal-actions button {
-    flex: 1; padding: 12px; border-radius: 8px; border: none;
-    font-weight: 600; cursor: pointer; font-size: 14px;
-  }
-  .btn-primary { background: var(--accent2); color: #0f172a; }
-  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-  .btn-secondary { background: #334155; color: var(--text); }
+  .btn-primary { background: var(--accent2); color: #0f172a; border: none; padding: 12px; border-radius: 8px; cursor: pointer; flex: 1; font-weight: bold; }
+  .btn-secondary { background: #334155; color: #fff; border: none; padding: 12px; border-radius: 8px; cursor: pointer; flex: 1; }
 
-  .toast {
-    position: fixed; bottom: 24px; right: 24px;
-    background: #1e293b; color: var(--text); padding: 12px 20px;
-    border-radius: 10px; border: 1px solid var(--accent2);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 200;
-    opacity: 0; transform: translateY(20px);
-    transition: all 0.3s; font-size: 14px; pointer-events: none;
-  }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 20px; border-radius: 8px; border: 1px solid var(--accent2); opacity: 0; transition: 0.3s; transform: translateY(20px); }
   .toast.show { opacity: 1; transform: translateY(0); }
 </style>
 </head>
 <body>
 <div class="container">
   <header>
-    <h1>💡 Smart Device Manager</h1>
-    <div class="status">
-      <span id="statusDot" class="dot"></span>
-      <span id="statusText">সংযোগ হচ্ছে...</span>
-    </div>
+    <h1>💡 Smart Home Dashboard</h1>
+    <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">সংযোগ হচ্ছে...</span></div>
   </header>
 
-  <div class="topbar">
-    <p>যেকোনো GPIO পিনে ডিভাইস কনফিগার করুন</p>
-    <button id="addBtn" class="add-btn">+ Add Device</button>
+  <div class="section-title">
+    <span>লাইট কন্ট্রোল</span>
+    <button class="add-btn" onclick="openLightModal()">+ Add Light</button>
   </div>
+  <div id="lightGrid" class="grid"></div>
 
-  <div id="deviceList" class="grid">
-    <div class="empty">ডিভাইস লোড হচ্ছে...</div>
+  <div class="section-title">
+    <span>সেন্সর (লাইভ রিডিং)</span>
+    <button class="add-btn" onclick="openSensorModal()">+ Add Sensor</button>
+  </div>
+  <div id="sensorGrid" class="grid"></div>
+</div>
+
+<!-- লাইট মোডাল -->
+<div id="lightModal" class="modal">
+  <div class="modal-content">
+    <h2>Add Light</h2>
+    <label>Light Name</label>
+    <input type="text" id="lightName" placeholder="e.g. Bedroom Light" />
+    <label>GPIO Pin</label>
+    <select id="lightPin"></select>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('lightModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveLight()">Save</button>
+    </div>
   </div>
 </div>
 
-<div id="modal" class="modal">
+<!-- সেন্সর মোডাল -->
+<div id="sensorModal" class="modal">
   <div class="modal-content">
-    <h2 id="modalTitle">Add Device</h2>
-    <label>Device Name</label>
-    <input type="text" id="deviceNameInput" placeholder="e.g. Bedroom Light" maxlength="40" />
-    <label>GPIO Pin (ESP32-S3)</label>
-    <select id="pinSelect"></select>
+    <h2>Add Sensor</h2>
+    <label>Sensor Name</label>
+    <input type="text" id="sensorName" placeholder="e.g. Room Temp" />
+    <label>GPIO Pin</label>
+    <select id="sensorPin"></select>
     <div class="modal-actions">
-      <button id="cancelBtn" class="btn-secondary">Cancel</button>
-      <button id="saveBtn" class="btn-primary">Save</button>
+      <button class="btn-secondary" onclick="closeModal('sensorModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveSensor()">Save</button>
     </div>
   </div>
 </div>
@@ -160,249 +110,169 @@
 <script>
 const SUPABASE_URL = "https://fabasazefdnkpygglajz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhYmFzYXplZmRua3B5Z2dsYWp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQzNjUyMjksImV4cCI6MjEwOTk0MTIyOX0.MgUDDJ79RekwPDhc6LB0pIyM2jxyncSnnmiKwaqxo6U";
-
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Safe GPIO pins for ESP32-S3 N16R8
 const SAFE_PINS = [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 38, 39, 40, 41, 42, 47, 48];
+let lights = [];
+let sensors = [];
 
-let devices = [];
-let editingId = null;
-
-const deviceList = document.getElementById("deviceList");
-const modal = document.getElementById("modal");
-const modalTitle = document.getElementById("modalTitle");
-const deviceNameInput = document.getElementById("deviceNameInput");
-const pinSelect = document.getElementById("pinSelect");
-const statusDot = document.getElementById("statusDot");
-const statusText = document.getElementById("statusText");
-const toast = document.getElementById("toast");
-const saveBtn = document.getElementById("saveBtn");
-
-function setStatus(online) {
-  statusDot.classList.toggle("online", online);
-  statusText.textContent = online ? "সংযুক্ত ✓" : "সংযোগ বিচ্ছিন্ন ✗";
-}
-
-function showToast(msg, isError = false) {
-  toast.textContent = msg;
-  toast.style.borderColor = isError ? "#f87171" : "#34d399";
-  toast.classList.add("show");
-  clearTimeout(window._toastTimer);
-  window._toastTimer = setTimeout(() => toast.classList.remove("show"), 3000);
-}
-
-function escapeHtml(s) {
-  return String(s || "").replace(/[&<>"']/g, m => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  }[m]));
-}
-
-SAFE_PINS.forEach(p => {
-  const opt = document.createElement("option");
-  opt.value = p;
-  opt.textContent = `GPIO ${p}`;
-  pinSelect.appendChild(opt);
+document.addEventListener("DOMContentLoaded", () => {
+  SAFE_PINS.forEach(p => {
+    document.getElementById("lightPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`;
+    document.getElementById("sensorPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`;
+  });
+  loadLights();
+  loadSensors();
+  subscribeRealtime();
 });
 
-async function loadDevices() {
-  const { data, error } = await sb
-    .from("devices")
-    .select("id, device_name, pin, created_at, device_states(is_on)")
-    .order("id", { ascending: true });
-
-  if (error) {
-    console.error(error);
-    setStatus(false);
-    statusText.textContent = "সংযোগ ব্যর্থ: " + error.message;
-    return;
-  }
-
-  devices = (data || []).map(d => ({
-    id: d.id,
-    name: d.device_name,
-    pin: d.pin,
-    isOn: Array.isArray(d.device_states)
-      ? (d.device_states[0]?.is_on || false)
-      : (d.device_states?.is_on || false)
-  }));
-
-  renderDevices();
-  setStatus(true);
+function showToast(msg, isError = false) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.borderColor = isError ? "#f87171" : "#34d399";
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3000);
 }
 
-function renderDevices() {
-  if (devices.length === 0) {
-    deviceList.innerHTML = '<div class="empty">এখনো কোনো ডিভাইস নেই।<br/>"Add Device" বাটনে ক্লিক করে শুরু করুন।</div>';
-    return;
+function openLightModal() { document.getElementById("lightModal").classList.add("active"); }
+function openSensorModal() { document.getElementById("sensorModal").classList.add("active"); }
+function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+
+// ===== লাইট লজিক =====
+async function loadLights() {
+  const { data } = await sb.from("devices").select("*, device_states(is_on)").order("id");
+  lights = (data || []).map(d => ({
+    id: d.id, name: d.device_name, pin: d.pin,
+    isOn: Array.isArray(d.device_states) ? (d.device_states[0]?.is_on || false) : (d.device_states?.is_on || false)
+  }));
+  renderLights();
+}
+
+function renderLights() {
+  document.getElementById("lightGrid").innerHTML = lights.map(l => `
+    <div class="card">
+      <div class="card-header">
+        <div><div class="name">${l.name}</div><span class="badge">GPIO ${l.pin}</span></div>
+        <span class="state ${l.isOn ? 'on' : ''}">${l.isOn ? 'চালু' : 'বন্ধ'}</span>
+      </div>
+      <div class="actions">
+        <button class="toggle ${l.isOn ? 'on' : ''}" onclick="toggleLight(${l.id})"></button>
+        <button class="icon-btn" onclick="deleteLight(${l.id})">🗑️</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+async function toggleLight(id) {
+  const l = lights.find(x => x.id === id);
+  const newState = !l.isOn;
+  l.isOn = newState;
+  renderLights();
+  const { error } = await sb.from("device_states").update({ is_on: newState }).eq("device_id", id);
+  if (error) showToast("লাইট আপডেট ব্যর্থ", true);
+}
+
+async function saveLight() {
+  const name = document.getElementById("lightName").value.trim();
+  const pin = parseInt(document.getElementById("lightPin").value);
+  if (!name) return showToast("নাম দিন", true);
+  const { error } = await sb.from("devices").insert({ device_name: name, pin });
+  if (error) showToast(error.message, true);
+  else { showToast("লাইট যোগ হয়েছে"); closeModal("lightModal"); loadLights(); }
+}
+
+async function deleteLight(id) {
+  if (!confirm("মুছে ফেলবেন?")) return;
+  await sb.from("devices").delete().eq("id", id);
+  loadLights();
+}
+
+// ===== সেন্সর লজিক (ফিক্স করা হয়েছে) =====
+async function loadSensors() {
+  const { data: sensorData, error } = await sb.from("sensors").select("*").order("id");
+  if (error || !sensorData) return;
+
+  // সব সেন্সরের সর্বশেষ রিডিং একবারে নিয়ে আসা (ফাস্ট লোডের জন্য)
+  const { data: recentReadings } = await sb.from("sensor_readings")
+    .select("sensor_id, temperature, humidity")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  const latestMap = {};
+  if (recentReadings) {
+    recentReadings.forEach(r => {
+      if (!latestMap[r.sensor_id]) latestMap[r.sensor_id] = r;
+    });
   }
 
-  deviceList.innerHTML = devices.map(d => `
-    <div class="card" data-id="${d.id}">
+  sensors = sensorData.map(s => ({
+    ...s,
+    lastTemp: latestMap[s.id] ? latestMap[s.id].temperature : null,
+    lastHum: latestMap[s.id] ? latestMap[s.id].humidity : null
+  }));
+
+  renderSensors();
+}
+
+function renderSensors() {
+  document.getElementById("sensorGrid").innerHTML = sensors.map(s => `
+    <div class="card">
       <div class="card-header">
-        <div>
-          <div class="device-name">${escapeHtml(d.name)}</div>
-          <span class="pin-badge">GPIO ${d.pin}</span>
-        </div>
-        <span class="device-state ${d.isOn ? 'on' : ''}">${d.isOn ? 'চালু' : 'বন্ধ'}</span>
+        <div><div class="name">${s.sensor_name}</div><span class="badge">GPIO ${s.pin}</span></div>
+        <button class="icon-btn" onclick="deleteSensor(${s.id})">🗑️</button>
       </div>
-      <div class="card-actions">
-        <button class="toggle ${d.isOn ? 'on' : ''}" data-action="toggle" data-id="${d.id}"></button>
-        <div style="display:flex; gap:8px;">
-          <button class="icon-btn" data-action="edit" data-id="${d.id}" title="Edit">✏️</button>
-          <button class="icon-btn danger" data-action="delete" data-id="${d.id}" title="Delete">🗑️</button>
+      <div class="sensor-data">
+        <div>
+          <div class="sensor-val">${s.lastTemp !== null && s.lastTemp !== undefined ? s.lastTemp.toFixed(1) + '°C' : '--'}</div>
+          <div class="sensor-lbl">Temperature</div>
+        </div>
+        <div>
+          <div class="sensor-val">${s.lastHum !== null && s.lastHum !== undefined ? s.lastHum.toFixed(1) + '%' : '--'}</div>
+          <div class="sensor-lbl">Humidity</div>
         </div>
       </div>
     </div>
   `).join("");
-
-  deviceList.querySelectorAll("[data-action]").forEach(el => {
-    el.addEventListener("click", handleAction);
-  });
 }
 
-function handleAction(e) {
-  const action = e.currentTarget.dataset.action;
-  const id = parseInt(e.currentTarget.dataset.id);
-  if (action === "toggle") toggleDevice(id);
-  else if (action === "edit") openEditModal(id);
-  else if (action === "delete") deleteDevice(id);
+async function saveSensor() {
+  const name = document.getElementById("sensorName").value.trim();
+  const pin = parseInt(document.getElementById("sensorPin").value);
+  if (!name) return showToast("নাম দিন", true);
+  const { error } = await sb.from("sensors").insert({ sensor_name: name, pin });
+  if (error) showToast(error.message, true);
+  else { showToast("সেন্সর যোগ হয়েছে"); closeModal("sensorModal"); loadSensors(); }
 }
 
-async function toggleDevice(id) {
-  const d = devices.find(x => x.id === id);
-  if (!d) return;
-
-  const newState = !d.isOn;
-  d.isOn = newState;
-  renderDevices();
-
-  const { error } = await sb
-    .from("device_states")
-    .update({ is_on: newState, updated_at: new Date().toISOString() })
-    .eq("device_id", id);
-
-  if (error) {
-    d.isOn = !newState;
-    renderDevices();
-    showToast("আপডেট ব্যর্থ: " + error.message, true);
-  } else {
-    showToast(`${d.name} → ${newState ? "ON" : "OFF"}`);
-  }
+async function deleteSensor(id) {
+  if (!confirm("সেন্সরটি মুছে ফেলবেন?")) return;
+  await sb.from("sensors").delete().eq("id", id);
+  loadSensors();
 }
 
-async function deleteDevice(id) {
-  const d = devices.find(x => x.id === id);
-  if (!d) return;
-  if (!confirm(`"${d.name}" ডিভাইসটি মুছে ফেলবেন?`)) return;
-
-  const { error } = await sb.from("devices").delete().eq("id", id);
-  if (error) {
-    showToast("মুছে ফেলা ব্যর্থ: " + error.message, true);
-  } else {
-    showToast("ডিভাইস মুছে ফেলা হয়েছে");
-    loadDevices();
-  }
-}
-
-function openAddModal() {
-  editingId = null;
-  modalTitle.textContent = "Add Device";
-  deviceNameInput.value = "";
-  const usedPins = devices.map(d => d.pin);
-  const freePin = SAFE_PINS.find(p => !usedPins.includes(p));
-  pinSelect.value = freePin !== undefined ? freePin : SAFE_PINS[0];
-  modal.classList.add("active");
-  deviceNameInput.focus();
-}
-
-function openEditModal(id) {
-  const d = devices.find(x => x.id === id);
-  if (!d) return;
-  editingId = id;
-  modalTitle.textContent = "Edit Device";
-  deviceNameInput.value = d.name;
-  pinSelect.value = d.pin;
-  modal.classList.add("active");
-  deviceNameInput.focus();
-}
-
-function closeModal() {
-  modal.classList.remove("active");
-  editingId = null;
-}
-
-async function saveDevice() {
-  const name = deviceNameInput.value.trim();
-  const pin = parseInt(pinSelect.value);
-
-  if (!name) {
-    showToast("ডিভাইসের নাম দিন", true);
-    return;
-  }
-  if (!SAFE_PINS.includes(pin)) {
-    showToast("সঠিক পিন বাছুন", true);
-    return;
-  }
-
-  const conflicting = devices.find(d => d.pin === pin && d.id !== editingId);
-  if (conflicting) {
-    showToast(`GPIO ${pin} ইতিমধ্যে "${conflicting.name}"-এ ব্যবহৃত`, true);
-    return;
-  }
-
-  saveBtn.disabled = true;
-  saveBtn.textContent = "Saving...";
-
-  let error;
-  if (editingId === null) {
-    ({ error } = await sb.from("devices").insert({ device_name: name, pin }));
-  } else {
-    ({ error } = await sb.from("devices").update({ device_name: name, pin }).eq("id", editingId));
-  }
-
-  saveBtn.disabled = false;
-  saveBtn.textContent = "Save";
-
-  if (error) {
-    showToast("সংরক্ষণ ব্যর্থ: " + error.message, true);
-  } else {
-    showToast(editingId === null ? "ডিভাইস যোগ হয়েছে" : "ডিভাইস আপডেট হয়েছে");
-    closeModal();
-    loadDevices();
-  }
-}
-
-document.getElementById("addBtn").addEventListener("click", openAddModal);
-document.getElementById("cancelBtn").addEventListener("click", closeModal);
-saveBtn.addEventListener("click", saveDevice);
-modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
-deviceNameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") saveDevice(); });
-
+// ===== Realtime সাবস্ক্রিপশন =====
 function subscribeRealtime() {
-  sb.channel("devices-realtime")
-    .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, (payload) => {
-      console.log("devices event:", payload);
-      loadDevices();
-    })
-    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "device_states" }, (payload) => {
-      const row = payload.new;
-      const d = devices.find(x => x.id === row.device_id);
-      if (d) {
-        d.isOn = row.is_on;
-        renderDevices();
+  sb.channel("dashboard-realtime")
+    .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, loadLights)
+    .on("postgres_changes", { event: "*", schema: "public", table: "device_states" }, loadLights)
+    .on("postgres_changes", { event: "*", schema: "public", table: "sensors" }, loadSensors)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "sensor_readings" }, (payload) => {
+      // নতুন ডেটা আসলে সাথে সাথে UI আপডেট হবে
+      const r = payload.new;
+      const s = sensors.find(x => x.id === r.sensor_id);
+      if (s) {
+        s.lastTemp = r.temperature;
+        s.lastHum = r.humidity;
+        renderSensors();
       }
     })
     .subscribe((status) => {
-      console.log("Realtime:", status);
-      if (status === "SUBSCRIBED") setStatus(true);
-      else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") setStatus(false);
+      const dot = document.getElementById("statusDot");
+      const txt = document.getElementById("statusText");
+      if (status === "SUBSCRIBED") { dot.classList.add("online"); txt.textContent = "সংযুক্ত ✓"; }
+      else { dot.classList.remove("online"); txt.textContent = "বিচ্ছিন্ন ✗"; }
     });
 }
-
-loadDevices();
-subscribeRealtime();
-setInterval(loadDevices, 30000);
 </script>
 </body>
 </html>
