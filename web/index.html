@@ -7,58 +7,32 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
-    --bg: #f8fafc;
-    --card-bg: #ffffff;
-    --text-main: #0f172a;
-    --text-muted: #64748b;
-    --border: #e2e8f0;
-    --primary: #000000;
-    --danger: #ef4444;
-    --success: #10b981;
+    --bg: #f8fafc; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
+    --border: #e2e8f0; --primary: #000000; --danger: #ef4444; --success: #10b981;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; padding: 40px 20px; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; padding: 40px 20px; }
   .container { max-width: 1100px; margin: 0 auto; }
   
-  /* Header */
   header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-  h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; }
+  h1 { font-size: 22px; font-weight: 600; }
   .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
   .dot.online { background: var(--success); }
 
-  /* Section Title */
   .section-title { font-size: 16px; font-weight: 600; margin: 32px 0 16px; display: flex; justify-content: space-between; align-items: center; }
   .add-btn { padding: 8px 16px; background: var(--primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: opacity 0.2s; }
   .add-btn:hover { opacity: 0.8; }
 
-  /* Grid & Cards */
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
   .card { background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 16px; }
   
   .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
   .name { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
-  .badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: #f1f5f9; color: var(--text-muted); font-weight: 500; border: 1px solid var(--border); }
+  .badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: #f1f5f9; color: var(--text-muted); font-weight: 500; border: 1px solid var(--border); display: inline-block; margin-right: 4px;}
   .state { font-size: 12px; padding: 4px 10px; border-radius: 6px; background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--border); }
   .state.on { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-  /* Sensor Latest Data Box */
-  .sensor-data-box { display: flex; gap: 16px; background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
-  .sensor-val-group { flex: 1; }
-  .sensor-val { font-size: 22px; font-weight: 700; color: var(--text-main); }
-  .sensor-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; font-weight: 500; }
-
-  /* Table Container */
-  .table-container { max-height: 220px; overflow-y: auto; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); }
-  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
-  .data-table th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; background: #f8fafc; z-index: 1; }
-  .data-table tr:last-child td { border-bottom: none; }
-  .data-table tr:hover { background: #f8fafc; }
-  .data-table td:last-child { text-align: right; }
-  .data-table th:last-child { text-align: right; }
-
-  /* Actions */
   .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
   .toggle { width: 44px; height: 24px; border-radius: 12px; background: #e2e8f0; cursor: pointer; border: none; position: relative; transition: 0.2s; }
   .toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
@@ -68,7 +42,6 @@
   .icon-btn { background: #fff; border: 1px solid var(--border); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: 0.2s; }
   .icon-btn:hover { background: #fee2e2; color: var(--danger); border-color: #fca5a5; }
 
-  /* Modal */
   .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px); }
   .modal.active { display: flex; }
   .modal-content { background: var(--card-bg); border-radius: 12px; padding: 24px; max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
@@ -80,7 +53,6 @@
   .btn-primary { background: var(--primary); color: #fff; border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: 500; font-size: 14px; }
   .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: 500; font-size: 14px; }
 
-  /* Toast */
   .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-main); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transform: translateY(20px); transition: 0.3s; z-index: 200; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
   .toast.show { opacity: 1; transform: translateY(0); }
 </style>
@@ -92,17 +64,34 @@
     <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">সংযোগ হচ্ছে...</span></div>
   </header>
 
+  <!-- Nodes Section -->
+  <div class="section-title">
+    <span>Nodes (সাব-ESP32)</span>
+    <button class="add-btn" onclick="openNodeModal()">+ Add Node</button>
+  </div>
+  <div id="nodeGrid" class="grid"></div>
+
+  <!-- Lights Section -->
   <div class="section-title">
     <span>লাইট কন্ট্রোল</span>
     <button class="add-btn" onclick="openLightModal()">+ Add Light</button>
   </div>
   <div id="lightGrid" class="grid"></div>
+</div>
 
-  <div class="section-title">
-    <span>সেন্সর ডেটা</span>
-    <button class="add-btn" onclick="openSensorModal()">+ Add Sensor</button>
+<!-- Node Modal -->
+<div id="nodeModal" class="modal">
+  <div class="modal-content">
+    <h2>Add Sub Node</h2>
+    <label>Node Name</label>
+    <input type="text" id="nodeName" placeholder="e.g. Bedroom Node" />
+    <label>MAC Address (xx:xx:xx:xx:xx:xx)</label>
+    <input type="text" id="nodeMac" placeholder="84:1F:E8:68:1C:A8" />
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('nodeModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveNode()">Save</button>
+    </div>
   </div>
-  <div id="sensorGrid" class="grid"></div>
 </div>
 
 <!-- Light Modal -->
@@ -111,33 +100,13 @@
     <h2>Add Light</h2>
     <label>Light Name</label>
     <input type="text" id="lightName" placeholder="e.g. Bedroom Light" />
+    <label>Select Node</label>
+    <select id="lightNode"></select>
     <label>GPIO Pin</label>
     <select id="lightPin"></select>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('lightModal')">Cancel</button>
       <button class="btn-primary" onclick="saveLight()">Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- Sensor Modal -->
-<div id="sensorModal" class="modal">
-  <div class="modal-content">
-    <h2>Add Sensor</h2>
-    <label>Sensor Name</label>
-    <input type="text" id="sensorName" placeholder="e.g. Room Temp" />
-    <label>Sensor Type</label>
-    <select id="sensorType">
-      <option value="DHT11">DHT11</option>
-      <option value="DHT22">DHT22</option>
-      <option value="MQ2">MQ2 (Gas)</option>
-      <option value="MQ135">MQ135 (Air Quality)</option>
-    </select>
-    <label>GPIO Pin</label>
-    <select id="sensorPin"></select>
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal('sensorModal')">Cancel</button>
-      <button class="btn-primary" onclick="saveSensor()">Save</button>
     </div>
   </div>
 </div>
@@ -151,15 +120,14 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const SAFE_PINS = [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 38, 39, 40, 41, 42, 47, 48];
 let lights = [];
-let sensors = [];
+let nodes = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   SAFE_PINS.forEach(p => {
     document.getElementById("lightPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`;
-    document.getElementById("sensorPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`;
   });
+  loadNodes();
   loadLights();
-  loadSensors();
   subscribeRealtime();
 });
 
@@ -171,25 +139,91 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.classList.remove("show"), 3000);
 }
 
-function openLightModal() { document.getElementById("lightModal").classList.add("active"); }
-function openSensorModal() { document.getElementById("sensorModal").classList.add("active"); }
+function openNodeModal() { document.getElementById("nodeModal").classList.add("active"); }
+function openLightModal() { 
+  // populate node dropdown
+  let nodeOptions = `<option value="0">Main ESP32 (Node 0)</option>`;
+  nodes.forEach(n => {
+    nodeOptions += `<option value="${n.id}">${n.node_name} (ID: ${n.id})</option>`;
+  });
+  document.getElementById("lightNode").innerHTML = nodeOptions;
+  
+  document.getElementById("lightModal").classList.add("active"); 
+}
 function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+
+// ===== Node Logic =====
+async function loadNodes() {
+  const { data } = await sb.from("nodes").select("*").order("id");
+  nodes = data || [];
+  
+  if(nodes.length === 0) {
+    document.getElementById("nodeGrid").innerHTML = `<div style="color:var(--text-muted); font-size:14px;">কোনো সাব-নোড যুক্ত করা নেই।</div>`;
+    return;
+  }
+
+  document.getElementById("nodeGrid").innerHTML = nodes.map(n => `
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="name">${n.node_name}</div>
+          <span class="badge">MAC: ${n.mac_address}</span>
+        </div>
+        <button class="icon-btn" onclick="deleteNode(${n.id})">Delete</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+async function saveNode() {
+  const name = document.getElementById("nodeName").value.trim();
+  const mac = document.getElementById("nodeMac").value.trim();
+  if (!name || !mac) return showToast("সব তথ্য দিন", true);
+  
+  const { error } = await sb.from("nodes").insert({ node_name: name, mac_address: mac });
+  if (error) showToast(error.message, true);
+  else { showToast("নোড যোগ হয়েছে"); closeModal("nodeModal"); loadNodes(); }
+}
+
+async function deleteNode(id) {
+  if (!confirm("এই নোডটি মুছে ফেলবেন? নোডের লাইটগুলোও মুছে যাবে!")) return;
+  await sb.from("nodes").delete().eq("id", id);
+  loadNodes();
+  loadLights();
+}
 
 // ===== Light Logic =====
 async function loadLights() {
   const { data } = await sb.from("devices").select("*, device_states(is_on)").order("id");
   lights = (data || []).map(d => ({
-    id: d.id, name: d.device_name, pin: d.pin,
+    id: d.id, name: d.device_name, pin: d.pin, node_id: d.node_id,
     isOn: Array.isArray(d.device_states) ? (d.device_states[0]?.is_on || false) : (d.device_states?.is_on || false)
   }));
   renderLights();
 }
 
 function renderLights() {
-  document.getElementById("lightGrid").innerHTML = lights.map(l => `
+  if(lights.length === 0) {
+    document.getElementById("lightGrid").innerHTML = `<div style="color:var(--text-muted); font-size:14px;">কোনো লাইট যুক্ত করা নেই।</div>`;
+    return;
+  }
+
+  document.getElementById("lightGrid").innerHTML = lights.map(l => {
+    // find node name
+    let nodeName = "Main ESP32";
+    if (l.node_id > 0) {
+      const node = nodes.find(n => n.id === l.node_id);
+      if (node) nodeName = node.node_name;
+    }
+
+    return `
     <div class="card">
       <div class="card-header">
-        <div><div class="name">${l.name}</div><span class="badge">GPIO ${l.pin}</span></div>
+        <div>
+          <div class="name">${l.name}</div>
+          <span class="badge">${nodeName}</span>
+          <span class="badge">GPIO ${l.pin}</span>
+        </div>
         <span class="state ${l.isOn ? 'on' : ''}">${l.isOn ? 'ON' : 'OFF'}</span>
       </div>
       <div class="actions">
@@ -197,7 +231,7 @@ function renderLights() {
         <button class="icon-btn" onclick="deleteLight(${l.id})">Delete</button>
       </div>
     </div>
-  `).join("");
+  `}).join("");
 }
 
 async function toggleLight(id) {
@@ -212,8 +246,11 @@ async function toggleLight(id) {
 async function saveLight() {
   const name = document.getElementById("lightName").value.trim();
   const pin = parseInt(document.getElementById("lightPin").value);
+  const node_id = parseInt(document.getElementById("lightNode").value);
+  
   if (!name) return showToast("Please enter a name", true);
-  const { error } = await sb.from("devices").insert({ device_name: name, pin });
+  
+  const { error } = await sb.from("devices").insert({ device_name: name, pin, node_id });
   if (error) showToast(error.message, true);
   else { showToast("Light added"); closeModal("lightModal"); loadLights(); }
 }
@@ -224,157 +261,12 @@ async function deleteLight(id) {
   loadLights();
 }
 
-// ===== Sensor Logic (DHT & MQ Support) =====
-async function loadSensors() {
-  const { data: sensorData, error } = await sb.from("sensors").select("*").order("id");
-  if (error || !sensorData) return;
-
-  const { data: allReadings } = await sb.from("sensor_readings")
-    .select("sensor_id, temperature, humidity, gas_value, timestamps, created_at, id")
-    .order("id", { ascending: true });
-
-  const readingsBySensor = {};
-  if (allReadings) {
-    allReadings.forEach(r => {
-      if (!readingsBySensor[r.sensor_id]) readingsBySensor[r.sensor_id] = [];
-      readingsBySensor[r.sensor_id].push(r);
-    });
-  }
-
-  sensors = sensorData.map(s => {
-    const rows = readingsBySensor[s.id] || [];
-    let flatData = [];
-    
-    // Check if sensor is MQ or DHT
-    const isMQ = s.sensor_type && s.sensor_type.toUpperCase().startsWith("MQ");
-
-    rows.forEach(row => {
-      const temps = Array.isArray(row.temperature) ? row.temperature : (row.temperature ? [row.temperature] : []);
-      const hums = Array.isArray(row.humidity) ? row.humidity : (row.humidity ? [row.humidity] : []);
-      const gases = Array.isArray(row.gas_value) ? row.gas_value : (row.gas_value ? [row.gas_value] : []);
-      const times = Array.isArray(row.timestamps) ? row.timestamps : [row.created_at];
-
-      const length = Math.max(temps.length, hums.length, gases.length);
-      for (let i = 0; i < length; i++) {
-        flatData.push({
-          temp: temps[i] !== undefined ? Number(temps[i]).toFixed(1) : null,
-          hum: hums[i] !== undefined ? Number(hums[i]).toFixed(1) : null,
-          gas: gases[i] !== undefined ? Number(gases[i]).toFixed(0) : null,
-          time: times[i] || row.created_at
-        });
-      }
-    });
-
-    const latest = flatData.length > 0 ? flatData[flatData.length - 1] : null;
-
-    return {
-      ...s,
-      isMQ: isMQ,
-      data: flatData.reverse(),
-      latestTemp: latest ? latest.temp : null,
-      latestHum: latest ? latest.hum : null,
-      latestGas: latest ? latest.gas : null
-    };
-  });
-
-  renderSensors();
-}
-
-function renderSensors() {
-  document.getElementById("sensorGrid").innerHTML = sensors.map(s => {
-    let dataBoxHtml = '';
-    let tableHeaderHtml = '';
-    let tableRowsHtml = '';
-
-    if (s.isMQ) {
-      // MQ Sensor View
-      const displayGas = s.latestGas !== null ? s.latestGas : '--';
-      dataBoxHtml = `
-        <div class="sensor-data-box">
-          <div class="sensor-val-group">
-            <div class="sensor-val">${displayGas}</div>
-            <div class="sensor-lbl">Gas Level</div>
-          </div>
-        </div>
-      `;
-      tableHeaderHtml = `<th>Time</th><th style="text-align:right;">Gas</th>`;
-      tableRowsHtml = s.data.length > 0 ? s.data.map(d => {
-        const dateObj = new Date(d.time);
-        const timeStr = dateObj.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-        return `<tr><td style="color:var(--text-muted); font-size:12px;">${timeStr}</td><td style="font-weight:600;">${d.gas !== null ? d.gas : '--'}</td></tr>`;
-      }).join('') : `<tr><td colspan="2" style="text-align:center; color:var(--text-muted);">No data</td></tr>`;
-    } else {
-      // DHT Sensor View
-      const displayTemp = s.latestTemp !== null ? s.latestTemp + '°C' : '--';
-      const displayHum = s.latestHum !== null ? s.latestHum + '%' : '--';
-      dataBoxHtml = `
-        <div class="sensor-data-box">
-          <div class="sensor-val-group">
-            <div class="sensor-val">${displayTemp}</div>
-            <div class="sensor-lbl">Temperature</div>
-          </div>
-          <div class="sensor-val-group">
-            <div class="sensor-val">${displayHum}</div>
-            <div class="sensor-lbl">Humidity</div>
-          </div>
-        </div>
-      `;
-      tableHeaderHtml = `<th>Time</th><th>Temp</th><th style="text-align:right;">Hum</th>`;
-      tableRowsHtml = s.data.length > 0 ? s.data.map(d => {
-        const dateObj = new Date(d.time);
-        const timeStr = dateObj.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-        return `<tr><td style="color:var(--text-muted); font-size:12px;">${timeStr}</td><td style="font-weight:600;">${d.temp !== null ? d.temp : '--'}</td><td style="font-weight:600; text-align:right;">${d.hum !== null ? d.hum : '--'}</td></tr>`;
-      }).join('') : `<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No data</td></tr>`;
-    }
-
-    return `
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="name">${s.sensor_name}</div>
-          <span class="badge">${s.sensor_type || 'DHT11'} &middot; GPIO ${s.pin}</span>
-        </div>
-        <button class="icon-btn" onclick="deleteSensor(${s.id})">Delete</button>
-      </div>
-      
-      ${dataBoxHtml}
-
-      <div class="table-container">
-        <table class="data-table">
-          <thead><tr>${tableHeaderHtml}</tr></thead>
-          <tbody>${tableRowsHtml}</tbody>
-        </table>
-      </div>
-    </div>
-  `}).join("");
-}
-
-async function saveSensor() {
-  const name = document.getElementById("sensorName").value.trim();
-  const type = document.getElementById("sensorType").value;
-  const pin = parseInt(document.getElementById("sensorPin").value);
-  if (!name) return showToast("Please enter a name", true);
-  
-  const { error } = await sb.from("sensors").insert({ sensor_name: name, pin, sensor_type: type });
-  if (error) showToast(error.message, true);
-  else { showToast("Sensor added"); closeModal("sensorModal"); loadSensors(); }
-}
-
-async function deleteSensor(id) {
-  if (!confirm("Delete this sensor?")) return;
-  await sb.from("sensors").delete().eq("id", id);
-  loadSensors();
-}
-
 // ===== Realtime Subscription =====
 function subscribeRealtime() {
   sb.channel("dashboard-realtime")
     .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, loadLights)
     .on("postgres_changes", { event: "*", schema: "public", table: "device_states" }, loadLights)
-    .on("postgres_changes", { event: "*", schema: "public", table: "sensors" }, loadSensors)
-    .on("postgres_changes", { event: "*", schema: "public", table: "sensor_readings" }, () => {
-      loadSensors();
-    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "nodes" }, loadNodes)
     .subscribe((status) => {
       const dot = document.getElementById("statusDot");
       const txt = document.getElementById("statusText");
