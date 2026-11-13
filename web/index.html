@@ -8,7 +8,7 @@
 <style>
   :root {
     --bg: #f8fafc; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
-    --border: #e2e8f0; --primary: #000000; --danger: #ef4444; --success: #10b981;
+    --border: #e2e8f0; --primary: #000000; --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; padding: 40px 20px; }
@@ -27,6 +27,9 @@
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
   .card { background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 16px; }
   
+  /* Pending Node Card Highlight */
+  .card.pending { border: 1px solid var(--warning); background-color: #fffbeb; }
+
   .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
   .name { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
   .badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: #f1f5f9; color: var(--text-muted); font-weight: 500; border: 1px solid var(--border); display: inline-block; margin-right: 4px;}
@@ -39,6 +42,9 @@
   .toggle.on { background: var(--primary); }
   .toggle.on::after { transform: translateX(20px); }
   
+  .btn-approve { background: var(--success); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+  .btn-approve:hover { background: #059669; }
+
   .icon-btn { background: #fff; border: 1px solid var(--border); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: 0.2s; }
   .icon-btn:hover { background: #fee2e2; color: var(--danger); border-color: #fca5a5; }
 
@@ -55,6 +61,7 @@
 
   .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-main); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transform: translateY(20px); transition: 0.3s; z-index: 200; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
   .toast.show { opacity: 1; transform: translateY(0); }
+  .empty-text { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
 </style>
 </head>
 <body>
@@ -64,10 +71,16 @@
     <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">সংযোগ হচ্ছে...</span></div>
   </header>
 
-  <!-- Nodes Section -->
+  <!-- Pending Nodes Section (Auto-Discovery) -->
+  <div class="section-title" id="pendingSection" style="display: none;">
+    <span>নতুন ডিভাইস পাওয়া গেছে (Pending)</span>
+  </div>
+  <div id="pendingGrid" class="grid"></div>
+
+  <!-- Approved Nodes Section -->
   <div class="section-title">
-    <span>Nodes (সাব-ESP32)</span>
-    <button class="add-btn" onclick="openNodeModal()">+ Add Node</button>
+    <span>আমার ডিভাইস (Nodes)</span>
+    <button class="add-btn" onclick="openNodeModal()">+ Add Manually</button>
   </div>
   <div id="nodeGrid" class="grid"></div>
 
@@ -79,17 +92,17 @@
   <div id="lightGrid" class="grid"></div>
 </div>
 
-<!-- Node Modal -->
+<!-- Manual Node Modal -->
 <div id="nodeModal" class="modal">
   <div class="modal-content">
-    <h2>Add Sub Node</h2>
+    <h2>Add Sub Node Manually</h2>
     <label>Node Name</label>
     <input type="text" id="nodeName" placeholder="e.g. Bedroom Node" />
     <label>MAC Address (xx:xx:xx:xx:xx:xx)</label>
     <input type="text" id="nodeMac" placeholder="84:1F:E8:68:1C:A8" />
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('nodeModal')">Cancel</button>
-      <button class="btn-primary" onclick="saveNode()">Save</button>
+      <button class="btn-primary" onclick="saveManualNode()">Save</button>
     </div>
   </div>
 </div>
@@ -120,7 +133,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const SAFE_PINS = [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 38, 39, 40, 41, 42, 47, 48];
 let lights = [];
-let nodes = [];
+let allNodes = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   SAFE_PINS.forEach(p => {
@@ -141,10 +154,11 @@ function showToast(msg, isError = false) {
 
 function openNodeModal() { document.getElementById("nodeModal").classList.add("active"); }
 function openLightModal() { 
-  // populate node dropdown
-  let nodeOptions = `<option value="0">Main ESP32 (Node 0)</option>`;
-  nodes.forEach(n => {
-    nodeOptions += `<option value="${n.id}">${n.node_name} (ID: ${n.id})</option>`;
+  // শুধুমাত্র অ্যাপ্রুভড নোডগুলো ড্রপডাউনে দেখাবে
+  const approvedNodes = allNodes.filter(n => n.is_approved);
+  let nodeOptions = `<option value="0">Main ESP32 (Gateway)</option>`;
+  approvedNodes.forEach(n => {
+    nodeOptions += `<option value="${n.id}">${n.node_name}</option>`;
   });
   document.getElementById("lightNode").innerHTML = nodeOptions;
   
@@ -152,17 +166,45 @@ function openLightModal() {
 }
 function closeModal(id) { document.getElementById(id).classList.remove("active"); }
 
-// ===== Node Logic =====
+// ===== Node Logic (Auto Discovery Support) =====
 async function loadNodes() {
   const { data } = await sb.from("nodes").select("*").order("id");
-  nodes = data || [];
+  allNodes = data || [];
   
-  if(nodes.length === 0) {
-    document.getElementById("nodeGrid").innerHTML = `<div style="color:var(--text-muted); font-size:14px;">কোনো সাব-নোড যুক্ত করা নেই।</div>`;
+  const approvedNodes = allNodes.filter(n => n.is_approved);
+  const pendingNodes = allNodes.filter(n => !n.is_approved);
+
+  // Pending Nodes রেন্ডার
+  const pendingSection = document.getElementById("pendingSection");
+  const pendingGrid = document.getElementById("pendingGrid");
+
+  if (pendingNodes.length > 0) {
+    pendingSection.style.display = "flex";
+    pendingGrid.innerHTML = pendingNodes.map(n => `
+      <div class="card pending">
+        <div class="card-header">
+          <div>
+            <div class="name">New Device Found!</div>
+            <span class="badge">MAC: ${n.mac_address}</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn-approve" onclick="approveNode(${n.id}, '${n.mac_address}')">Approve & Name</button>
+        </div>
+      </div>
+    `).join("");
+  } else {
+    pendingSection.style.display = "none";
+    pendingGrid.innerHTML = "";
+  }
+
+  // Approved Nodes রেন্ডার
+  if(approvedNodes.length === 0) {
+    document.getElementById("nodeGrid").innerHTML = `<div class="empty-text">কোনো ডিভাইস যুক্ত করা নেই।</div>`;
     return;
   }
 
-  document.getElementById("nodeGrid").innerHTML = nodes.map(n => `
+  document.getElementById("nodeGrid").innerHTML = approvedNodes.map(n => `
     <div class="card">
       <div class="card-header">
         <div>
@@ -175,18 +217,36 @@ async function loadNodes() {
   `).join("");
 }
 
-async function saveNode() {
+// নতুন ডিভাইস অ্যাপ্রুভ করা
+async function approveNode(id, mac) {
+  const name = prompt("Enter a name for this new device:", "Room Node");
+  if (!name) return; // ইউজার ক্যানসেল করলে কিছু হবে না
+
+  const { error } = await sb.from("nodes").update({ 
+    node_name: name, 
+    is_approved: true 
+  }).eq("id", id);
+
+  if (error) showToast(error.message, true);
+  else { 
+    showToast("ডিভাইস অ্যাপ্রুভ করা হয়েছে!"); 
+    loadNodes(); 
+  }
+}
+
+async function saveManualNode() {
   const name = document.getElementById("nodeName").value.trim();
   const mac = document.getElementById("nodeMac").value.trim();
   if (!name || !mac) return showToast("সব তথ্য দিন", true);
   
-  const { error } = await sb.from("nodes").insert({ node_name: name, mac_address: mac });
+  // ম্যানুয়ালি যোগ করলে সরাসরি অ্যাপ্রুভড হবে
+  const { error } = await sb.from("nodes").insert({ node_name: name, mac_address: mac, is_approved: true });
   if (error) showToast(error.message, true);
   else { showToast("নোড যোগ হয়েছে"); closeModal("nodeModal"); loadNodes(); }
 }
 
 async function deleteNode(id) {
-  if (!confirm("এই নোডটি মুছে ফেলবেন? নোডের লাইটগুলোও মুছে যাবে!")) return;
+  if (!confirm("এই ডিভাইসটি মুছে ফেলবেন? ডিভাইসের লাইটগুলোও মুছে যাবে!")) return;
   await sb.from("nodes").delete().eq("id", id);
   loadNodes();
   loadLights();
@@ -204,7 +264,7 @@ async function loadLights() {
 
 function renderLights() {
   if(lights.length === 0) {
-    document.getElementById("lightGrid").innerHTML = `<div style="color:var(--text-muted); font-size:14px;">কোনো লাইট যুক্ত করা নেই।</div>`;
+    document.getElementById("lightGrid").innerHTML = `<div class="empty-text">কোনো লাইট যুক্ত করা নেই।</div>`;
     return;
   }
 
@@ -212,7 +272,7 @@ function renderLights() {
     // find node name
     let nodeName = "Main ESP32";
     if (l.node_id > 0) {
-      const node = nodes.find(n => n.id === l.node_id);
+      const node = allNodes.find(n => n.id === l.node_id);
       if (node) nodeName = node.node_name;
     }
 
