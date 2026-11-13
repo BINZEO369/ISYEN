@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Smart Home Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Chart.js লাইব্রেরি যুক্ত করা হলো -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   :root { --bg: #0f172a; --card: #1e293b; --accent: #22d3ee; --accent2: #34d399; --danger: #f87171; --text: #e2e8f0; --muted: #94a3b8; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,6 +33,17 @@
   .sensor-data { display: flex; gap: 24px; margin-top: 8px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; }
   .sensor-val { font-size: 24px; font-weight: 700; color: var(--accent2); }
   .sensor-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-top: 4px; }
+
+  /* গ্রাফের জন্য নতুন সিএসএস */
+  .chart-container {
+    position: relative;
+    height: 180px;
+    width: 100%;
+    margin-top: 10px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 12px;
+    padding: 10px;
+  }
 
   .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
   .toggle { width: 56px; height: 30px; border-radius: 20px; background: #334155; cursor: pointer; border: none; position: relative; transition: 0.3s; }
@@ -69,7 +82,7 @@
   <div id="lightGrid" class="grid"></div>
 
   <div class="section-title">
-    <span>সেন্সর (লাইভ রিডিং)</span>
+    <span>সেন্সর (লাইভ রিডিং ও গ্রাফ)</span>
     <button class="add-btn" onclick="openSensorModal()">+ Add Sensor</button>
   </div>
   <div id="sensorGrid" class="grid"></div>
@@ -115,6 +128,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const SAFE_PINS = [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 38, 39, 40, 41, 42, 47, 48];
 let lights = [];
 let sensors = [];
+let chartInstances = {}; // গ্রাফগুলো ট্র্যাক করার জন্য
 
 document.addEventListener("DOMContentLoaded", () => {
   SAFE_PINS.forEach(p => {
@@ -138,15 +152,10 @@ function openLightModal() { document.getElementById("lightModal").classList.add(
 function openSensorModal() { document.getElementById("sensorModal").classList.add("active"); }
 function closeModal(id) { document.getElementById(id).classList.remove("active"); }
 
-// ==========================================
-// নতুন ফাংশন: Array বা Single Value থেকে লেটেস্ট ডেটা বের করা
-// ==========================================
 function getLatestValue(val) {
   if (val === null || val === undefined) return null;
-  if (Array.isArray(val)) {
-    return val.length > 0 ? val[val.length - 1] : null;
-  }
-  return val; // পুরোনো ডেটার জন্য
+  if (Array.isArray(val)) return val.length > 0 ? val[val.length - 1] : null;
+  return val;
 }
 
 // ===== লাইট লজিক =====
@@ -203,34 +212,40 @@ async function loadSensors() {
   const { data: sensorData, error } = await sb.from("sensors").select("*").order("id");
   if (error || !sensorData) return;
 
+  // লেটেস্ট ৫টি রো নিয়ে আসা
   const { data: recentReadings } = await sb.from("sensor_readings")
-    .select("sensor_id, temperature, humidity")
-    .order("created_at", { ascending: false })
+    .select("sensor_id, temperature, humidity, created_at")
+    .order("created_at", { ascending: true }) // গ্রাফের জন্য পুরোনো থেকে নতুন
     .limit(200);
 
-  const latestMap = {};
+  const readingsBySensor = {};
   if (recentReadings) {
     recentReadings.forEach(r => {
-      if (!latestMap[r.sensor_id]) latestMap[r.sensor_id] = r;
+      if (!readingsBySensor[r.sensor_id]) readingsBySensor[r.sensor_id] = [];
+      readingsBySensor[r.sensor_id].push(r);
     });
   }
 
-  sensors = sensorData.map(s => ({
-    ...s,
-    lastTemp: latestMap[s.id] ? latestMap[s.id].temperature : null,
-    lastHum: latestMap[s.id] ? latestMap[s.id].humidity : null
-  }));
+  sensors = sensorData.map(s => {
+    const readings = readingsBySensor[s.id] || [];
+    const lastReading = readings[readings.length - 1];
+    
+    return {
+      ...s,
+      readings: readings,
+      lastTemp: lastReading ? lastReading.temperature : null,
+      lastHum: lastReading ? lastReading.humidity : null
+    };
+  });
 
   renderSensors();
 }
 
 function renderSensors() {
   document.getElementById("sensorGrid").innerHTML = sensors.map(s => {
-    // অ্যারে বা সিঙ্গেল ভ্যালু থেকে লেটেস্ট ডেটা বের করা
     const tempVal = getLatestValue(s.lastTemp);
     const humVal = getLatestValue(s.lastHum);
     
-    // যদি ডেটা থাকে তবে ডেসিমেল ফরম্যাটে দেখানো
     const displayTemp = tempVal !== null ? Number(tempVal).toFixed(1) + '°C' : '--';
     const displayHum = humVal !== null ? Number(humVal).toFixed(1) + '%' : '--';
 
@@ -250,8 +265,89 @@ function renderSensors() {
           <div class="sensor-lbl">Humidity</div>
         </div>
       </div>
+      
+      <!-- গ্রাফের ক্যানভাস -->
+      <div class="chart-container">
+        <canvas id="chart-${s.id}"></canvas>
+      </div>
     </div>
   `}).join("");
+
+  // HTML রেন্ডার হওয়ার পর গ্রাফগুলো তৈরি করা
+  setTimeout(() => renderCharts(), 50);
+}
+
+// ===== গ্রাফ রেন্ডারিং লজিক =====
+function renderCharts() {
+  sensors.forEach(s => {
+    const canvas = document.getElementById(`chart-${s.id}`);
+    if (!canvas) return;
+
+    // JSONB অ্যারে থেকে ডেটা ফ্ল্যাট করা (যেমন: [[25,26], [27,28]] থেকে [25,26,27,28])
+    let flatTemp = [];
+    let flatHum = [];
+
+    s.readings.forEach(r => {
+      let t = Array.isArray(r.temperature) ? r.temperature : (r.temperature ? [r.temperature] : []);
+      let h = Array.isArray(r.humidity) ? r.humidity : (r.humidity ? [r.humidity] : []);
+      flatTemp.push(...t);
+      flatHum.push(...h);
+    });
+
+    // আগের চার্টটি থাকলে ডিলিট করা
+    if (chartInstances[s.id]) {
+      chartInstances[s.id].destroy();
+    }
+
+    // Chart.js দিয়ে নতুন লাইন চার্ট তৈরি
+    chartInstances[s.id] = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: flatTemp.map((_, i) => i + 1), // X-Axis: 1, 2, 3...
+        datasets: [
+          {
+            label: 'Temp (°C)',
+            data: flatTemp,
+            borderColor: '#34d399', // সবুজ
+            backgroundColor: 'rgba(52, 211, 153, 0.1)',
+            borderWidth: 2,
+            tension: 0.4, // বাঁকা দাগ
+            fill: true,
+            pointRadius: 2
+          },
+          {
+            label: 'Humidity (%)',
+            data: flatHum,
+            borderColor: '#22d3ee', // নীল
+            backgroundColor: 'rgba(34, 211, 238, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { 
+            display: true,
+            labels: { color: '#94a3b8', font: {size: 10} }
+          }
+        },
+        scales: {
+          x: { 
+            display: false // X-Axis লুকানো হলো যাতে ক্লিন দেখায়
+          },
+          y: { 
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#94a3b8', font: {size: 10} }
+          }
+        }
+      }
+    });
+  });
 }
 
 async function saveSensor() {
@@ -266,6 +362,10 @@ async function saveSensor() {
 async function deleteSensor(id) {
   if (!confirm("সেন্সরটি মুছে ফেলবেন?")) return;
   await sb.from("sensors").delete().eq("id", id);
+  if (chartInstances[id]) {
+    chartInstances[id].destroy();
+    delete chartInstances[id];
+  }
   loadSensors();
 }
 
@@ -275,15 +375,9 @@ function subscribeRealtime() {
     .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, loadLights)
     .on("postgres_changes", { event: "*", schema: "public", table: "device_states" }, loadLights)
     .on("postgres_changes", { event: "*", schema: "public", table: "sensors" }, loadSensors)
-    .on("postgres_changes", { event: "*", schema: "public", table: "sensor_readings" }, (payload) => {
-      // INSERT বা UPDATE যাই হোক, শুধু লেটেস্ট ডেটাটা তুলে নেবে
-      const r = payload.new;
-      const s = sensors.find(x => x.id === r.sensor_id);
-      if (s) {
-        s.lastTemp = r.temperature;
-        s.lastHum = r.humidity;
-        renderSensors();
-      }
+    .on("postgres_changes", { event: "*", schema: "public", table: "sensor_readings" }, () => {
+      // নতুন ডেটা আসলে পুরো সেন্সর লিস্ট রিলোড হবে (গ্রাফও আপডেট হবে)
+      loadSensors();
     })
     .subscribe((status) => {
       const dot = document.getElementById("statusDot");
