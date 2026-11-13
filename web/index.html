@@ -6,90 +6,89 @@
 <title>Smart Home Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root { --bg: #0f172a; --card: #1e293b; --accent: #22d3ee; --accent2: #34d399; --danger: #f87171; --text: #e2e8f0; --muted: #94a3b8; }
+  :root {
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --primary: #000000;
+    --danger: #ef4444;
+    --success: #10b981;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, #1e293b, #0f172a 60%); color: var(--text); min-height: 100vh; padding: 24px; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; padding: 40px 20px; }
   .container { max-width: 1100px; margin: 0 auto; }
-  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; }
-  h1 { font-size: 26px; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; color: transparent; }
-  .status { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
-  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); }
-  .dot.online { background: var(--accent2); }
+  
+  /* Header */
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; }
+  .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
+  .dot.online { background: var(--success); }
 
-  .section-title { font-size: 18px; margin: 30px 0 16px; border-left: 4px solid var(--accent); padding-left: 10px; display: flex; justify-content: space-between; align-items: center; }
-  .add-btn { padding: 8px 16px; background: var(--card); color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
-  .add-btn:hover { background: var(--accent); color: #0f172a; }
+  /* Section Title */
+  .section-title { font-size: 16px; font-weight: 600; margin: 32px 0 16px; display: flex; justify-content: space-between; align-items: center; }
+  .add-btn { padding: 8px 16px; background: var(--primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: opacity 0.2s; }
+  .add-btn:hover { opacity: 0.8; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-  .card { background: linear-gradient(145deg, var(--card), #273449); border-radius: 16px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 12px; }
+  /* Grid & Cards */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+  .card { background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 16px; }
+  
   .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
-  .name { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
-  .badge { font-size: 11px; padding: 3px 8px; border-radius: 12px; background: rgba(34, 211, 238, 0.15); color: var(--accent); }
-  .state { font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #334155; color: var(--muted); }
-  .state.on { background: rgba(52,211,153,0.15); color: var(--accent2); }
+  .name { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: #f1f5f9; color: var(--text-muted); font-weight: 500; border: 1px solid var(--border); }
+  .state { font-size: 12px; padding: 4px 10px; border-radius: 6px; background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--border); }
+  .state.on { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-  .sensor-data { display: flex; gap: 24px; margin-top: 8px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; }
-  .sensor-val { font-size: 24px; font-weight: 700; color: var(--accent2); }
-  .sensor-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-top: 4px; }
+  /* Sensor Latest Data Box */
+  .sensor-data-box { display: flex; gap: 16px; background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
+  .sensor-val-group { flex: 1; }
+  .sensor-val { font-size: 22px; font-weight: 700; color: var(--text-main); }
+  .sensor-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; font-weight: 500; }
 
-  /* নতুন টেবিল ডিজাইন */
-  .table-container {
-    max-height: 250px;
-    overflow-y: auto;
-    border-radius: 8px;
-    border: 1px solid #334155;
-    background: rgba(0,0,0,0.15);
-    margin-top: 8px;
-  }
-  .data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-  .data-table th, .data-table td {
-    padding: 8px 10px;
-    text-align: left;
-    border-bottom: 1px solid #334155;
-  }
-  .data-table th {
-    color: var(--muted);
-    font-weight: 600;
-    position: sticky;
-    top: 0;
-    background: #1e293b;
-    z-index: 1;
-  }
-  .data-table tr:hover { background: rgba(255,255,255,0.03); }
+  /* Table Container */
+  .table-container { max-height: 220px; overflow-y: auto; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  .data-table th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; background: #f8fafc; z-index: 1; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover { background: #f8fafc; }
   .data-table td:last-child { text-align: right; }
   .data-table th:last-child { text-align: right; }
 
-  .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
-  .toggle { width: 56px; height: 30px; border-radius: 20px; background: #334155; cursor: pointer; border: none; position: relative; transition: 0.3s; }
-  .toggle::after { content: ""; position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%; background: #cbd5e1; transition: 0.3s; }
-  .toggle.on { background: var(--accent2); }
-  .toggle.on::after { transform: translateX(26px); background: #fff; }
+  /* Actions */
+  .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+  .toggle { width: 44px; height: 24px; border-radius: 12px; background: #e2e8f0; cursor: pointer; border: none; position: relative; transition: 0.2s; }
+  .toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .toggle.on { background: var(--primary); }
+  .toggle.on::after { transform: translateX(20px); }
+  
+  .icon-btn { background: #fff; border: 1px solid var(--border); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: 0.2s; }
+  .icon-btn:hover { background: #fee2e2; color: var(--danger); border-color: #fca5a5; }
 
-  .icon-btn { background: transparent; border: 1px solid #334155; color: var(--muted); padding: 6px 10px; border-radius: 6px; cursor: pointer; }
-  .icon-btn:hover { background: var(--danger); color: white; border-color: var(--danger); }
-
-  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  /* Modal */
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px); }
   .modal.active { display: flex; }
-  .modal-content { background: #1e293b; border-radius: 16px; padding: 24px; max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 12px; }
-  .modal-content h2 { color: var(--accent); font-size: 20px; margin-bottom: 8px; }
-  .modal-content label { font-size: 13px; color: var(--muted); margin-top: 6px; }
-  .modal-content input, .modal-content select { padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #fff; width: 100%; }
-  .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
-  .btn-primary { background: var(--accent2); color: #0f172a; border: none; padding: 12px; border-radius: 8px; cursor: pointer; flex: 1; font-weight: bold; }
-  .btn-secondary { background: #334155; color: #fff; border: none; padding: 12px; border-radius: 8px; cursor: pointer; flex: 1; }
+  .modal-content { background: var(--card-bg); border-radius: 12px; padding: 24px; max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+  .modal-content h2 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .modal-content label { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: -8px; }
+  .modal-content input, .modal-content select { padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); background: #fff; color: var(--text-main); width: 100%; font-size: 14px; outline: none; }
+  .modal-content input:focus, .modal-content select:focus { border-color: var(--primary); }
+  .modal-actions { display: flex; gap: 12px; margin-top: 8px; }
+  .btn-primary { background: var(--primary); color: #fff; border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: 500; font-size: 14px; }
+  .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: 500; font-size: 14px; }
 
-  .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 20px; border-radius: 8px; border: 1px solid var(--accent2); opacity: 0; transition: 0.3s; transform: translateY(20px); z-index: 200; }
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-main); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transform: translateY(20px); transition: 0.3s; z-index: 200; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
   .toast.show { opacity: 1; transform: translateY(0); }
 </style>
 </head>
 <body>
 <div class="container">
   <header>
-    <h1>💡 Smart Home Dashboard</h1>
+    <h1>Smart Home</h1>
     <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">সংযোগ হচ্ছে...</span></div>
   </header>
 
@@ -100,13 +99,13 @@
   <div id="lightGrid" class="grid"></div>
 
   <div class="section-title">
-    <span>সেন্সর ডেটা লিস্ট</span>
+    <span>সেন্সর ডেটা</span>
     <button class="add-btn" onclick="openSensorModal()">+ Add Sensor</button>
   </div>
   <div id="sensorGrid" class="grid"></div>
 </div>
 
-<!-- লাইট মোডাল -->
+<!-- Light Modal -->
 <div id="lightModal" class="modal">
   <div class="modal-content">
     <h2>Add Light</h2>
@@ -121,12 +120,19 @@
   </div>
 </div>
 
-<!-- সেন্সর মোডাল -->
+<!-- Sensor Modal -->
 <div id="sensorModal" class="modal">
   <div class="modal-content">
     <h2>Add Sensor</h2>
     <label>Sensor Name</label>
     <input type="text" id="sensorName" placeholder="e.g. Room Temp" />
+    <label>Sensor Type</label>
+    <select id="sensorType">
+      <option value="DHT11">DHT11</option>
+      <option value="DHT22">DHT22</option>
+      <option value="MQ2">MQ2 (Gas)</option>
+      <option value="MQ135">MQ135 (Air Quality)</option>
+    </select>
     <label>GPIO Pin</label>
     <select id="sensorPin"></select>
     <div class="modal-actions">
@@ -160,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function showToast(msg, isError = false) {
   const t = document.getElementById("toast");
   t.textContent = msg;
-  t.style.borderColor = isError ? "#f87171" : "#34d399";
+  t.style.backgroundColor = isError ? "#ef4444" : "#0f172a";
   t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 3000);
 }
@@ -169,7 +175,7 @@ function openLightModal() { document.getElementById("lightModal").classList.add(
 function openSensorModal() { document.getElementById("sensorModal").classList.add("active"); }
 function closeModal(id) { document.getElementById(id).classList.remove("active"); }
 
-// ===== লাইট লজিক =====
+// ===== Light Logic =====
 async function loadLights() {
   const { data } = await sb.from("devices").select("*, device_states(is_on)").order("id");
   lights = (data || []).map(d => ({
@@ -184,11 +190,11 @@ function renderLights() {
     <div class="card">
       <div class="card-header">
         <div><div class="name">${l.name}</div><span class="badge">GPIO ${l.pin}</span></div>
-        <span class="state ${l.isOn ? 'on' : ''}">${l.isOn ? 'চালু' : 'বন্ধ'}</span>
+        <span class="state ${l.isOn ? 'on' : ''}">${l.isOn ? 'ON' : 'OFF'}</span>
       </div>
       <div class="actions">
         <button class="toggle ${l.isOn ? 'on' : ''}" onclick="toggleLight(${l.id})"></button>
-        <button class="icon-btn" onclick="deleteLight(${l.id})">🗑️</button>
+        <button class="icon-btn" onclick="deleteLight(${l.id})">Delete</button>
       </div>
     </div>
   `).join("");
@@ -200,32 +206,32 @@ async function toggleLight(id) {
   l.isOn = newState;
   renderLights();
   const { error } = await sb.from("device_states").update({ is_on: newState }).eq("device_id", id);
-  if (error) showToast("লাইট আপডেট ব্যর্থ", true);
+  if (error) showToast("Failed to update", true);
 }
 
 async function saveLight() {
   const name = document.getElementById("lightName").value.trim();
   const pin = parseInt(document.getElementById("lightPin").value);
-  if (!name) return showToast("নাম দিন", true);
+  if (!name) return showToast("Please enter a name", true);
   const { error } = await sb.from("devices").insert({ device_name: name, pin });
   if (error) showToast(error.message, true);
-  else { showToast("লাইট যোগ হয়েছে"); closeModal("lightModal"); loadLights(); }
+  else { showToast("Light added"); closeModal("lightModal"); loadLights(); }
 }
 
 async function deleteLight(id) {
-  if (!confirm("মুছে ফেলবেন?")) return;
+  if (!confirm("Delete this light?")) return;
   await sb.from("devices").delete().eq("id", id);
   loadLights();
 }
 
-// ===== সেন্সর লজিক (লম্বা লিস্ট/টেবিল ফরম্যাট) =====
+// ===== Sensor Logic (DHT & MQ Support) =====
 async function loadSensors() {
   const { data: sensorData, error } = await sb.from("sensors").select("*").order("id");
   if (error || !sensorData) return;
 
   const { data: allReadings } = await sb.from("sensor_readings")
-    .select("sensor_id, temperature, humidity, timestamps, created_at, id")
-    .order("id", { ascending: true }); // পুরোনো থেকে নতুন
+    .select("sensor_id, temperature, humidity, gas_value, timestamps, created_at, id")
+    .order("id", { ascending: true });
 
   const readingsBySensor = {};
   if (allReadings) {
@@ -238,32 +244,36 @@ async function loadSensors() {
   sensors = sensorData.map(s => {
     const rows = readingsBySensor[s.id] || [];
     let flatData = [];
+    
+    // Check if sensor is MQ or DHT
+    const isMQ = s.sensor_type && s.sensor_type.toUpperCase().startsWith("MQ");
 
-    // JSONB অ্যারে থেকে ডেটা ফ্ল্যাট করা (একটি রো-তে থাকা ১১৫২টি ডেটা আলাদা করা)
     rows.forEach(row => {
       const temps = Array.isArray(row.temperature) ? row.temperature : (row.temperature ? [row.temperature] : []);
       const hums = Array.isArray(row.humidity) ? row.humidity : (row.humidity ? [row.humidity] : []);
+      const gases = Array.isArray(row.gas_value) ? row.gas_value : (row.gas_value ? [row.gas_value] : []);
       const times = Array.isArray(row.timestamps) ? row.timestamps : [row.created_at];
 
-      for (let i = 0; i < temps.length; i++) {
-        if (temps[i] !== null && temps[i] !== undefined) {
-          flatData.push({
-            temp: Number(temps[i]).toFixed(1),
-            hum: Number(hums[i]).toFixed(1),
-            time: times[i] || row.created_at
-          });
-        }
+      const length = Math.max(temps.length, hums.length, gases.length);
+      for (let i = 0; i < length; i++) {
+        flatData.push({
+          temp: temps[i] !== undefined ? Number(temps[i]).toFixed(1) : null,
+          hum: hums[i] !== undefined ? Number(hums[i]).toFixed(1) : null,
+          gas: gases[i] !== undefined ? Number(gases[i]).toFixed(0) : null,
+          time: times[i] || row.created_at
+        });
       }
     });
 
-    // সর্বশেষ ডেটা বের করা কার্ডে দেখানোর জন্য
     const latest = flatData.length > 0 ? flatData[flatData.length - 1] : null;
 
     return {
       ...s,
-      data: flatData.reverse(), // নতুন ডেটা উপরে দেখানোর জন্য রিভার্স করা হলো
+      isMQ: isMQ,
+      data: flatData.reverse(),
       latestTemp: latest ? latest.temp : null,
-      latestHum: latest ? latest.hum : null
+      latestHum: latest ? latest.hum : null,
+      latestGas: latest ? latest.gas : null
     };
   });
 
@@ -272,56 +282,67 @@ async function loadSensors() {
 
 function renderSensors() {
   document.getElementById("sensorGrid").innerHTML = sensors.map(s => {
-    const displayTemp = s.latestTemp !== null ? s.latestTemp + '°C' : '--';
-    const displayHum = s.latestHum !== null ? s.latestHum + '%' : '--';
+    let dataBoxHtml = '';
+    let tableHeaderHtml = '';
+    let tableRowsHtml = '';
 
-    // টেবিলের রো তৈরি করা (নতুন ডেটা সবার উপরে)
-    const tableRows = s.data.length > 0 ? s.data.map(d => {
-      const dateObj = new Date(d.time);
-      const timeStr = dateObj.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const dateStr = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-      
-      return `
-        <tr>
-          <td style="color:#94a3b8; font-size:11px;">${dateStr} ${timeStr}</td>
-          <td style="color:#34d399; font-weight:600;">${d.temp}°C</td>
-          <td style="color:#22d3ee; font-weight:600;">${d.hum}%</td>
-        </tr>
+    if (s.isMQ) {
+      // MQ Sensor View
+      const displayGas = s.latestGas !== null ? s.latestGas : '--';
+      dataBoxHtml = `
+        <div class="sensor-data-box">
+          <div class="sensor-val-group">
+            <div class="sensor-val">${displayGas}</div>
+            <div class="sensor-lbl">Gas Level</div>
+          </div>
+        </div>
       `;
-    }).join('') : `<tr><td colspan="3" style="text-align:center; color:#94a3b8;">কোনো ডেটা নেই</td></tr>`;
+      tableHeaderHtml = `<th>Time</th><th style="text-align:right;">Gas</th>`;
+      tableRowsHtml = s.data.length > 0 ? s.data.map(d => {
+        const dateObj = new Date(d.time);
+        const timeStr = dateObj.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+        return `<tr><td style="color:var(--text-muted); font-size:12px;">${timeStr}</td><td style="font-weight:600;">${d.gas !== null ? d.gas : '--'}</td></tr>`;
+      }).join('') : `<tr><td colspan="2" style="text-align:center; color:var(--text-muted);">No data</td></tr>`;
+    } else {
+      // DHT Sensor View
+      const displayTemp = s.latestTemp !== null ? s.latestTemp + '°C' : '--';
+      const displayHum = s.latestHum !== null ? s.latestHum + '%' : '--';
+      dataBoxHtml = `
+        <div class="sensor-data-box">
+          <div class="sensor-val-group">
+            <div class="sensor-val">${displayTemp}</div>
+            <div class="sensor-lbl">Temperature</div>
+          </div>
+          <div class="sensor-val-group">
+            <div class="sensor-val">${displayHum}</div>
+            <div class="sensor-lbl">Humidity</div>
+          </div>
+        </div>
+      `;
+      tableHeaderHtml = `<th>Time</th><th>Temp</th><th style="text-align:right;">Hum</th>`;
+      tableRowsHtml = s.data.length > 0 ? s.data.map(d => {
+        const dateObj = new Date(d.time);
+        const timeStr = dateObj.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+        return `<tr><td style="color:var(--text-muted); font-size:12px;">${timeStr}</td><td style="font-weight:600;">${d.temp !== null ? d.temp : '--'}</td><td style="font-weight:600; text-align:right;">${d.hum !== null ? d.hum : '--'}</td></tr>`;
+      }).join('') : `<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No data</td></tr>`;
+    }
 
     return `
     <div class="card">
       <div class="card-header">
-        <div><div class="name">${s.sensor_name}</div><span class="badge">GPIO ${s.pin}</span></div>
-        <button class="icon-btn" onclick="deleteSensor(${s.id})">🗑️</button>
+        <div>
+          <div class="name">${s.sensor_name}</div>
+          <span class="badge">${s.sensor_type || 'DHT11'} &middot; GPIO ${s.pin}</span>
+        </div>
+        <button class="icon-btn" onclick="deleteSensor(${s.id})">Delete</button>
       </div>
       
-      <!-- লেটেস্ট ডেটা (উপরে) -->
-      <div class="sensor-data" style="background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.2);">
-        <div>
-          <div class="sensor-val">${displayTemp}</div>
-          <div class="sensor-lbl">Latest Temp</div>
-        </div>
-        <div>
-          <div class="sensor-val">${displayHum}</div>
-          <div class="sensor-lbl">Latest Humidity</div>
-        </div>
-      </div>
+      ${dataBoxHtml}
 
-      <!-- লম্বা লিস্ট (টেবিল) -->
       <div class="table-container">
         <table class="data-table">
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Temp (°C)</th>
-              <th>Humidity (%)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${tableRows}
-          </tbody>
+          <thead><tr>${tableHeaderHtml}</tr></thead>
+          <tbody>${tableRowsHtml}</tbody>
         </table>
       </div>
     </div>
@@ -330,34 +351,35 @@ function renderSensors() {
 
 async function saveSensor() {
   const name = document.getElementById("sensorName").value.trim();
+  const type = document.getElementById("sensorType").value;
   const pin = parseInt(document.getElementById("sensorPin").value);
-  if (!name) return showToast("নাম দিন", true);
-  const { error } = await sb.from("sensors").insert({ sensor_name: name, pin });
+  if (!name) return showToast("Please enter a name", true);
+  
+  const { error } = await sb.from("sensors").insert({ sensor_name: name, pin, sensor_type: type });
   if (error) showToast(error.message, true);
-  else { showToast("সেন্সর যোগ হয়েছে"); closeModal("sensorModal"); loadSensors(); }
+  else { showToast("Sensor added"); closeModal("sensorModal"); loadSensors(); }
 }
 
 async function deleteSensor(id) {
-  if (!confirm("সেন্সরটি মুছে ফেলবেন?")) return;
+  if (!confirm("Delete this sensor?")) return;
   await sb.from("sensors").delete().eq("id", id);
   loadSensors();
 }
 
-// ===== Realtime সাবস্ক্রিপশন =====
+// ===== Realtime Subscription =====
 function subscribeRealtime() {
   sb.channel("dashboard-realtime")
     .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, loadLights)
     .on("postgres_changes", { event: "*", schema: "public", table: "device_states" }, loadLights)
     .on("postgres_changes", { event: "*", schema: "public", table: "sensors" }, loadSensors)
     .on("postgres_changes", { event: "*", schema: "public", table: "sensor_readings" }, () => {
-      // নতুন ডেটা আসলে পুরো টেবিলটি রিলোড হবে
       loadSensors();
     })
     .subscribe((status) => {
       const dot = document.getElementById("statusDot");
       const txt = document.getElementById("statusText");
-      if (status === "SUBSCRIBED") { dot.classList.add("online"); txt.textContent = "সংযুক্ত ✓"; }
-      else { dot.classList.remove("online"); txt.textContent = "বিচ্ছিন্ন ✗"; }
+      if (status === "SUBSCRIBED") { dot.classList.add("online"); txt.textContent = "Connected"; }
+      else { dot.classList.remove("online"); txt.textContent = "Disconnected"; }
     });
 }
 </script>
