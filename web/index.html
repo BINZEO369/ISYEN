@@ -14,105 +14,129 @@
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; padding: 40px 20px; }
   .container { max-width: 1100px; margin: 0 auto; }
   
+  /* Auth Screen */
+  #auth-screen { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+  .auth-box { background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 400px; }
+  .auth-box h2 { margin-bottom: 20px; text-align: center; }
+  .auth-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+  .auth-box button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin-bottom: 10px;}
+  .auth-box .toggle-auth { text-align: center; font-size: 13px; color: var(--primary); cursor: pointer; margin-top: 10px; }
+
+  /* Main App */
+  #main-app { display: none; }
   header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
   h1 { font-size: 22px; font-weight: 600; }
-  .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
-  .dot.online { background: var(--success); }
+  .user-info { display: flex; align-items: center; gap: 15px; font-size: 13px; }
+  .logout-btn { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
 
   .section-title { font-size: 16px; font-weight: 600; margin: 32px 0 16px; display: flex; justify-content: space-between; align-items: center; }
-  .add-btn { padding: 8px 16px; background: var(--primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: opacity 0.2s; }
-  .add-btn:hover { opacity: 0.8; }
+  .add-btn { padding: 8px 16px; background: var(--primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
   .card { background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 16px; }
-  
-  /* Pending Node Card Highlight */
   .card.pending { border: 1px solid var(--warning); background-color: #fffbeb; }
 
   .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
   .name { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
-  .badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: #f1f5f9; color: var(--text-muted); font-weight: 500; border: 1px solid var(--border); display: inline-block; margin-right: 4px;}
-  .state { font-size: 12px; padding: 4px 10px; border-radius: 6px; background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--border); }
-  .state.on { background: var(--primary); color: #fff; border-color: var(--primary); }
-
+  .badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--border); display: inline-block; margin-right: 4px;}
+  .code-badge { background: #dbeafe; color: #1e40af; font-weight: bold; font-size: 14px; letter-spacing: 1px; }
+  
   .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
   .toggle { width: 44px; height: 24px; border-radius: 12px; background: #e2e8f0; cursor: pointer; border: none; position: relative; transition: 0.2s; }
-  .toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: 0.2s; }
   .toggle.on { background: var(--primary); }
   .toggle.on::after { transform: translateX(20px); }
   
   .btn-approve { background: var(--success); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
-  .btn-approve:hover { background: #059669; }
+  .icon-btn { background: #fff; border: 1px solid var(--border); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .icon-btn:hover { background: #fee2e2; color: var(--danger); }
 
-  .icon-btn { background: #fff; border: 1px solid var(--border); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: 0.2s; }
-  .icon-btn:hover { background: #fee2e2; color: var(--danger); border-color: #fca5a5; }
-
-  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px); }
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
   .modal.active { display: flex; }
-  .modal-content { background: var(--card-bg); border-radius: 12px; padding: 24px; max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-  .modal-content h2 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .modal-content { background: var(--card-bg); border-radius: 12px; padding: 24px; max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 16px; }
+  .modal-content h2 { font-size: 18px; font-weight: 600; }
   .modal-content label { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: -8px; }
-  .modal-content input, .modal-content select { padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); background: #fff; color: var(--text-main); width: 100%; font-size: 14px; outline: none; }
-  .modal-content input:focus, .modal-content select:focus { border-color: var(--primary); }
+  .modal-content input, .modal-content select { padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); width: 100%; font-size: 14px; }
   .modal-actions { display: flex; gap: 12px; margin-top: 8px; }
-  .btn-primary { background: var(--primary); color: #fff; border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: 500; font-size: 14px; }
-  .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: 500; font-size: 14px; }
+  .btn-primary { background: var(--primary); color: #fff; border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; }
+  .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; }
 
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-main); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transform: translateY(20px); transition: 0.3s; z-index: 200; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-main); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transition: 0.3s; z-index: 200; pointer-events: none; }
   .toast.show { opacity: 1; transform: translateY(0); }
   .empty-text { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
 </style>
 </head>
 <body>
-<div class="container">
+
+<!-- ================= AUTH SCREEN ================= -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <h2 id="auth-title">Login</h2>
+    <input type="email" id="auth-email" placeholder="Email Address" required />
+    <input type="password" id="auth-password" placeholder="Password" required />
+    <button onclick="handleAuth()" id="auth-btn">Login</button>
+    <div class="toggle-auth" onclick="toggleAuthMode()">Don't have an account? Sign Up</div>
+  </div>
+</div>
+
+<!-- ================= MAIN APP ================= -->
+<div id="main-app" class="container">
   <header>
     <h1>Smart Home</h1>
-    <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">সংযোগ হচ্ছে...</span></div>
+    <div class="user-info">
+      <span id="user-email"></span>
+      <button class="logout-btn" onclick="handleLogout()">Log Out</button>
+    </div>
   </header>
 
-  <!-- Pending Nodes Section (Auto-Discovery) -->
+  <!-- Gateways Section -->
+  <div class="section-title">
+    <span>My Gateways (Main ESP32)</span>
+    <button class="add-btn" onclick="openGatewayModal()">+ Add Gateway</button>
+  </div>
+  <div id="gatewayGrid" class="grid"></div>
+
+  <!-- Pending Nodes Section -->
   <div class="section-title" id="pendingSection" style="display: none;">
-    <span>নতুন ডিভাইস পাওয়া গেছে (Pending)</span>
+    <span>New Devices Found (Pending)</span>
   </div>
   <div id="pendingGrid" class="grid"></div>
 
   <!-- Approved Nodes Section -->
   <div class="section-title">
-    <span>আমার ডিভাইস (Nodes)</span>
-    <button class="add-btn" onclick="openNodeModal()">+ Add Manually</button>
+    <span>My Sub Nodes</span>
   </div>
   <div id="nodeGrid" class="grid"></div>
 
   <!-- Lights Section -->
   <div class="section-title">
-    <span>লাইট কন্ট্রোল</span>
+    <span>Lights</span>
     <button class="add-btn" onclick="openLightModal()">+ Add Light</button>
   </div>
   <div id="lightGrid" class="grid"></div>
 </div>
 
-<!-- Manual Node Modal -->
-<div id="nodeModal" class="modal">
+<!-- Modals -->
+<div id="gatewayModal" class="modal">
   <div class="modal-content">
-    <h2>Add Sub Node Manually</h2>
-    <label>Node Name</label>
-    <input type="text" id="nodeName" placeholder="e.g. Bedroom Node" />
-    <label>MAC Address (xx:xx:xx:xx:xx:xx)</label>
-    <input type="text" id="nodeMac" placeholder="84:1F:E8:68:1C:A8" />
+    <h2>Add New Gateway</h2>
+    <label>Gateway Name</label>
+    <input type="text" id="gatewayName" placeholder="e.g. Home Main Board" />
+    <p style="font-size:12px; color:var(--text-muted);">Clicking Save will generate a Claim Code. You must enter this code in your ESP32 setup portal.</p>
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal('nodeModal')">Cancel</button>
-      <button class="btn-primary" onclick="saveManualNode()">Save</button>
+      <button class="btn-secondary" onclick="closeModal('gatewayModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveGateway()">Generate Code</button>
     </div>
   </div>
 </div>
 
-<!-- Light Modal -->
 <div id="lightModal" class="modal">
   <div class="modal-content">
     <h2>Add Light</h2>
     <label>Light Name</label>
     <input type="text" id="lightName" placeholder="e.g. Bedroom Light" />
+    <label>Select Gateway</label>
+    <select id="lightGateway" onchange="updateNodeDropdown()"></select>
     <label>Select Node</label>
     <select id="lightNode"></select>
     <label>GPIO Pin</label>
@@ -132,49 +156,151 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const SAFE_PINS = [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 38, 39, 40, 41, 42, 47, 48];
-let lights = [];
+let currentUser = null;
+let isSignUp = false;
+let allGateways = [];
 let allNodes = [];
+let allLights = [];
 
-document.addEventListener("DOMContentLoaded", () => {
+// ================= 1. AUTHENTICATION LOGIC =================
+document.addEventListener("DOMContentLoaded", async () => {
+  // Populate Pins
   SAFE_PINS.forEach(p => {
     document.getElementById("lightPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`;
   });
-  loadNodes();
-  loadLights();
-  subscribeRealtime();
+
+  // Check active session
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    showDashboard();
+  } else {
+    showAuth();
+  }
+
+  // Listen to Auth Changes
+  sb.auth.onAuthStateChange((event, session) => {
+    if (session) {
+      currentUser = session.user;
+      showDashboard();
+    } else {
+      currentUser = null;
+      showAuth();
+    }
+  });
 });
 
-function showToast(msg, isError = false) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.style.backgroundColor = isError ? "#ef4444" : "#0f172a";
-  t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 3000);
+function toggleAuthMode() {
+  isSignUp = !isSignUp;
+  document.getElementById("auth-title").textContent = isSignUp ? "Sign Up" : "Login";
+  document.getElementById("auth-btn").textContent = isSignUp ? "Create Account" : "Login";
+  document.querySelector(".toggle-auth").textContent = isSignUp ? "Already have an account? Login" : "Don't have an account? Sign Up";
 }
 
-function openNodeModal() { document.getElementById("nodeModal").classList.add("active"); }
-function openLightModal() { 
-  // শুধুমাত্র অ্যাপ্রুভড নোডগুলো ড্রপডাউনে দেখাবে
-  const approvedNodes = allNodes.filter(n => n.is_approved);
-  let nodeOptions = `<option value="0">Main ESP32 (Gateway)</option>`;
-  approvedNodes.forEach(n => {
-    nodeOptions += `<option value="${n.id}">${n.node_name}</option>`;
+async function handleAuth() {
+  const email = document.getElementById("auth-email").value;
+  const password = document.getElementById("auth-password").value;
+  
+  if(!email || !password) return showToast("Please enter email and password", true);
+
+  let error;
+  if (isSignUp) {
+    const res = await sb.auth.signUp({ email, password });
+    error = res.error;
+    if(!error) showToast("Account created! Check email or login.");
+  } else {
+    const res = await sb.auth.signInWithPassword({ email, password });
+    error = res.error;
+  }
+
+  if (error) showToast(error.message, true);
+}
+
+async function handleLogout() {
+  await sb.auth.signOut();
+}
+
+function showAuth() {
+  document.getElementById("auth-screen").style.display = "flex";
+  document.getElementById("main-app").style.display = "none";
+}
+
+function showDashboard() {
+  document.getElementById("auth-screen").style.display = "none";
+  document.getElementById("main-app").style.display = "block";
+  document.getElementById("user-email").textContent = currentUser.email;
+  
+  loadAllData();
+  subscribeRealtime();
+}
+
+// ================= 2. DATA LOADING LOGIC =================
+async function loadAllData() {
+  if(!currentUser) return;
+
+  // Fetch Gateways (RLS ensures only user's gateways)
+  const { data: gws } = await sb.from("gateways").select("*").order("created_at");
+  allGateways = gws || [];
+  renderGateways();
+
+  // Fetch Nodes
+  const { data: nds } = await sb.from("nodes").select("*").order("id");
+  allNodes = nds || [];
+  renderNodes();
+
+  // Fetch Lights
+  const { data: lts } = await sb.from("devices").select("*, device_states(is_on)").order("id");
+  allLights = (lts || []).map(d => ({
+    id: d.id, name: d.device_name, pin: d.pin, gateway_id: d.gateway_id, node_id: d.node_id,
+    isOn: Array.isArray(d.device_states) ? (d.device_states[0]?.is_on || false) : (d.device_states?.is_on || false)
+  }));
+  renderLights();
+}
+
+// ================= 3. GATEWAYS =================
+function openGatewayModal() { document.getElementById("gatewayModal").classList.add("active"); }
+
+async function saveGateway() {
+  const name = document.getElementById("gatewayName").value.trim();
+  if (!name) return showToast("Enter gateway name", true);
+  
+  // Generate a random 6-digit claim code
+  const claimCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  const { error } = await sb.from("gateways").insert({ 
+    user_id: currentUser.id,
+    gateway_name: name,
+    claim_code: claimCode
   });
-  document.getElementById("lightNode").innerHTML = nodeOptions;
-  
-  document.getElementById("lightModal").classList.add("active"); 
-}
-function closeModal(id) { document.getElementById(id).classList.remove("active"); }
 
-// ===== Node Logic (Auto Discovery Support) =====
-async function loadNodes() {
-  const { data } = await sb.from("nodes").select("*").order("id");
-  allNodes = data || [];
-  
+  if (error) showToast(error.message, true);
+  else { showToast("Gateway created! Check Claim Code."); closeModal("gatewayModal"); loadAllData(); }
+}
+
+function renderGateways() {
+  if (allGateways.length === 0) {
+    document.getElementById("gatewayGrid").innerHTML = `<div class="empty-text">No gateways added yet.</div>`;
+    return;
+  }
+
+  document.getElementById("gatewayGrid").innerHTML = allGateways.map(g => `
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="name">${g.gateway_name}</div>
+          <span class="badge">MAC: ${g.mac_address || 'Waiting for connection...'}</span>
+        </div>
+        ${g.mac_address ? '<span class="badge" style="color:var(--success)">Online</span>' : `<span class="badge code-badge">Code: ${g.claim_code}</span>`}
+      </div>
+    </div>
+  `).join("");
+}
+
+// ================= 4. NODES =================
+function renderNodes() {
   const approvedNodes = allNodes.filter(n => n.is_approved);
   const pendingNodes = allNodes.filter(n => !n.is_approved);
 
-  // Pending Nodes রেন্ডার
   const pendingSection = document.getElementById("pendingSection");
   const pendingGrid = document.getElementById("pendingGrid");
 
@@ -184,93 +310,85 @@ async function loadNodes() {
       <div class="card pending">
         <div class="card-header">
           <div>
-            <div class="name">New Device Found!</div>
+            <div class="name">New Node Found!</div>
             <span class="badge">MAC: ${n.mac_address}</span>
           </div>
         </div>
         <div class="actions">
-          <button class="btn-approve" onclick="approveNode(${n.id}, '${n.mac_address}')">Approve & Name</button>
+          <button class="btn-approve" onclick="approveNode(${n.id})">Approve</button>
         </div>
       </div>
     `).join("");
   } else {
     pendingSection.style.display = "none";
-    pendingGrid.innerHTML = "";
   }
 
-  // Approved Nodes রেন্ডার
   if(approvedNodes.length === 0) {
-    document.getElementById("nodeGrid").innerHTML = `<div class="empty-text">কোনো ডিভাইস যুক্ত করা নেই।</div>`;
+    document.getElementById("nodeGrid").innerHTML = `<div class="empty-text">No sub nodes approved yet.</div>`;
     return;
   }
 
-  document.getElementById("nodeGrid").innerHTML = approvedNodes.map(n => `
+  document.getElementById("nodeGrid").innerHTML = approvedNodes.map(n => {
+    const gw = allGateways.find(g => g.id === n.gateway_id);
+    return `
     <div class="card">
       <div class="card-header">
         <div>
           <div class="name">${n.node_name}</div>
+          <span class="badge">${gw ? gw.gateway_name : 'Unknown GW'}</span>
           <span class="badge">MAC: ${n.mac_address}</span>
         </div>
         <button class="icon-btn" onclick="deleteNode(${n.id})">Delete</button>
       </div>
     </div>
-  `).join("");
+  `}).join("");
 }
 
-// নতুন ডিভাইস অ্যাপ্রুভ করা
-async function approveNode(id, mac) {
-  const name = prompt("Enter a name for this new device:", "Room Node");
-  if (!name) return; // ইউজার ক্যানসেল করলে কিছু হবে না
-
-  const { error } = await sb.from("nodes").update({ 
-    node_name: name, 
-    is_approved: true 
-  }).eq("id", id);
-
+async function approveNode(id) {
+  const name = prompt("Enter a name for this node:", "Room Node");
+  if (!name) return;
+  const { error } = await sb.from("nodes").update({ node_name: name, is_approved: true }).eq("id", id);
   if (error) showToast(error.message, true);
-  else { 
-    showToast("ডিভাইস অ্যাপ্রুভ করা হয়েছে!"); 
-    loadNodes(); 
-  }
-}
-
-async function saveManualNode() {
-  const name = document.getElementById("nodeName").value.trim();
-  const mac = document.getElementById("nodeMac").value.trim();
-  if (!name || !mac) return showToast("সব তথ্য দিন", true);
-  
-  // ম্যানুয়ালি যোগ করলে সরাসরি অ্যাপ্রুভড হবে
-  const { error } = await sb.from("nodes").insert({ node_name: name, mac_address: mac, is_approved: true });
-  if (error) showToast(error.message, true);
-  else { showToast("নোড যোগ হয়েছে"); closeModal("nodeModal"); loadNodes(); }
+  else { showToast("Node approved!"); loadAllData(); }
 }
 
 async function deleteNode(id) {
-  if (!confirm("এই ডিভাইসটি মুছে ফেলবেন? ডিভাইসের লাইটগুলোও মুছে যাবে!")) return;
+  if (!confirm("Delete this node?")) return;
   await sb.from("nodes").delete().eq("id", id);
-  loadNodes();
-  loadLights();
+  loadAllData();
 }
 
-// ===== Light Logic =====
-async function loadLights() {
-  const { data } = await sb.from("devices").select("*, device_states(is_on)").order("id");
-  lights = (data || []).map(d => ({
-    id: d.id, name: d.device_name, pin: d.pin, node_id: d.node_id,
-    isOn: Array.isArray(d.device_states) ? (d.device_states[0]?.is_on || false) : (d.device_states?.is_on || false)
-  }));
-  renderLights();
+// ================= 5. LIGHTS =================
+function openLightModal() {
+  if (allGateways.length === 0) return showToast("Please add a gateway first!", true);
+  
+  let gwOptions = allGateways.map(g => `<option value="${g.id}">${g.gateway_name}</option>`).join('');
+  document.getElementById("lightGateway").innerHTML = gwOptions;
+  updateNodeDropdown(); // Populate node dropdown based on first gateway
+  
+  document.getElementById("lightModal").classList.add("active");
+}
+
+function updateNodeDropdown() {
+  const gwId = parseInt(document.getElementById("lightGateway").value);
+  const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
+  
+  let nodeOptions = `<option value="0">Main ESP32 (Gateway directly)</option>`;
+  gwNodes.forEach(n => {
+    nodeOptions += `<option value="${n.id}">${n.node_name}</option>`;
+  });
+  document.getElementById("lightNode").innerHTML = nodeOptions;
 }
 
 function renderLights() {
-  if(lights.length === 0) {
-    document.getElementById("lightGrid").innerHTML = `<div class="empty-text">কোনো লাইট যুক্ত করা নেই।</div>`;
+  if(allLights.length === 0) {
+    document.getElementById("lightGrid").innerHTML = `<div class="empty-text">No lights added yet.</div>`;
     return;
   }
 
-  document.getElementById("lightGrid").innerHTML = lights.map(l => {
-    // find node name
-    let nodeName = "Main ESP32";
+  document.getElementById("lightGrid").innerHTML = allLights.map(l => {
+    const gw = allGateways.find(g => g.id === l.gateway_id);
+    let nodeName = "Main Board";
     if (l.node_id > 0) {
       const node = allNodes.find(n => n.id === l.node_id);
       if (node) nodeName = node.node_name;
@@ -281,10 +399,11 @@ function renderLights() {
       <div class="card-header">
         <div>
           <div class="name">${l.name}</div>
+          <span class="badge">${gw ? gw.gateway_name : 'Unknown'}</span>
           <span class="badge">${nodeName}</span>
           <span class="badge">GPIO ${l.pin}</span>
         </div>
-        <span class="state ${l.isOn ? 'on' : ''}">${l.isOn ? 'ON' : 'OFF'}</span>
+        <span class="badge ${l.isOn ? 'code-badge' : ''}">${l.isOn ? 'ON' : 'OFF'}</span>
       </div>
       <div class="actions">
         <button class="toggle ${l.isOn ? 'on' : ''}" onclick="toggleLight(${l.id})"></button>
@@ -295,44 +414,54 @@ function renderLights() {
 }
 
 async function toggleLight(id) {
-  const l = lights.find(x => x.id === id);
+  const l = allLights.find(x => x.id === id);
   const newState = !l.isOn;
   l.isOn = newState;
-  renderLights();
-  const { error } = await sb.from("device_states").update({ is_on: newState }).eq("device_id", id);
-  if (error) showToast("Failed to update", true);
+  renderLights(); // Optimistic UI update
+  await sb.from("device_states").update({ is_on: newState }).eq("device_id", id);
 }
 
 async function saveLight() {
   const name = document.getElementById("lightName").value.trim();
-  const pin = parseInt(document.getElementById("lightPin").value);
+  const gateway_id = parseInt(document.getElementById("lightGateway").value);
   const node_id = parseInt(document.getElementById("lightNode").value);
+  const pin = parseInt(document.getElementById("lightPin").value);
   
-  if (!name) return showToast("Please enter a name", true);
+  if (!name) return showToast("Enter light name", true);
   
-  const { error } = await sb.from("devices").insert({ device_name: name, pin, node_id });
+  const { error } = await sb.from("devices").insert({ 
+    gateway_id, node_id, device_name: name, pin 
+  });
+  
   if (error) showToast(error.message, true);
-  else { showToast("Light added"); closeModal("lightModal"); loadLights(); }
+  else { showToast("Light added"); closeModal("lightModal"); loadAllData(); }
 }
 
 async function deleteLight(id) {
   if (!confirm("Delete this light?")) return;
   await sb.from("devices").delete().eq("id", id);
-  loadLights();
+  loadAllData();
 }
 
-// ===== Realtime Subscription =====
+function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+
+// ================= 6. REALTIME & UTILS =================
 function subscribeRealtime() {
+  // We listen to all relevant tables. RLS ensures we only get events for our own data.
   sb.channel("dashboard-realtime")
-    .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, loadLights)
-    .on("postgres_changes", { event: "*", schema: "public", table: "device_states" }, loadLights)
-    .on("postgres_changes", { event: "*", schema: "public", table: "nodes" }, loadNodes)
-    .subscribe((status) => {
-      const dot = document.getElementById("statusDot");
-      const txt = document.getElementById("statusText");
-      if (status === "SUBSCRIBED") { dot.classList.add("online"); txt.textContent = "Connected"; }
-      else { dot.classList.remove("online"); txt.textContent = "Disconnected"; }
-    });
+    .on("postgres_changes", { event: "*", schema: "public", table: "gateways" }, loadAllData)
+    .on("postgres_changes", { event: "*", schema: "public", table: "nodes" }, loadAllData)
+    .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, loadAllData)
+    .on("postgres_changes", { event: "*", schema: "public", table: "device_states" }, loadAllData)
+    .subscribe();
+}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.backgroundColor = isError ? "#ef4444" : "#0f172a";
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3000);
 }
 </script>
 </body>
