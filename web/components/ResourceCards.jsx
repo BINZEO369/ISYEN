@@ -18,7 +18,7 @@ const ago = (value) => {
 const Empty = ({ children }) => <div className="empty-state">{children}</div>;
 export function GatewayCards({ items }) {
   return (
-    <div className="card-grid">
+    <div className="card-grid gateway-grid">
       {items.length ? (
         items.map((g) => {
           const online =
@@ -27,10 +27,13 @@ export function GatewayCards({ items }) {
           return (
             <article className="card gateway-card" key={g.id}>
               <div className="card-top">
-                <div>
-                  <div className="card-title">{g.gateway_name}</div>
-                  <div className="card-sub">
-                    MAC · {g.mac_address || "Waiting for connection"}
+                <div className="resource-heading">
+                  <span className="resource-icon gateway-icon" aria-hidden="true">⌘</span>
+                  <div className="resource-heading-copy">
+                    <div className="card-title">{g.gateway_name}</div>
+                    <div className="card-sub">
+                      MAC · {g.mac_address || "Waiting for connection"}
+                    </div>
                   </div>
                 </div>
                 {g.mac_address ? (
@@ -68,22 +71,25 @@ export function NodeCards({
 }) {
   const list = items.filter((n) => !n.is_approved === pending);
   return (
-    <div className="card-grid">
+    <div className="card-grid node-grid">
       {list.length ? (
         list.map((n) => {
           const gw = gateways.find((g) => same(g.id, n.gateway_id));
           return (
             <article className={`card node-card ${pending ? "pending" : ""}`} key={n.id}>
               <div className="card-top">
-                <div>
-                  <div className="card-title">
-                    {pending
-                      ? "New Node detected"
-                      : n.node_name || "Sub Node"}
-                  </div>
-                  <div className="card-sub">
-                    {pending ? "" : `${gw?.gateway_name || "Gateway"} · `}MAC ·{" "}
-                    {n.mac_address}
+                <div className="resource-heading">
+                  <span className="resource-icon node-icon" aria-hidden="true">⌂</span>
+                  <div className="resource-heading-copy">
+                    <div className="card-title">
+                      {pending
+                        ? "New Node detected"
+                        : n.node_name || "Sub Node"}
+                    </div>
+                    <div className="card-sub">
+                      {pending ? "" : `${gw?.gateway_name || "Gateway"} · `}MAC ·{" "}
+                      {n.mac_address}
+                    </div>
                   </div>
                 </div>
                 <span className={`status ${pending ? "offline" : ""}`}>
@@ -128,7 +134,7 @@ export function NodeCards({
 }
 export function DeviceCards({ items, gateways, nodes, onToggle, onDelete }) {
   return (
-    <div className="card-grid">
+    <div className="card-grid device-grid">
       {items.length ? (
         items.map((d) => {
           const on = Array.isArray(d.device_states)
@@ -143,10 +149,13 @@ export function DeviceCards({ items, gateways, nodes, onToggle, onDelete }) {
           return (
             <article className="card device-card" key={d.id}>
               <div className="card-top">
-                <div>
-                  <div className="card-title">{d.device_name}</div>
-                  <div className="card-sub">
-                    {gw?.gateway_name || "Gateway"} · {node}
+                <div className="resource-heading">
+                  <span className="resource-icon device-icon" aria-hidden="true">◈</span>
+                  <div className="resource-heading-copy">
+                    <div className="card-title">{d.device_name}</div>
+                    <div className="card-sub">
+                      {gw?.gateway_name || "Gateway"} · {node}
+                    </div>
                   </div>
                 </div>
                 <span className={`status ${on ? "" : "offline"}`}>
@@ -239,13 +248,15 @@ function Reading({ sensor, reading: r }) {
     <div className="sensor-reading">
       <div>
         <div className="reading-value">
-          {t == null ? "—" : Number(t).toFixed(1)}°C
+          {t == null ? "—" : Number(t).toFixed(1)}
+          {t != null && <small className="reading-unit">°C</small>}
         </div>
         <div className="reading-label">Temperature</div>
       </div>
       <div>
         <div className="reading-value">
-          {h == null ? "—" : Number(h).toFixed(1)}%
+          {h == null ? "—" : Number(h).toFixed(1)}
+          {h != null && <small className="reading-unit">%</small>}
         </div>
         <div className="reading-label">Humidity</div>
       </div>
@@ -254,7 +265,7 @@ function Reading({ sensor, reading: r }) {
 }
 export function SensorCards({ items, gateways, nodes, readings, onDelete }) {
   return (
-    <div className="card-grid">
+    <div className="card-grid sensor-grid">
       {items.length ? (
         items.map((s) => {
           const gw = gateways.find((g) => same(g.id, s.gateway_id));
@@ -267,10 +278,13 @@ export function SensorCards({ items, gateways, nodes, readings, onDelete }) {
           return (
             <article className="card sensor-card" key={s.id}>
               <div className="card-top">
-                <div>
-                  <div className="card-title">{s.sensor_name}</div>
-                  <div className="card-sub">
-                    {gw?.gateway_name || "Gateway"} · {node}
+                <div className="resource-heading">
+                  <span className="resource-icon sensor-icon" aria-hidden="true">⌁</span>
+                  <div className="resource-heading-copy">
+                    <div className="card-title">{s.sensor_name}</div>
+                    <div className="card-sub">
+                      {gw?.gateway_name || "Gateway"} · {node}
+                    </div>
                   </div>
                 </div>
                 <span className="status">{s.sensor_type}</span>

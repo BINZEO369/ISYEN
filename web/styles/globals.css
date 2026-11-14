@@ -1399,3 +1399,636 @@ select:focus-visible {
     padding: 9px;
   }
 }
+
+
+/* Dashboard layout pass: compact control-panel composition, not a color-only reskin. */
+.app-shell .workspace {
+  max-width: 1180px;
+  padding: 28px 34px 56px;
+}
+.app-shell .dashboard-heading {
+  min-height: 82px;
+  margin-bottom: 14px;
+  padding: 15px 21px;
+  border: 1px solid rgba(255, 250, 244, 0.18);
+  border-radius: 17px;
+  box-shadow: 0 13px 28px rgba(85, 62, 42, 0.17);
+}
+.app-shell .dashboard-heading .eyebrow {
+  margin-bottom: 4px;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+.app-shell .dashboard-heading h1 {
+  font-size: 22px;
+  line-height: 1.2;
+}
+.app-shell .dashboard-heading .profile {
+  gap: 9px;
+}
+.app-shell .dashboard-heading .profile .btn-quiet {
+  min-height: 36px;
+  padding: 8px 13px;
+  border-color: rgba(255, 250, 244, 0.58);
+  border-radius: 10px;
+  background: #f9f4ee;
+  box-shadow: 0 3px 9px rgba(72, 51, 33, 0.08);
+}
+.app-shell .dashboard-section-nav {
+  width: 100%;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 6px;
+  border-radius: 13px;
+  background: #f9f7f3;
+}
+.app-shell .dashboard-section-nav a {
+  min-height: 37px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.app-shell .dashboard-section-nav a.active {
+  background: #b97543;
+  border-color: #b97543;
+  color: #fffaf4;
+  box-shadow: 0 4px 9px rgba(139, 83, 43, 0.2);
+}
+.app-shell .dashboard-welcome-card {
+  min-height: 86px;
+  margin-bottom: 17px;
+  padding: 17px 20px;
+  border-radius: 16px;
+}
+.app-shell .dashboard-welcome-card h2 {
+  font-size: 18px;
+}
+.app-shell .dashboard-welcome-card .muted {
+  font-size: 11px;
+}
+.app-shell .sync-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid #ead9c8;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.app-shell .stats-grid {
+  gap: 12px;
+  margin-bottom: 15px;
+}
+.app-shell .stat-card {
+  min-height: 78px;
+  padding: 13px 15px;
+  border-radius: 14px;
+  box-shadow: 0 5px 14px rgba(67, 49, 32, 0.045);
+}
+.app-shell .stat-icon {
+  width: 39px;
+  height: 39px;
+  border-radius: 11px;
+  font-size: 18px;
+}
+.app-shell .stat-card small {
+  font-size: 10px;
+}
+.app-shell .stat-card strong {
+  font-size: 20px;
+}
+.app-shell .dashboard-overview-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+  margin-top: 14px;
+}
+.app-shell .dashboard-overview-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto;
+  align-items: center;
+  gap: 3px 12px;
+  min-height: 119px;
+  padding: 16px 18px;
+  border-top: 1px solid #e7dfd6;
+  border-radius: 16px;
+}
+.app-shell .dashboard-overview-card::before {
+  content: "◈";
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #a86637;
+  background: #f4e8dc;
+  font-size: 20px;
+}
+.app-shell .dashboard-overview-card:nth-child(2)::before {
+  content: "⌁";
+  color: #68806d;
+  background: #e9f0e9;
+}
+.app-shell .dashboard-overview-card .eyebrow {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 8px;
+}
+.app-shell .dashboard-overview-card strong {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 15px;
+}
+.app-shell .dashboard-overview-count {
+  grid-column: 3;
+  grid-row: 1 / 3;
+  font-size: 23px;
+}
+.app-shell .dashboard-overview-card .muted {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  font-size: 10px;
+}
+.app-shell .workspace section:not(.welcome-row) {
+  margin-top: 17px;
+}
+.app-shell .dashboard-block {
+  padding: 19px;
+  border: 1px solid #e3dbd2;
+  border-radius: 19px;
+  background: #f9f7f3;
+  box-shadow: 0 9px 23px rgba(67, 49, 32, 0.05);
+}
+.app-shell .section-heading {
+  gap: 15px;
+  margin-bottom: 13px;
+}
+.app-shell .section-heading .eyebrow {
+  margin-bottom: 3px;
+  font-size: 8px;
+}
+.app-shell .section-heading h2 {
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+.app-shell .section-heading .btn-primary {
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1px solid #bd7946;
+  border-radius: 10px;
+  background: #bd7946;
+  box-shadow: 0 4px 10px rgba(139, 83, 43, 0.14);
+  font-size: 11px;
+}
+.app-shell .section-heading .btn-primary:hover:not(:disabled) {
+  background: #a86637;
+  transform: translateY(-1px);
+}
+.app-shell .page-description {
+  margin: -3px 0 15px;
+  font-size: 11px;
+  line-height: 1.65;
+}
+.app-shell .card-grid {
+  gap: 12px;
+}
+.app-shell .gateway-grid,
+.app-shell .node-grid {
+  grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+}
+.app-shell .device-grid {
+  grid-template-columns: repeat(auto-fill, minmax(218px, 1fr));
+}
+.app-shell .sensor-grid {
+  grid-template-columns: repeat(auto-fill, minmax(292px, 1fr));
+}
+.app-shell .card {
+  position: relative;
+  padding: 16px;
+  border: 1px solid #e6ded5;
+  border-radius: 15px;
+  background: #fffdfa;
+  box-shadow: 0 5px 15px rgba(67, 49, 32, 0.055);
+}
+.app-shell .card:hover {
+  border-color: #d9c2ab;
+  box-shadow: 0 11px 23px rgba(67, 49, 32, 0.09);
+  transform: translateY(-2px);
+}
+.app-shell .gateway-card,
+.app-shell .node-card,
+.app-shell .device-card,
+.app-shell .sensor-card {
+  border-top: 1px solid #e6ded5;
+}
+.app-shell .gateway-card {
+  min-height: 133px;
+}
+.app-shell .node-card {
+  min-height: 148px;
+}
+.app-shell .card-top {
+  align-items: center;
+  gap: 10px;
+}
+.app-shell .resource-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.app-shell .resource-heading-copy {
+  min-width: 0;
+}
+.app-shell .resource-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  border-radius: 11px;
+  color: #98643d;
+  background: #f3e8dc;
+  font-size: 18px;
+  line-height: 1;
+}
+.app-shell .node-icon {
+  color: #776859;
+  background: #efebe5;
+}
+.app-shell .device-icon {
+  color: #a86637;
+  background: #f7eadc;
+}
+.app-shell .sensor-icon {
+  color: #68806d;
+  background: #eaf0e9;
+}
+.app-shell .card-title {
+  font-size: 14px;
+  line-height: 1.35;
+}
+.app-shell .card-sub {
+  margin-top: 3px;
+  font-size: 10px;
+  line-height: 1.45;
+}
+.app-shell .badge-row {
+  gap: 7px;
+  margin-top: 11px;
+}
+.app-shell .badge {
+  padding: 5px 8px;
+  border: 1px solid #eee6de;
+  border-radius: 7px;
+  font-size: 9px;
+}
+.app-shell .status {
+  padding: 5px 8px;
+  border: 1px solid #dce8dc;
+  border-radius: 8px;
+  background: #edf3eb;
+  color: #527453;
+  font-size: 9px;
+  letter-spacing: 0.02em;
+}
+.app-shell .status.offline {
+  border-color: #ecd8d0;
+  background: #f8eeea;
+  color: #9e594d;
+}
+.app-shell .card-actions {
+  gap: 10px;
+  margin-top: 13px;
+  padding-top: 11px;
+  border-top: 1px solid #eee7df;
+}
+.app-shell .card-actions .btn {
+  min-height: 36px;
+  padding: 8px 11px;
+  border-radius: 9px;
+}
+.app-shell .icon-button {
+  min-height: 32px;
+  padding: 7px 10px;
+  border-color: #eee3d8;
+  border-radius: 9px;
+  background: #f7f2ec;
+  color: #806c59;
+  transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+}
+.app-shell .icon-button:hover {
+  border-color: #e8d1c7;
+  background: #f8eeea;
+  color: #a35d4f;
+  transform: translateY(-1px);
+}
+.app-shell .device-card {
+  display: flex;
+  min-height: 192px;
+  flex-direction: column;
+  gap: 13px;
+  padding: 17px;
+  border-top: 1px solid #e6ded5;
+}
+.app-shell .device-card .resource-icon {
+  width: 43px;
+  height: 43px;
+  flex-basis: 43px;
+  border-radius: 13px;
+  font-size: 20px;
+}
+.app-shell .device-card .card-title {
+  font-size: 15px;
+}
+.app-shell .device-card .badge-row {
+  margin-top: 0;
+}
+.app-shell .device-card .card-actions {
+  margin-top: auto;
+  padding-top: 12px;
+}
+.app-shell .toggle {
+  width: 47px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid #d9cec3;
+  border-radius: 20px;
+  background: #ded5cc;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+.app-shell .toggle::after {
+  width: 22px;
+  height: 22px;
+  background: #fffdfa;
+  box-shadow: 0 1px 4px rgba(67, 49, 32, 0.2);
+}
+.app-shell .toggle.on {
+  border-color: #b97543;
+  background: #bd7946;
+}
+.app-shell .toggle.on::after {
+  transform: translateX(19px);
+}
+.app-shell .sensor-card {
+  display: flex;
+  min-height: 226px;
+  flex-direction: column;
+  gap: 11px;
+  padding: 16px;
+  border-top: 1px solid #e6ded5;
+}
+.app-shell .sensor-card .badge-row {
+  margin-top: 0;
+}
+.app-shell .sensor-reading {
+  width: 100%;
+  gap: 9px;
+  margin-top: 0;
+  padding: 9px;
+  border: 1px solid #eee6de;
+  border-radius: 12px;
+  background: #f7f3ee;
+}
+.app-shell .sensor-reading > div {
+  padding: 10px 9px;
+  border-color: #efe7df;
+  border-radius: 9px;
+  background: #fffdfa;
+}
+.app-shell .reading-value {
+  color: #4c4035;
+  font-size: 19px;
+  line-height: 1.2;
+}
+.app-shell .reading-value.compact {
+  font-size: 11px;
+}
+.app-shell .reading-unit {
+  margin-left: 2px;
+  color: #9a7555;
+  font-size: 10px;
+  font-weight: 600;
+}
+.app-shell .reading-label {
+  margin-top: 5px;
+  color: #887b6e;
+  font-size: 8px;
+  letter-spacing: 0.075em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+.app-shell .sensor-card .card-actions {
+  margin-top: auto;
+  padding-top: 10px;
+}
+.app-shell .sensor-card .card-actions .reading-label {
+  margin: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 9px;
+}
+.app-shell .empty-state {
+  min-height: 108px;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  border: 1px dashed #d8c9b9;
+  border-radius: 13px;
+  background: #fffdfa;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.app-shell .modal-content {
+  padding: 25px;
+  border-radius: 18px;
+}
+.app-shell .modal-actions .btn {
+  min-height: 40px;
+  border-radius: 10px;
+}
+.app-shell .toast {
+  border-radius: 12px;
+}
+@media (max-width: 900px) {
+  .app-shell .workspace {
+    padding: 25px 24px 48px;
+  }
+  .app-shell .dashboard-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .app-shell .device-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .app-shell .sensor-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .app-shell .workspace {
+    padding: 19px 15px 38px;
+  }
+  .app-shell .dashboard-heading {
+    min-height: 70px;
+    align-items: center;
+    flex-direction: row;
+    gap: 8px;
+    padding: 13px 14px;
+    border-radius: 15px;
+  }
+  .app-shell .dashboard-heading h1 {
+    font-size: 18px;
+  }
+  .app-shell .dashboard-heading .eyebrow {
+    font-size: 8px;
+  }
+  .app-shell .dashboard-heading .avatar {
+    display: none;
+  }
+  .app-shell .dashboard-heading .profile-meta {
+    display: none;
+  }
+  .app-shell .dashboard-heading .profile .btn-quiet {
+    min-height: 34px;
+    margin-left: 0;
+    padding: 7px 10px;
+    font-size: 10px;
+  }
+  .app-shell .dashboard-section-nav {
+    gap: 4px;
+    margin-bottom: 14px;
+    padding: 5px;
+  }
+  .app-shell .dashboard-section-nav a {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 35px;
+    padding: 7px 4px;
+    font-size: 9px;
+  }
+  .app-shell .dashboard-welcome-card {
+    min-height: 0;
+    padding: 15px;
+  }
+  .app-shell .dashboard-welcome-card h2 {
+    font-size: 17px;
+  }
+  .app-shell .stats-grid {
+    gap: 8px;
+  }
+  .app-shell .stat-card {
+    min-height: 68px;
+    gap: 9px;
+    padding: 10px;
+  }
+  .app-shell .stat-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+  }
+  .app-shell .stat-card small {
+    font-size: 9px;
+  }
+  .app-shell .stat-card strong {
+    font-size: 18px;
+  }
+  .app-shell .dashboard-overview-grid {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+  .app-shell .dashboard-overview-card {
+    min-height: 103px;
+    padding: 13px 14px;
+  }
+  .app-shell .dashboard-block {
+    padding: 14px;
+    border-radius: 17px;
+  }
+  .app-shell .section-heading {
+    align-items: center;
+    margin-bottom: 11px;
+  }
+  .app-shell .section-heading h2 {
+    font-size: 16px;
+  }
+  .app-shell .section-heading .btn-primary {
+    min-height: 35px;
+    padding: 7px 9px;
+    font-size: 9px;
+  }
+  .app-shell .gateway-grid,
+  .app-shell .node-grid {
+    grid-template-columns: 1fr;
+  }
+  .app-shell .device-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+  .app-shell .sensor-grid {
+    grid-template-columns: 1fr;
+  }
+  .app-shell .device-card {
+    min-height: 188px;
+    gap: 11px;
+    padding: 12px;
+  }
+  .app-shell .device-card .card-top {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .app-shell .device-card .resource-heading {
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .app-shell .device-card .resource-icon {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+    border-radius: 10px;
+    font-size: 16px;
+  }
+  .app-shell .device-card .card-title {
+    font-size: 12px;
+  }
+  .app-shell .device-card .card-sub {
+    font-size: 8px;
+  }
+  .app-shell .device-card .card-actions {
+    gap: 6px;
+  }
+  .app-shell .device-card .icon-button {
+    min-height: 29px;
+    padding: 6px 8px;
+    font-size: 9px;
+  }
+  .app-shell .sensor-card {
+    min-height: 0;
+    padding: 13px;
+  }
+  .app-shell .sensor-reading {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .app-shell .page-description {
+    font-size: 10px;
+  }
+}
+@media (max-width: 360px) {
+  .app-shell .workspace {
+    padding-inline: 12px;
+  }
+  .app-shell .device-card .card-actions .icon-button {
+    padding-inline: 6px;
+  }
+  .app-shell .section-heading .btn-primary {
+    padding-inline: 7px;
+  }
+}

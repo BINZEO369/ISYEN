@@ -11,12 +11,12 @@ import {
 
 const TYPES = ["DHT11", "DHT22", "MQ2", "MQ135", "PIR", "REED"];
 const DASHBOARD_SECTIONS = [
-  { id: "overview", label: "Dashboard", href: "/dashboard" },
+  { id: "overview", label: "Control Panel", href: "/dashboard" },
   { id: "device", label: "Devices", href: "/dashboard/device" },
   { id: "sensor", label: "Sensors", href: "/dashboard/sensor" },
 ];
 const SECTION_TITLES = {
-  overview: "Dashboard",
+  overview: "Control Panel",
   device: "Devices",
   sensor: "Sensors",
 };
@@ -304,10 +304,10 @@ export default function DashboardShell({
   }
   return (
     <div className="app-shell">
-      <main className="workspace">
+      <main className="workspace" data-section={section}>
         <section className="dashboard-heading" aria-labelledby="dashboard-title">
           <div>
-            <p className="eyebrow">Your Smart Home</p>
+            <p className="eyebrow">ISYEN · HOME CONTROL</p>
             <h1 id="dashboard-title">{SECTION_TITLES[section] || "Dashboard"}</h1>
           </div>
           <div className="profile">
@@ -377,7 +377,7 @@ export default function DashboardShell({
                     value={data.nodes.filter((n) => n.is_approved).length}
                   />
                   <Stat
-                    icon="☼"
+                    icon="◈"
                     tint="amber"
                     label="Devices"
                     value={data.devices.length}
@@ -471,6 +471,9 @@ export default function DashboardShell({
                     ＋ Add Sensor
                   </button>
                 </Heading>
+                <p className="muted page-description">
+                  View the latest temperature, humidity, gas, motion and contact readings from your connected sensors.
+                </p>
                 <SensorCards
                   items={data.sensors}
                   gateways={data.gateways}
