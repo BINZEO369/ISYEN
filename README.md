@@ -10,6 +10,8 @@ web/                         # Vercel website project root
   components/                # auth, protected dashboard route, cards, feedback
   services/                  # API origin/configuration only; no Supabase browser key
   styles/                    # responsive dashboard styles
+  public/images/             # public homepage smart-home visuals
+  public/manus-routes.json   # public route manifest
   package.json               # web-only dependencies and scripts
   .env.example
 
@@ -35,7 +37,7 @@ admin/                        # deferred; existing placeholder left alone
 
 | URL | কাজ |
 | --- | --- |
-| `/` | `/dashboard`-এ পাঠায়; login session না থাকলে dashboard route `/signin`-এ পাঠায় |
+| `/` | ISYEN feature homepage; এখানে sign-in, sign-up ও dashboard-এর link আছে |
 | `/signin` | Login page; সরাসরি open/refresh করা যায় |
 | `/signup` | Registration page; সরাসরি open/refresh করা যায় |
 | `/dashboard` | Protected dashboard; বৈধ session না থাকলে `/signin`-এ ফেরত পাঠায় |
