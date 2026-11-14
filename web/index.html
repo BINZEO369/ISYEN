@@ -19,8 +19,8 @@
   .auth-box { background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 400px; }
   .auth-box h2 { margin-bottom: 20px; text-align: center; }
   .auth-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
-  .auth-box button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin-bottom: 10px;}
-  .auth-box .toggle-auth { text-align: center; font-size: 13px; color: var(--primary); cursor: pointer; margin-top: 10px; }
+  .auth-box button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
+  .auth-box .toggle-auth { text-align: center; font-size: 13px; color: var(--primary); cursor: pointer; margin-top: 15px; }
 
   /* Main App */
   #main-app { display: none; }
@@ -33,7 +33,7 @@
   .add-btn { padding: 8px 16px; background: var(--primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-  .card { background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 16px; }
+  .card { background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
   .card.pending { border: 1px solid var(--warning); background-color: #fffbeb; }
 
   .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -50,6 +50,10 @@
   .btn-approve { background: var(--success); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
   .icon-btn { background: #fff; border: 1px solid var(--border); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
   .icon-btn:hover { background: #fee2e2; color: var(--danger); }
+
+  .sensor-data { display: flex; gap: 15px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-top: 5px;}
+  .sensor-val { font-size: 20px; font-weight: 700; color: var(--text-main); }
+  .sensor-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
 
   .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
   .modal.active { display: flex; }
@@ -91,7 +95,7 @@
 
   <!-- Gateways Section -->
   <div class="section-title">
-    <span>My Gateways (Main ESP32)</span>
+    <span>Gateways (Main ESP32)</span>
     <button class="add-btn" onclick="openGatewayModal()">+ Add Gateway</button>
   </div>
   <div id="gatewayGrid" class="grid"></div>
@@ -104,16 +108,23 @@
 
   <!-- Approved Nodes Section -->
   <div class="section-title">
-    <span>My Sub Nodes</span>
+    <span>Sub Nodes</span>
   </div>
   <div id="nodeGrid" class="grid"></div>
 
   <!-- Lights Section -->
   <div class="section-title">
-    <span>Lights</span>
+    <span>Lights & Devices</span>
     <button class="add-btn" onclick="openLightModal()">+ Add Light</button>
   </div>
   <div id="lightGrid" class="grid"></div>
+
+  <!-- Sensors Section -->
+  <div class="section-title">
+    <span>Sensors</span>
+    <button class="add-btn" onclick="openSensorModal()">+ Add Sensor</button>
+  </div>
+  <div id="sensorGrid" class="grid"></div>
 </div>
 
 <!-- Modals -->
@@ -122,7 +133,7 @@
     <h2>Add New Gateway</h2>
     <label>Gateway Name</label>
     <input type="text" id="gatewayName" placeholder="e.g. Home Main Board" />
-    <p style="font-size:12px; color:var(--text-muted);">Clicking Save will generate a Claim Code. You must enter this code in your ESP32 setup portal.</p>
+    <p style="font-size:12px; color:var(--text-muted);">Clicking Save will generate a Claim Code. Enter this code in your ESP32 setup portal.</p>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('gatewayModal')">Cancel</button>
       <button class="btn-primary" onclick="saveGateway()">Generate Code</button>
@@ -136,7 +147,7 @@
     <label>Light Name</label>
     <input type="text" id="lightName" placeholder="e.g. Bedroom Light" />
     <label>Select Gateway</label>
-    <select id="lightGateway" onchange="updateNodeDropdown()"></select>
+    <select id="lightGateway" onchange="updateLightNodeDropdown()"></select>
     <label>Select Node</label>
     <select id="lightNode"></select>
     <label>GPIO Pin</label>
@@ -144,6 +155,31 @@
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('lightModal')">Cancel</button>
       <button class="btn-primary" onclick="saveLight()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="sensorModal" class="modal">
+  <div class="modal-content">
+    <h2>Add Sensor</h2>
+    <label>Sensor Name</label>
+    <input type="text" id="sensorName" placeholder="e.g. Room Temp" />
+    <label>Sensor Type</label>
+    <select id="sensorType">
+      <option value="DHT11">DHT11 (Temp + Humidity)</option>
+      <option value="DHT22">DHT22 (Temp + Humidity)</option>
+      <option value="MQ2">MQ2 (Gas)</option>
+      <option value="MQ135">MQ135 (Air Quality)</option>
+    </select>
+    <label>Select Gateway</label>
+    <select id="sensorGateway" onchange="updateSensorNodeDropdown()"></select>
+    <label>Select Node</label>
+    <select id="sensorNode"></select>
+    <label>GPIO Pin</label>
+    <select id="sensorPin"></select>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('sensorModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveSensor()">Save</button>
     </div>
   </div>
 </div>
@@ -160,33 +196,22 @@ let currentUser = null;
 let isSignUp = false;
 let allGateways = [];
 let allNodes = [];
-let allLights = [];
+let allDevices = [];
+let allSensors = [];
+let allReadings = {};
 
-// ================= 1. AUTHENTICATION LOGIC =================
+// ================= 1. AUTHENTICATION =================
 document.addEventListener("DOMContentLoaded", async () => {
-  // Populate Pins
   SAFE_PINS.forEach(p => {
     document.getElementById("lightPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`;
+    document.getElementById("sensorPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`;
   });
 
-  // Check active session
   const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    currentUser = session.user;
-    showDashboard();
-  } else {
-    showAuth();
-  }
+  if (session) { currentUser = session.user; showDashboard(); } else { showAuth(); }
 
-  // Listen to Auth Changes
   sb.auth.onAuthStateChange((event, session) => {
-    if (session) {
-      currentUser = session.user;
-      showDashboard();
-    } else {
-      currentUser = null;
-      showAuth();
-    }
+    if (session) { currentUser = session.user; showDashboard(); } else { currentUser = null; showAuth(); }
   });
 });
 
@@ -200,9 +225,7 @@ function toggleAuthMode() {
 async function handleAuth() {
   const email = document.getElementById("auth-email").value;
   const password = document.getElementById("auth-password").value;
-  
-  if(!email || !password) return showToast("Please enter email and password", true);
-
+  if(!email || !password) return showToast("Enter email and password", true);
   let error;
   if (isSignUp) {
     const res = await sb.auth.signUp({ email, password });
@@ -212,83 +235,62 @@ async function handleAuth() {
     const res = await sb.auth.signInWithPassword({ email, password });
     error = res.error;
   }
-
   if (error) showToast(error.message, true);
 }
 
-async function handleLogout() {
-  await sb.auth.signOut();
+async function handleLogout() { await sb.auth.signOut(); }
+function showAuth() { document.getElementById("auth-screen").style.display = "flex"; document.getElementById("main-app").style.display = "none"; }
+function showDashboard() { 
+  document.getElementById("auth-screen").style.display = "none"; 
+  document.getElementById("main-app").style.display = "block"; 
+  document.getElementById("user-email").textContent = currentUser.email; 
+  loadAllData(); 
+  subscribeRealtime(); 
 }
 
-function showAuth() {
-  document.getElementById("auth-screen").style.display = "flex";
-  document.getElementById("main-app").style.display = "none";
-}
-
-function showDashboard() {
-  document.getElementById("auth-screen").style.display = "none";
-  document.getElementById("main-app").style.display = "block";
-  document.getElementById("user-email").textContent = currentUser.email;
-  
-  loadAllData();
-  subscribeRealtime();
-}
-
-// ================= 2. DATA LOADING LOGIC =================
+// ================= 2. LOAD & RENDER =================
 async function loadAllData() {
   if(!currentUser) return;
 
-  // Fetch Gateways (RLS ensures only user's gateways)
   const { data: gws } = await sb.from("gateways").select("*").order("created_at");
   allGateways = gws || [];
   renderGateways();
 
-  // Fetch Nodes
   const { data: nds } = await sb.from("nodes").select("*").order("id");
   allNodes = nds || [];
   renderNodes();
 
-  // Fetch Lights
-  const { data: lts } = await sb.from("devices").select("*, device_states(is_on)").order("id");
-  allLights = (lts || []).map(d => ({
-    id: d.id, name: d.device_name, pin: d.pin, gateway_id: d.gateway_id, node_id: d.node_id,
+  const { data: devs } = await sb.from("devices").select("*, device_states(is_on)").order("id");
+  allDevices = (devs || []).map(d => ({
+    ...d,
     isOn: Array.isArray(d.device_states) ? (d.device_states[0]?.is_on || false) : (d.device_states?.is_on || false)
   }));
-  renderLights();
+  renderDevices();
+
+  const { data: sens } = await sb.from("sensors").select("*").order("id");
+  allSensors = sens || [];
+  await loadSensorReadings();
+  renderSensors();
 }
 
-// ================= 3. GATEWAYS =================
+// --- Gateways ---
 function openGatewayModal() { document.getElementById("gatewayModal").classList.add("active"); }
-
 async function saveGateway() {
   const name = document.getElementById("gatewayName").value.trim();
   if (!name) return showToast("Enter gateway name", true);
-  
-  // Generate a random 6-digit claim code
   const claimCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-
-  const { error } = await sb.from("gateways").insert({ 
-    user_id: currentUser.id,
-    gateway_name: name,
-    claim_code: claimCode
-  });
-
+  const { error } = await sb.from("gateways").insert({ user_id: currentUser.id, gateway_name: name, claim_code: claimCode });
   if (error) showToast(error.message, true);
-  else { showToast("Gateway created! Check Claim Code."); closeModal("gatewayModal"); loadAllData(); }
+  else { showToast("Gateway created!"); closeModal("gatewayModal"); loadAllData(); }
 }
-
 function renderGateways() {
-  if (allGateways.length === 0) {
-    document.getElementById("gatewayGrid").innerHTML = `<div class="empty-text">No gateways added yet.</div>`;
-    return;
-  }
-
+  if (allGateways.length === 0) return document.getElementById("gatewayGrid").innerHTML = `<div class="empty-text">No gateways added.</div>`;
   document.getElementById("gatewayGrid").innerHTML = allGateways.map(g => `
     <div class="card">
       <div class="card-header">
         <div>
           <div class="name">${g.gateway_name}</div>
-          <span class="badge">MAC: ${g.mac_address || 'Waiting for connection...'}</span>
+          <span class="badge">MAC: ${g.mac_address || 'Waiting...'}</span>
         </div>
         ${g.mac_address ? '<span class="badge" style="color:var(--success)">Online</span>' : `<span class="badge code-badge">Code: ${g.claim_code}</span>`}
       </div>
@@ -296,109 +298,76 @@ function renderGateways() {
   `).join("");
 }
 
-// ================= 4. NODES =================
+// --- Nodes ---
 function renderNodes() {
-  const approvedNodes = allNodes.filter(n => n.is_approved);
-  const pendingNodes = allNodes.filter(n => !n.is_approved);
-
+  const approved = allNodes.filter(n => n.is_approved);
+  const pending = allNodes.filter(n => !n.is_approved);
   const pendingSection = document.getElementById("pendingSection");
-  const pendingGrid = document.getElementById("pendingGrid");
 
-  if (pendingNodes.length > 0) {
+  if (pending.length > 0) {
     pendingSection.style.display = "flex";
-    pendingGrid.innerHTML = pendingNodes.map(n => `
+    document.getElementById("pendingGrid").innerHTML = pending.map(n => `
       <div class="card pending">
         <div class="card-header">
-          <div>
-            <div class="name">New Node Found!</div>
-            <span class="badge">MAC: ${n.mac_address}</span>
-          </div>
+          <div><div class="name">New Node Found!</div><span class="badge">MAC: ${n.mac_address}</span></div>
         </div>
-        <div class="actions">
-          <button class="btn-approve" onclick="approveNode(${n.id})">Approve</button>
-        </div>
+        <div class="actions"><button class="btn-approve" onclick="approveNode(${n.id})">Approve</button></div>
       </div>
     `).join("");
-  } else {
-    pendingSection.style.display = "none";
-  }
+  } else { pendingSection.style.display = "none"; }
 
-  if(approvedNodes.length === 0) {
-    document.getElementById("nodeGrid").innerHTML = `<div class="empty-text">No sub nodes approved yet.</div>`;
-    return;
-  }
-
-  document.getElementById("nodeGrid").innerHTML = approvedNodes.map(n => {
+  if(approved.length === 0) return document.getElementById("nodeGrid").innerHTML = `<div class="empty-text">No sub nodes approved.</div>`;
+  document.getElementById("nodeGrid").innerHTML = approved.map(n => {
     const gw = allGateways.find(g => g.id === n.gateway_id);
     return `
     <div class="card">
       <div class="card-header">
         <div>
           <div class="name">${n.node_name}</div>
-          <span class="badge">${gw ? gw.gateway_name : 'Unknown GW'}</span>
+          <span class="badge">${gw ? gw.gateway_name : 'Unknown'}</span>
           <span class="badge">MAC: ${n.mac_address}</span>
         </div>
         <button class="icon-btn" onclick="deleteNode(${n.id})">Delete</button>
       </div>
-    </div>
-  `}).join("");
+    </div>`;
+  }).join("");
 }
-
 async function approveNode(id) {
   const name = prompt("Enter a name for this node:", "Room Node");
   if (!name) return;
-  const { error } = await sb.from("nodes").update({ node_name: name, is_approved: true }).eq("id", id);
-  if (error) showToast(error.message, true);
-  else { showToast("Node approved!"); loadAllData(); }
+  await sb.from("nodes").update({ node_name: name, is_approved: true }).eq("id", id);
+  showToast("Node approved!"); loadAllData();
 }
-
 async function deleteNode(id) {
   if (!confirm("Delete this node?")) return;
-  await sb.from("nodes").delete().eq("id", id);
-  loadAllData();
+  await sb.from("nodes").delete().eq("id", id); loadAllData();
 }
 
-// ================= 5. LIGHTS =================
+// --- Devices (Lights) ---
 function openLightModal() {
   if (allGateways.length === 0) return showToast("Please add a gateway first!", true);
-  
-  let gwOptions = allGateways.map(g => `<option value="${g.id}">${g.gateway_name}</option>`).join('');
-  document.getElementById("lightGateway").innerHTML = gwOptions;
-  updateNodeDropdown(); // Populate node dropdown based on first gateway
-  
+  document.getElementById("lightGateway").innerHTML = allGateways.map(g => `<option value="${g.id}">${g.gateway_name}</option>`).join('');
+  updateLightNodeDropdown();
   document.getElementById("lightModal").classList.add("active");
 }
-
-function updateNodeDropdown() {
+function updateLightNodeDropdown() {
   const gwId = parseInt(document.getElementById("lightGateway").value);
   const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
-  
-  let nodeOptions = `<option value="0">Main ESP32 (Gateway directly)</option>`;
-  gwNodes.forEach(n => {
-    nodeOptions += `<option value="${n.id}">${n.node_name}</option>`;
-  });
-  document.getElementById("lightNode").innerHTML = nodeOptions;
+  let opts = `<option value="0">Main ESP32 (Gateway)</option>`;
+  gwNodes.forEach(n => opts += `<option value="${n.id}">${n.node_name}</option>`);
+  document.getElementById("lightNode").innerHTML = opts;
 }
-
-function renderLights() {
-  if(allLights.length === 0) {
-    document.getElementById("lightGrid").innerHTML = `<div class="empty-text">No lights added yet.</div>`;
-    return;
-  }
-
-  document.getElementById("lightGrid").innerHTML = allLights.map(l => {
+function renderDevices() {
+  if(allDevices.length === 0) return document.getElementById("lightGrid").innerHTML = `<div class="empty-text">No lights added.</div>`;
+  document.getElementById("lightGrid").innerHTML = allDevices.map(l => {
     const gw = allGateways.find(g => g.id === l.gateway_id);
     let nodeName = "Main Board";
-    if (l.node_id > 0) {
-      const node = allNodes.find(n => n.id === l.node_id);
-      if (node) nodeName = node.node_name;
-    }
-
+    if (l.node_id > 0) { const nd = allNodes.find(n => n.id === l.node_id); if (nd) nodeName = nd.node_name; }
     return `
     <div class="card">
       <div class="card-header">
         <div>
-          <div class="name">${l.name}</div>
+          <div class="name">${l.device_name}</div>
           <span class="badge">${gw ? gw.gateway_name : 'Unknown'}</span>
           <span class="badge">${nodeName}</span>
           <span class="badge">GPIO ${l.pin}</span>
@@ -409,53 +378,117 @@ function renderLights() {
         <button class="toggle ${l.isOn ? 'on' : ''}" onclick="toggleLight(${l.id})"></button>
         <button class="icon-btn" onclick="deleteLight(${l.id})">Delete</button>
       </div>
-    </div>
-  `}).join("");
+    </div>`;
+  }).join("");
 }
-
 async function toggleLight(id) {
-  const l = allLights.find(x => x.id === id);
-  const newState = !l.isOn;
-  l.isOn = newState;
-  renderLights(); // Optimistic UI update
+  const l = allDevices.find(x => x.id === id);
+  const newState = !l.isOn; l.isOn = newState; renderDevices();
   await sb.from("device_states").update({ is_on: newState }).eq("device_id", id);
 }
-
 async function saveLight() {
   const name = document.getElementById("lightName").value.trim();
-  const gateway_id = parseInt(document.getElementById("lightGateway").value);
-  const node_id = parseInt(document.getElementById("lightNode").value);
+  const gwId = parseInt(document.getElementById("lightGateway").value);
+  const nodeId = parseInt(document.getElementById("lightNode").value);
   const pin = parseInt(document.getElementById("lightPin").value);
-  
   if (!name) return showToast("Enter light name", true);
-  
-  const { error } = await sb.from("devices").insert({ 
-    gateway_id, node_id, device_name: name, pin 
-  });
-  
-  if (error) showToast(error.message, true);
-  else { showToast("Light added"); closeModal("lightModal"); loadAllData(); }
+  await sb.from("devices").insert({ gateway_id: gwId, node_id: nodeId, device_name: name, pin: pin });
+  showToast("Light added"); closeModal("lightModal"); loadAllData();
 }
-
 async function deleteLight(id) {
   if (!confirm("Delete this light?")) return;
-  await sb.from("devices").delete().eq("id", id);
-  loadAllData();
+  await sb.from("devices").delete().eq("id", id); loadAllData();
 }
 
-function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+// --- Sensors ---
+function openSensorModal() {
+  if (allGateways.length === 0) return showToast("Please add a gateway first!", true);
+  document.getElementById("sensorGateway").innerHTML = allGateways.map(g => `<option value="${g.id}">${g.gateway_name}</option>`).join('');
+  updateSensorNodeDropdown();
+  document.getElementById("sensorModal").classList.add("active");
+}
+function updateSensorNodeDropdown() {
+  const gwId = parseInt(document.getElementById("sensorGateway").value);
+  const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
+  let opts = `<option value="0">Main ESP32 (Gateway)</option>`;
+  gwNodes.forEach(n => opts += `<option value="${n.id}">${n.node_name}</option>`);
+  document.getElementById("sensorNode").innerHTML = opts;
+}
+async function loadSensorReadings() {
+  for (let s of allSensors) {
+    const { data } = await sb.from("sensor_readings").select("temperature, humidity, gas_value").eq("sensor_id", s.id).order("created_at", { ascending: false }).limit(1);
+    if (data && data.length > 0) allReadings[s.id] = data[0];
+  }
+}
+function renderSensors() {
+  if(allSensors.length === 0) return document.getElementById("sensorGrid").innerHTML = `<div class="empty-text">No sensors added.</div>`;
+  document.getElementById("sensorGrid").innerHTML = allSensors.map(s => {
+    const gw = allGateways.find(g => g.id === s.gateway_id);
+    let nodeName = "Main Board";
+    if (s.node_id > 0) { const nd = allNodes.find(n => n.id === s.node_id); if (nd) nodeName = nd.node_name; }
+    
+    // লেটেস্ট ভ্যালু বের করা (JSONB array থেকে)
+    let latestTemp = '--', latestHum = '--', latestGas = '--';
+    if (allReadings[s.id]) {
+      const r = allReadings[s.id];
+      const getLatest = (arr) => Array.isArray(arr) ? (arr.length > 0 ? arr[arr.length-1] : null) : arr;
+      if (r.temperature) { const t = getLatest(r.temperature); if (t !== null) latestTemp = Number(t).toFixed(1); }
+      if (r.humidity) { const h = getLatest(r.humidity); if (h !== null) latestHum = Number(h).toFixed(1); }
+      if (r.gas_value) { const g = getLatest(r.gas_value); if (g !== null) latestGas = Number(g).toFixed(0); }
+    }
 
-// ================= 6. REALTIME & UTILS =================
+    const isMQ = s.sensor_type.startsWith("MQ");
+    let dataHtml = isMQ 
+      ? `<div class="sensor-data"><div><div class="sensor-val">${latestGas}</div><div class="sensor-lbl">Gas Value</div></div></div>`
+      : `<div class="sensor-data">
+           <div><div class="sensor-val">${latestTemp}°C</div><div class="sensor-lbl">Temp</div></div>
+           <div><div class="sensor-val">${latestHum}%</div><div class="sensor-lbl">Humidity</div></div>
+         </div>`;
+
+    return `
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="name">${s.sensor_name}</div>
+          <span class="badge">${gw ? gw.gateway_name : 'Unknown'}</span>
+          <span class="badge">${nodeName}</span>
+          <span class="badge">GPIO ${s.pin}</span>
+          <span class="badge">${s.sensor_type}</span>
+        </div>
+        <button class="icon-btn" onclick="deleteSensor(${s.id})">Delete</button>
+      </div>
+      ${dataHtml}
+    </div>`;
+  }).join("");
+}
+async function saveSensor() {
+  const name = document.getElementById("sensorName").value.trim();
+  const type = document.getElementById("sensorType").value;
+  const gwId = parseInt(document.getElementById("sensorGateway").value);
+  const nodeId = parseInt(document.getElementById("sensorNode").value);
+  const pin = parseInt(document.getElementById("sensorPin").value);
+  if (!name) return showToast("Enter sensor name", true);
+  await sb.from("sensors").insert({ gateway_id: gwId, node_id: nodeId, sensor_name: name, pin: pin, sensor_type: type });
+  showToast("Sensor added"); closeModal("sensorModal"); loadAllData();
+}
+async function deleteSensor(id) {
+  if (!confirm("Delete this sensor?")) return;
+  await sb.from("sensors").delete().eq("id", id); loadAllData();
+}
+
+// ================= 3. REALTIME & UTILS =================
 function subscribeRealtime() {
-  // We listen to all relevant tables. RLS ensures we only get events for our own data.
   sb.channel("dashboard-realtime")
     .on("postgres_changes", { event: "*", schema: "public", table: "gateways" }, loadAllData)
     .on("postgres_changes", { event: "*", schema: "public", table: "nodes" }, loadAllData)
     .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, loadAllData)
     .on("postgres_changes", { event: "*", schema: "public", table: "device_states" }, loadAllData)
+    .on("postgres_changes", { event: "*", schema: "public", table: "sensors" }, loadAllData)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "sensor_readings" }, loadAllData)
     .subscribe();
 }
 
+function closeModal(id) { document.getElementById(id).classList.remove("active"); }
 function showToast(msg, isError = false) {
   const t = document.getElementById("toast");
   t.textContent = msg;
