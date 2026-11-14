@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart Home Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #f8fafc; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
+    --border: #e2e8f0; --primary: #000000; --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; padding: 40px 20px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  
+  #auth-screen { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+  .auth-box { background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 400px; }
+  .auth-box h2 { margin-bottom: 20px; text-align: center; }
+  .auth-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+  .auth-box button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
+  .auth-box .toggle-auth { text-align: center; font-size: 13px; color: var(--primary); cursor: pointer; margin-top: 15px; }
+
+  #main-app { display: none; }
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  h1 { font-size: 22px; font-weight: 600; }
+  .user-info { display: flex; align-items: center; gap: 15px; font-size: 13px; }
+  .logout-btn { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+
+  .section-title { font-size: 16px; font-weight: 600; margin: 32px 0 16px; display: flex; justify-content: space-between; align-items: center; }
+  .add-btn { padding: 8px 16px; background: var(--primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .card { background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
+  .card.pending { border: 1px solid var(--warning); background-color: #fffbeb; }
+
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .name { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--border); display: inline-block; margin-right: 4px; margin-top: 4px;}
+  .code-badge { background: #dbeafe; color: #1e40af; font-weight: bold; font-size: 14px; letter-spacing: 1px; }
+  
+  .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+  .toggle { width: 44px; height: 24px; border-radius: 12px; background: #e2e8f0; cursor: pointer; border: none; position: relative; transition: 0.2s; }
+  .toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: 0.2s; }
+  .toggle.on { background: var(--primary); }
+  .toggle.on::after { transform: translateX(20px); }
+  
+  .btn-approve { background: var(--success); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+  .icon-btn { background: #fff; border: 1px solid var(--border); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .icon-btn:hover { background: #fee2e2; color: var(--danger); }
+
+  .sensor-data { display: flex; gap: 15px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-top: 5px;}
+  .sensor-val { font-size: 20px; font-weight: 700; color: var(--text-main); }
+  .sensor-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
+  .motion-active { animation: pulse 1.5s infinite; }
+  .door-open-active { animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .modal.active { display: flex; }
+  .modal-content { background: var(--card-bg); border-radius: 12px; padding: 24px; max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 16px; max-height: 90vh; overflow-y: auto;}
+  .modal-content h2 { font-size: 18px; font-weight: 600; }
+  .modal-content label { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: -8px; }
+  .modal-content input, .modal-content select { padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); width: 100%; font-size: 14px; }
+  .modal-content select option:disabled { color: #cbd5e1; }
+  .modal-actions { display: flex; gap: 12px; margin-top: 8px; }
+  .btn-primary { background: var(--primary); color: #fff; border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; }
+  .btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
+  .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; }
+  .warning-text { font-size: 12px; color: var(--danger); padding: 8px 10px; background: #fef2f2; border-radius: 6px; border: 1px solid #fecaca; display: none; }
+  .info-text { font-size: 12px; color: var(--text-muted); padding: 8px 10px; background: #eff6ff; border-radius: 6px; border: 1px solid #bfdbfe; margin-top: 4px; }
+
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-main); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transition: 0.3s; z-index: 200; pointer-events: none; max-width: 320px; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .empty-text { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <h2 id="auth-title">Login</h2>
+    <input type="email" id="auth-email" placeholder="Email Address" required />
+    <input type="password" id="auth-password" placeholder="Password" required />
+    <button onclick="handleAuth()" id="auth-btn">Login</button>
+    <div class="toggle-auth" onclick="toggleAuthMode()">Don't have an account? Sign Up</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app" class="container">
+  <header>
+    <h1>Smart Home</h1>
+    <div class="user-info">
+      <span id="user-email"></span>
+      <button class="logout-btn" onclick="handleLogout()">Log Out</button>
+    </div>
+  </header>
+
+  <div class="section-title">
+    <span>Gateways</span>
+    <button class="add-btn" onclick="openGatewayModal()">+ Add Gateway</button>
+  </div>
+  <div id="gatewayGrid" class="grid"></div>
+
+  <div class="section-title" id="pendingSection" style="display: none;">
+    <span>New Devices Found (Pending)</span>
+  </div>
+  <div id="pendingGrid" class="grid"></div>
+
+  <div class="section-title">
+    <span>Sub Nodes</span>
+  </div>
+  <div id="nodeGrid" class="grid"></div>
+
+  <div class="section-title">
+    <span>Lights & Devices</span>
+    <button class="add-btn" onclick="openLightModal()">+ Add Light</button>
+  </div>
+  <div id="lightGrid" class="grid"></div>
+
+  <div class="section-title">
+    <span>Sensors</span>
+    <button class="add-btn" onclick="openSensorModal()">+ Add Sensor</button>
+  </div>
+  <div id="sensorGrid" class="grid"></div>
+</div>
+
+<!-- MODALS -->
+<div id="gatewayModal" class="modal">
+  <div class="modal-content">
+    <h2>Add New Gateway</h2>
+    <label>Gateway Name</label>
+    <input type="text" id="gatewayName" placeholder="e.g. Home Main Board" />
+    <p style="font-size:12px; color:var(--text-muted);">Clicking Save will generate a Claim Code. Enter this code in your ESP32 setup portal.</p>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('gatewayModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveGateway()">Generate Code</button>
+    </div>
+  </div>
+</div>
+
+<div id="lightModal" class="modal">
+  <div class="modal-content">
+    <h2>Add Light</h2>
+    <label>Light Name</label>
+    <input type="text" id="lightName" placeholder="e.g. Bedroom Light" />
+    <label>Select Gateway</label>
+    <select id="lightGateway" onchange="updateLightNodeDropdown()"></select>
+    <label>Select Node</label>
+    <select id="lightNode"></select>
+    <label>GPIO Pin</label>
+    <select id="lightPin"></select>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('lightModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveLight()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="sensorModal" class="modal">
+  <div class="modal-content">
+    <h2>Add Sensor</h2>
+    <label>Sensor Name</label>
+    <input type="text" id="sensorName" placeholder="e.g. Room Temp" />
+    <label>Sensor Type</label>
+    <select id="sensorType" onchange="onSensorTypeChange()">
+      <option value="DHT11">DHT11 (Temp + Humidity)</option>
+      <option value="DHT22">DHT22 (Temp + Humidity)</option>
+      <option value="MQ2">MQ2 (Gas)</option>
+      <option value="MQ135">MQ135 (Air Quality)</option>
+      <option value="PIR">PIR (Motion) — Sub Node only</option>
+      <option value="REED">REED (Door/Window) — Sub Node only</option>
+    </select>
+    <div id="pirTriggerGroup" style="display: none; margin-top: 4px;">
+      <label>Motion Trigger (HIGH/LOW)</label>
+      <select id="pirTriggerState">
+        <option value="HIGH">HIGH — motion হলে pin HIGH (default)</option>
+        <option value="LOW">LOW — motion হলে pin LOW</option>
+      </select>
+      <div class="info-text">HC-SR501 মডিউলের জন্য HIGH রাখুন</div>
+    </div>
+    <div id="reedTriggerGroup" style="display: none; margin-top: 4px;">
+      <label>Open Detection (HIGH/LOW)</label>
+      <select id="reedTriggerState">
+        <option value="HIGH">HIGH — দরজা খোলা হলে pin HIGH (default, NO reed)</option>
+        <option value="LOW">LOW — দরজা খোলা হলে pin LOW (NC reed)</option>
+      </select>
+      <div class="info-text">সাধারণ NO reed + internal pull-up-এ HIGH রাখুন</div>
+    </div>
+    <div id="pirWarning" class="warning-text">⚠️ PIR/REED sensor must be on a Sub Node, not the Main Gateway.</div>
+    <label>Select Gateway</label>
+    <select id="sensorGateway" onchange="updateSensorNodeDropdown()"></select>
+    <label>Select Node</label>
+    <select id="sensorNode" onchange="onSensorNodeChange()"></select>
+    <label>GPIO Pin</label>
+    <select id="sensorPin"></select>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('sensorModal')">Cancel</button>
+      <button class="btn-primary" id="sensorSaveBtn" onclick="saveSensor()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const SUPABASE_URL = "https://fabasazefdnkpygglajz.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhYmFzYXplZmRua3B5Z2dsYWp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQzNjUyMjksImV4cCI6MjEwOTk0MTIyOX0.MgUDDJ79RekwPDhc6LB0pIyM2jxyncSnnmiKwaqxo6U";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const DEVICE_PINS = [4, 5, 13, 14, 16, 17, 18, 21, 22, 23, 25, 33];
+const SENSOR_PINS = [4, 5, 13, 14, 15, 16, 17, 18, 21, 22, 23, 25, 33, 34, 35, 36, 39];
+
+let currentUser = null;
+let isSignUp = false;
+let allGateways = [];
+let allNodes = [];
+let allDevices = [];
+let allSensors = [];
+let allReadings = {};
+let rtChannel = null;
+let dashboardInitialized = false;
+let toastTimer = null;
+let reloadTimer = null;
+let pirPollTimer = null;
+let sensorPollTimer = null;
+
+// ================= AUTH =================
+document.addEventListener("DOMContentLoaded", async () => {
+  DEVICE_PINS.forEach(p => {
+    document.getElementById("lightPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`;
+  });
+  SENSOR_PINS.forEach(p => {
+    document.getElementById("sensorPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`;
+  });
+
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) { currentUser = session.user; showDashboard(); } else { showAuth(); }
+
+  sb.auth.onAuthStateChange((event, session) => {
+    if (session) { currentUser = session.user; showDashboard(); }
+    else { currentUser = null; dashboardInitialized = false; showAuth(); }
+  });
+});
+
+function toggleAuthMode() {
+  isSignUp = !isSignUp;
+  document.getElementById("auth-title").textContent = isSignUp ? "Sign Up" : "Login";
+  document.getElementById("auth-btn").textContent = isSignUp ? "Create Account" : "Login";
+  document.querySelector(".toggle-auth").textContent = isSignUp ? "Already have an account? Login" : "Don't have an account? Sign Up";
+}
+
+async function handleAuth() {
+  const email = document.getElementById("auth-email").value.trim();
+  const password = document.getElementById("auth-password").value;
+  if (!email || !password) return showToast("Enter email and password", true);
+  
+  if (isSignUp) {
+    const res = await sb.auth.signUp({ email, password });
+    if (res.error) return showToast(res.error.message, true);
+    if (!res.data.session) {
+      showToast("Account created! Check email to confirm.");
+      document.getElementById("auth-email").value = "";
+      document.getElementById("auth-password").value = "";
+      toggleAuthMode();
+      return;
+    }
+  } else {
+    const res = await sb.auth.signInWithPassword({ email, password });
+    if (res.error) showToast(res.error.message, true);
+  }
+}
+
+async function handleLogout() {
+  if (rtChannel) { await sb.removeChannel(rtChannel); rtChannel = null; }
+  if (pirPollTimer) { clearInterval(pirPollTimer); pirPollTimer = null; }
+  if (sensorPollTimer) { clearInterval(sensorPollTimer); sensorPollTimer = null; }
+  dashboardInitialized = false;
+  await sb.auth.signOut();
+}
+
+function showAuth() {
+  document.getElementById("auth-screen").style.display = "flex";
+  document.getElementById("main-app").style.display = "none";
+}
+
+function showDashboard() {
+  if (dashboardInitialized && currentUser) return;
+  dashboardInitialized = true;
+  document.getElementById("auth-screen").style.display = "none";
+  document.getElementById("main-app").style.display = "block";
+  document.getElementById("user-email").textContent = currentUser.email;
+  
+  loadAllData();
+  subscribeRealtime();
+  
+  // DHT + MQ — 20s polling
+  sensorPollTimer = setInterval(async () => {
+    if (!currentUser) return;
+    const nonFast = allSensors.filter(s => s.sensor_type !== 'PIR' && s.sensor_type !== 'REED');
+    if (nonFast.length === 0) return;
+    const results = await Promise.all(nonFast.map(s =>
+      sb.from("sensor_readings")
+        .select("temperature, humidity, gas_value, motion, door_state, created_at")
+        .eq("sensor_id", s.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .then(r => ({ id: s.id, row: r.data?.[0] }))
+    ));
+    results.forEach(({id, row}) => { if (row) allReadings[id] = row; });
+    renderSensors();
+  }, 20000);
+
+  // PIR + REED — 3s fast polling
+  pirPollTimer = setInterval(async () => {
+    if (!currentUser) return;
+    const fast = allSensors.filter(s => s.sensor_type === 'PIR' || s.sensor_type === 'REED');
+    if (fast.length === 0) return;
+    const results = await Promise.all(fast.map(s =>
+      sb.from("sensor_readings")
+        .select("temperature, humidity, gas_value, motion, door_state, created_at")
+        .eq("sensor_id", s.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .then(r => ({ id: s.id, row: r.data?.[0] }))
+    ));
+    results.forEach(({id, row}) => { if (row) allReadings[id] = row; });
+    renderSensors();
+  }, 3000);
+}
+
+// ================= LOAD & RENDER =================
+async function loadAllData() {
+  if (!currentUser) return;
+
+  const [gwRes, ndsRes, devsRes, sensRes] = await Promise.all([
+    sb.from("gateways").select("*").order("created_at"),
+    sb.from("nodes").select("*").order("id"),
+    sb.from("devices").select("*, device_states(is_on)").order("id"),
+    sb.from("sensors").select("*").order("id")
+  ]);
+
+  allGateways = gwRes.data || [];
+  allNodes = ndsRes.data || [];
+  allDevices = (devsRes.data || []).map(d => ({
+    ...d,
+    isOn: Array.isArray(d.device_states) ? (d.device_states[0]?.is_on || false) : (d.device_states?.is_on || false)
+  }));
+  allSensors = sensRes.data || [];
+
+  renderGateways();
+  renderNodes();
+  renderDevices();
+  await loadSensorReadings();
+  renderSensors();
+}
+
+function formatTime(iso) {
+  if (!iso) return "—";
+  let diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 0) diff = 0;
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
+}
+
+function isGatewayOnline(g) {
+  if (!g.last_seen) return false;
+  return (Date.now() - new Date(g.last_seen).getTime()) < 90000;
+}
+
+// ---- Gateways ----
+function openGatewayModal() {
+  document.getElementById("gatewayName").value = "";
+  document.getElementById("gatewayModal").classList.add("active");
+}
+
+async function saveGateway() {
+  const name = document.getElementById("gatewayName").value.trim();
+  if (!name) return showToast("Enter gateway name", true);
+  
+  const buf = new Uint8Array(4);
+  crypto.getRandomValues(buf);
+  const claimCode = Array.from(buf).map(b => (b % 36).toString(36)).join('').toUpperCase();
+  
+  const { error } = await sb.from("gateways").insert({ user_id: currentUser.id, gateway_name: name, claim_code: claimCode });
+  if (error) return showToast(error.message, true);
+  showToast("Gateway created!");
+  closeModal("gatewayModal");
+  loadAllData();
+}
+
+function renderGateways() {
+  if (allGateways.length === 0) return document.getElementById("gatewayGrid").innerHTML = `<div class="empty-text">No gateways added.</div>`;
+  document.getElementById("gatewayGrid").innerHTML = allGateways.map(g => {
+    const online = isGatewayOnline(g);
+    let statusBadge = '';
+    if (g.mac_address) {
+      statusBadge = online 
+        ? '<span class="badge" style="color:var(--success)">● Online</span>'
+        : '<span class="badge" style="color:var(--danger)">● Offline</span>';
+    } else {
+      statusBadge = `<span class="badge code-badge">Code: ${g.claim_code || '—'}</span>`;
+    }
+    return `
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="name">${g.gateway_name}</div>
+            <span class="badge">MAC: ${g.mac_address || 'Waiting...'}</span>
+            ${g.last_seen ? `<span class="badge">Seen: ${formatTime(g.last_seen)}</span>` : ''}
+          </div>
+          ${statusBadge}
+        </div>
+      </div>`;
+  }).join("");
+}
+
+// ---- Nodes ----
+function renderNodes() {
+  const approved = allNodes.filter(n => n.is_approved);
+  const pending = allNodes.filter(n => !n.is_approved);
+  const pendingSection = document.getElementById("pendingSection");
+
+  if (pending.length > 0) {
+    pendingSection.style.display = "flex";
+    document.getElementById("pendingGrid").innerHTML = pending.map(n => `
+      <div class="card pending">
+        <div class="card-header">
+          <div><div class="name">New Node Found!</div><span class="badge">MAC: ${n.mac_address}</span></div>
+        </div>
+        <div class="actions"><button class="btn-approve" onclick="approveNode(${n.id})">Approve</button></div>
+      </div>
+    `).join("");
+  } else { pendingSection.style.display = "none"; }
+
+  if (approved.length === 0) return document.getElementById("nodeGrid").innerHTML = `<div class="empty-text">No sub nodes approved.</div>`;
+  document.getElementById("nodeGrid").innerHTML = approved.map(n => {
+    const gw = allGateways.find(g => g.id === n.gateway_id);
+    return `
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="name">${n.node_name}</div>
+          <span class="badge">${gw ? gw.gateway_name : 'Unknown'}</span>
+          <span class="badge">MAC: ${n.mac_address}</span>
+        </div>
+        <button class="icon-btn" onclick="deleteNode(${n.id})">Delete</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function approveNode(id) {
+  const name = prompt("Enter a name for this node:", "Room Node");
+  if (!name) return;
+  const { error } = await sb.from("nodes").update({ node_name: name, is_approved: true }).eq("id", id);
+  if (error) return showToast(error.message, true);
+  showToast("Node approved!");
+  loadAllData();
+}
+
+async function deleteNode(id) {
+  const node = allNodes.find(n => n.id === id);
+  const dCount = allDevices.filter(d => d.node_id === id).length;
+  const sCount = allSensors.filter(s => s.node_id === id).length;
+  const msg = `Delete "${node.node_name}"?\n\nWill also delete:\n• ${dCount} device(s)\n• ${sCount} sensor(s)\n\nThis cannot be undone.`;
+  if (!confirm(msg)) return;
+  const { error } = await sb.from("nodes").delete().eq("id", id);
+  if (error) return showToast(error.message, true);
+  showToast("Node deleted");
+  loadAllData();
+}
+
+// ---- Devices (Lights) ----
+function openLightModal() {
+  if (allGateways.length === 0) return showToast("Please add a gateway first!", true);
+  document.getElementById("lightName").value = "";
+  document.getElementById("lightGateway").innerHTML = allGateways.map(g => `<option value="${g.id}">${g.gateway_name}</option>`).join('');
+  updateLightNodeDropdown();
+  document.getElementById("lightModal").classList.add("active");
+}
+
+function updateLightNodeDropdown() {
+  const gwId = parseInt(document.getElementById("lightGateway").value);
+  const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
+  let opts = `<option value="0">Main ESP32 (Gateway)</option>`;
+  gwNodes.forEach(n => opts += `<option value="${n.id}">${n.node_name}</option>`);
+  document.getElementById("lightNode").innerHTML = opts;
+}
+
+function renderDevices() {
+  if (allDevices.length === 0) return document.getElementById("lightGrid").innerHTML = `<div class="empty-text">No lights added.</div>`;
+  document.getElementById("lightGrid").innerHTML = allDevices.map(l => {
+    const gw = allGateways.find(g => g.id === l.gateway_id);
+    let nodeName = "Main Board";
+    if (l.node_id > 0) { 
+      const nd = allNodes.find(n => n.id === l.node_id); 
+      nodeName = nd ? nd.node_name : "Unknown Node"; 
+    }
+    return `
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="name">${l.device_name}</div>
+          <span class="badge">${gw ? gw.gateway_name : 'Unknown'}</span>
+          <span class="badge">${nodeName}</span>
+          <span class="badge">GPIO ${l.pin}</span>
+        </div>
+        <span class="badge ${l.isOn ? 'code-badge' : ''}">${l.isOn ? 'ON' : 'OFF'}</span>
+      </div>
+      <div class="actions">
+        <button class="toggle ${l.isOn ? 'on' : ''}" onclick="toggleLight(${l.id})"></button>
+        <button class="icon-btn" onclick="deleteLight(${l.id})">Delete</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function toggleLight(id) {
+  const l = allDevices.find(x => x.id === id);
+  const oldState = l.isOn;
+  const newState = !oldState;
+  l.isOn = newState; renderDevices();
+  
+  const { error } = await sb.from("device_states")
+    .update({ is_on: newState, updated_at: new Date().toISOString() })
+    .eq("device_id", id);
+  
+  if (error) {
+    l.isOn = oldState; renderDevices();
+    showToast("Failed: " + error.message, true);
+  }
+}
+
+async function saveLight() {
+  const name = document.getElementById("lightName").value.trim();
+  const gwId = parseInt(document.getElementById("lightGateway").value);
+  const nodeId = parseInt(document.getElementById("lightNode").value);
+  const pin = parseInt(document.getElementById("lightPin").value);
+  if (!name) return showToast("Enter light name", true);
+  
+  const { error } = await sb.from("devices").insert({ gateway_id: gwId, node_id: nodeId, device_name: name, pin: pin });
+  if (error) return showToast(error.message, true);
+  showToast("Light added");
+  closeModal("lightModal");
+  loadAllData();
+}
+
+async function deleteLight(id) {
+  if (!confirm("Delete this light?")) return;
+  const { error } = await sb.from("devices").delete().eq("id", id);
+  if (error) return showToast(error.message, true);
+  showToast("Deleted");
+  loadAllData();
+}
+
+// ---- Sensors (DHT / MQ / PIR / REED) ----
+function openSensorModal() {
+  if (allGateways.length === 0) return showToast("Please add a gateway first!", true);
+  document.getElementById("sensorName").value = "";
+  document.getElementById("sensorType").value = "DHT11";
+  document.getElementById("pirTriggerState").value = "HIGH";
+  document.getElementById("reedTriggerState").value = "HIGH";
+  document.getElementById("sensorGateway").innerHTML = allGateways.map(g => `<option value="${g.id}">${g.gateway_name}</option>`).join('');
+  updateSensorNodeDropdown();
+  onSensorTypeChange();
+  document.getElementById("sensorModal").classList.add("active");
+}
+
+function updateSensorNodeDropdown() {
+  const gwId = parseInt(document.getElementById("sensorGateway").value);
+  const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
+  const type = document.getElementById("sensorType").value;
+  const isSubOnly = (type === 'PIR' || type === 'REED');
+  
+  let opts = `<option value="0" ${isSubOnly ? 'disabled' : ''}>Main ESP32 (Gateway)</option>`;
+  gwNodes.forEach(n => opts += `<option value="${n.id}">${n.node_name}</option>`);
+  document.getElementById("sensorNode").innerHTML = opts;
+  
+  if (isSubOnly) {
+    const nodeSelect = document.getElementById("sensorNode");
+    if (parseInt(nodeSelect.value) === 0 && gwNodes.length > 0) {
+      nodeSelect.value = gwNodes[0].id;
+    }
+  }
+}
+
+function onSensorTypeChange() {
+  const type = document.getElementById("sensorType").value;
+  const pirGroup = document.getElementById("pirTriggerGroup");
+  const reedGroup = document.getElementById("reedTriggerGroup");
+  const warningDiv = document.getElementById("pirWarning");
+  const saveBtn = document.getElementById("sensorSaveBtn");
+  const gwId = parseInt(document.getElementById("sensorGateway").value);
+  const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
+  
+  pirGroup.style.display = 'none';
+  reedGroup.style.display = 'none';
+  warningDiv.style.display = 'none';
+  saveBtn.disabled = false;
+  
+  if (type === 'PIR') {
+    pirGroup.style.display = 'block';
+    updateSensorNodeDropdown();
+    if (gwNodes.length === 0) {
+      warningDiv.textContent = "⚠️ PIR needs an approved Sub Node.";
+      warningDiv.style.display = 'block';
+      saveBtn.disabled = true;
+    }
+  } else if (type === 'REED') {
+    reedGroup.style.display = 'block';
+    updateSensorNodeDropdown();
+    if (gwNodes.length === 0) {
+      warningDiv.textContent = "⚠️ REED needs an approved Sub Node.";
+      warningDiv.style.display = 'block';
+      saveBtn.disabled = true;
+    }
+  } else {
+    updateSensorNodeDropdown();
+  }
+}
+
+function onSensorNodeChange() {
+  const type = document.getElementById("sensorType").value;
+  const nodeId = parseInt(document.getElementById("sensorNode").value);
+  const warningDiv = document.getElementById("pirWarning");
+  const saveBtn = document.getElementById("sensorSaveBtn");
+  
+  if ((type === 'PIR' || type === 'REED') && nodeId === 0) {
+    warningDiv.textContent = "⚠️ " + type + " sensor must be on a Sub Node.";
+    warningDiv.style.display = 'block';
+    saveBtn.disabled = true;
+  } else {
+    warningDiv.style.display = 'none';
+    saveBtn.disabled = false;
+  }
+}
+
+async function loadSensorReadings() {
+  if (allSensors.length === 0) { allReadings = {}; return; }
+  const results = await Promise.all(allSensors.map(s =>
+    sb.from("sensor_readings")
+      .select("temperature, humidity, gas_value, motion, door_state, created_at")
+      .eq("sensor_id", s.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .then(r => ({ id: s.id, row: r.data?.[0] }))
+  ));
+  allReadings = {};
+  results.forEach(({id, row}) => { if (row) allReadings[id] = row; });
+}
+
+function getLatest(arr) {
+  if (arr === null || arr === undefined) return null;
+  if (Array.isArray(arr)) return arr.length > 0 ? arr[arr.length - 1] : null;
+  return arr;
+}
+
+function renderSensors() {
+  if (allSensors.length === 0) return document.getElementById("sensorGrid").innerHTML = `<div class="empty-text">No sensors added.</div>`;
+  
+  document.getElementById("sensorGrid").innerHTML = allSensors.map(s => {
+    const gw = allGateways.find(g => g.id === s.gateway_id);
+    let nodeName = "Main Board";
+    if (s.node_id > 0) {
+      const nd = allNodes.find(n => n.id === s.node_id);
+      nodeName = nd ? nd.node_name : "Unknown Node";
+    }
+    
+    const r = allReadings[s.id];
+    let dataHtml = '';
+    let extraBadge = '';
+    
+    // PIR
+    if (s.sensor_type === 'PIR') {
+      const motionVal = r ? (getLatest(r.motion) !== null ? Number(getLatest(r.motion)) : null) : null;
+      const isMotion = motionVal === 1;
+      const statusColor = motionVal === null ? 'var(--text-muted)' : (isMotion ? 'var(--danger)' : 'var(--success)');
+      const statusIcon = motionVal === null ? '⚪' : (isMotion ? '🔴' : '🟢');
+      const statusText = motionVal === null ? 'NO DATA' : (isMotion ? 'MOTION' : 'CLEAR');
+      const pulseClass = isMotion ? 'motion-active' : '';
+      extraBadge = `<span class="badge">Trigger: ${s.pir_trigger_state || 'HIGH'}</span>`;
+      
+      dataHtml = `
+        <div class="sensor-data">
+          <div style="flex: 1;">
+            <div class="sensor-val ${pulseClass}" style="color: ${statusColor}">${statusIcon} ${statusText}</div>
+            <div class="sensor-lbl">Motion Status</div>
+          </div>
+          ${r ? `<div><div class="sensor-val" style="font-size:12px; color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Last Update</div></div>` : ''}
+        </div>`;
+    }
+    // REED
+    else if (s.sensor_type === 'REED') {
+      const doorVal = r ? (getLatest(r.door_state) !== null ? Number(getLatest(r.door_state)) : null) : null;
+      const isOpen = doorVal === 1;
+      const statusColor = doorVal === null ? 'var(--text-muted)' : (isOpen ? 'var(--warning)' : 'var(--success)');
+      const statusIcon = doorVal === null ? '⚪' : (isOpen ? '🚪' : '🔒');
+      const statusText = doorVal === null ? 'NO DATA' : (isOpen ? 'OPEN' : 'CLOSED');
+      const pulseClass = isOpen ? 'door-open-active' : '';
+      extraBadge = `<span class="badge">Open: ${s.pir_trigger_state || 'HIGH'}</span>`;
+      
+      dataHtml = `
+        <div class="sensor-data">
+          <div style="flex: 1;">
+            <div class="sensor-val ${pulseClass}" style="color: ${statusColor}">${statusIcon} ${statusText}</div>
+            <div class="sensor-lbl">Door / Window Status</div>
+          </div>
+          ${r ? `<div><div class="sensor-val" style="font-size:12px; color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Last Update</div></div>` : ''}
+        </div>`;
+    }
+    // MQ
+    else if (s.sensor_type.startsWith('MQ')) {
+      let gasVal = '--';
+      if (r && r.gas_value) {
+        const g = getLatest(r.gas_value);
+        if (g !== null) gasVal = Number(g).toFixed(0);
+      }
+      dataHtml = `
+        <div class="sensor-data">
+          <div>
+            <div class="sensor-val">${gasVal}</div>
+            <div class="sensor-lbl">Gas Value</div>
+          </div>
+        </div>`;
+    }
+    // DHT
+    else {
+      let temp = '--', hum = '--';
+      if (r) {
+        if (r.temperature) { const t = getLatest(r.temperature); if (t !== null) temp = Number(t).toFixed(1); }
+        if (r.humidity) { const h = getLatest(r.humidity); if (h !== null) hum = Number(h).toFixed(1); }
+      }
+      dataHtml = `
+        <div class="sensor-data">
+          <div><div class="sensor-val">${temp}°C</div><div class="sensor-lbl">Temp</div></div>
+          <div><div class="sensor-val">${hum}%</div><div class="sensor-lbl">Humidity</div></div>
+        </div>`;
+    }
+    
+    return `
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="name">${s.sensor_name}</div>
+          <span class="badge">${gw ? gw.gateway_name : 'Unknown'}</span>
+          <span class="badge">${nodeName}</span>
+          <span class="badge">GPIO ${s.pin}</span>
+          <span class="badge">${s.sensor_type}</span>
+          ${extraBadge}
+        </div>
+        <button class="icon-btn" onclick="deleteSensor(${s.id})">Delete</button>
+      </div>
+      ${dataHtml}
+    </div>`;
+  }).join("");
+}
+
+async function saveSensor() {
+  const name = document.getElementById("sensorName").value.trim();
+  const type = document.getElementById("sensorType").value;
+  const gwId = parseInt(document.getElementById("sensorGateway").value);
+  const nodeId = parseInt(document.getElementById("sensorNode").value);
+  const pin = parseInt(document.getElementById("sensorPin").value);
+  
+  if (!name) return showToast("Enter sensor name", true);
+  if ((type === 'PIR' || type === 'REED') && nodeId === 0) {
+    return showToast(type + " must be on Sub Node", true);
+  }
+  
+  let triggerState = 'HIGH';
+  if (type === 'PIR') triggerState = document.getElementById("pirTriggerState").value;
+  else if (type === 'REED') triggerState = document.getElementById("reedTriggerState").value;
+  
+  const payload = {
+    gateway_id: gwId,
+    node_id: nodeId,
+    sensor_name: name,
+    pin: pin,
+    sensor_type: type,
+    pir_trigger_state: triggerState
+  };
+  
+  const { error } = await sb.from("sensors").insert(payload);
+  if (error) return showToast(error.message, true);
+  showToast("Sensor added");
+  closeModal("sensorModal");
+  loadAllData();
+}
+
+async function deleteSensor(id) {
+  if (!confirm("Delete this sensor?")) return;
+  const { error } = await sb.from("sensors").delete().eq("id", id);
+  if (error) return showToast(error.message, true);
+  showToast("Deleted");
+  loadAllData();
+}
+
+// ================= REALTIME & UTILS =================
+function scheduleReload() {
+  clearTimeout(reloadTimer);
+  reloadTimer = setTimeout(loadAllData, 800);
+}
+
+function subscribeRealtime() {
+  if (rtChannel) sb.removeChannel(rtChannel);
+  rtChannel = sb.channel("dashboard-realtime")
+    .on("postgres_changes", { event: "*", schema: "public", table: "gateways" }, scheduleReload)
+    .on("postgres_changes", { event: "*", schema: "public", table: "nodes" }, scheduleReload)
+    .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, scheduleReload)
+    .on("postgres_changes", { event: "*", schema: "public", table: "device_states" }, scheduleReload)
+    .on("postgres_changes", { event: "*", schema: "public", table: "sensors" }, scheduleReload)
+    .subscribe((status) => {
+      if (status === 'CHANNEL_ERROR') console.warn("Realtime error");
+    });
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.backgroundColor = isError ? "#ef4444" : "#0f172a";
+  t.classList.add("show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 3000);
+}
+</script>
+</body>
+</html>
