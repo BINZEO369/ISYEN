@@ -53,6 +53,7 @@
   .sensor-val { font-size: 20px; font-weight: 700; color: var(--text-main); }
   .sensor-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
   .motion-active { animation: pulse 1.5s infinite; }
+  .door-open-active { animation: pulse 1.5s infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 
   .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
@@ -67,6 +68,7 @@
   .btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
   .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; }
   .warning-text { font-size: 12px; color: var(--danger); padding: 8px 10px; background: #fef2f2; border-radius: 6px; border: 1px solid #fecaca; display: none; }
+  .info-text { font-size: 12px; color: var(--text-muted); padding: 8px 10px; background: #eff6ff; border-radius: 6px; border: 1px solid #bfdbfe; margin-top: 4px; }
 
   .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-main); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transition: 0.3s; z-index: 200; pointer-events: none; max-width: 320px; }
   .toast.show { opacity: 1; transform: translateY(0); }
@@ -169,15 +171,25 @@
       <option value="MQ2">MQ2 (Gas)</option>
       <option value="MQ135">MQ135 (Air Quality)</option>
       <option value="PIR">PIR (Motion) — Sub Node only</option>
+      <option value="REED">REED (Door/Window) — Sub Node only</option>
     </select>
     <div id="pirTriggerGroup" style="display: none; margin-top: 4px;">
-      <label>Motion Trigger</label>
+      <label>Motion Trigger (HIGH/LOW)</label>
       <select id="pirTriggerState">
-        <option value="HIGH">HIGH (default — most modules)</option>
-        <option value="LOW">LOW (some modules)</option>
+        <option value="HIGH">HIGH — motion হলে pin HIGH (default)</option>
+        <option value="LOW">LOW — motion হলে pin LOW</option>
       </select>
+      <div class="info-text">HC-SR501 মডিউলের জন্য HIGH রাখুন (default)</div>
     </div>
-    <div id="pirWarning" class="warning-text">⚠️ PIR sensor must be on a Sub Node, not the Main Gateway.</div>
+    <div id="reedTriggerGroup" style="display: none; margin-top: 4px;">
+      <label>Open Detection (HIGH/LOW)</label>
+      <select id="reedTriggerState">
+        <option value="HIGH">HIGH — দরজা খোলা হলে pin HIGH (default, NO reed)</option>
+        <option value="LOW">LOW — দরজা খোলা হলে pin LOW (NC reed)</option>
+      </select>
+      <div class="info-text">সাধারণ NO reed + internal pull-up-এ HIGH রাখুন</div>
+    </div>
+    <div id="pirWarning" class="warning-text">⚠️ PIR/REED sensor must be on a Sub Node, not the Main Gateway.</div>
     <label>Select Gateway</label>
     <select id="sensorGateway" onchange="updateSensorNodeDropdown()"></select>
     <label>Select Node</label>
@@ -198,7 +210,7 @@ const SUPABASE_URL = "https://fabasazefdnkpygglajz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhYmFzYXplZmRua3B5Z2dsYWp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQzNjUyMjksImV4cCI6MjEwOTk0MTIyOX0.MgUDDJ79RekwPDhc6LB0pIyM2jxyncSnnmiKwaqxo6U";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Safe pins — no flash/UART/strapping/USB
+// Safe pins
 const DEVICE_PINS = [4, 5, 13, 14, 16, 17, 18, 21, 22, 23, 25, 33];
 const SENSOR_PINS = [4, 5, 13, 14, 15, 16, 17, 18, 21, 22, 23, 25, 33, 34, 35, 36, 39];
 
@@ -213,8 +225,8 @@ let rtChannel = null;
 let dashboardInitialized = false;
 let toastTimer = null;
 let reloadTimer = null;
-let pirPollTimer = null;
-let sensorPollTimer = null;
+let pirPollTimer = null;    // PIR + REED fast poll (3s)
+let sensorPollTimer = null; // DHT + MQ slow poll (20s)
 
 // ================= AUTH =================
 document.addEventListener("DOMContentLoaded", async () => {
@@ -285,14 +297,14 @@ function showDashboard() {
   loadAllData();
   subscribeRealtime();
   
-  // DHT/MQ sensor readings — 20s polling
+  // DHT + MQ — 20s polling
   sensorPollTimer = setInterval(async () => {
     if (!currentUser) return;
-    const nonPir = allSensors.filter(s => s.sensor_type !== 'PIR');
-    if (nonPir.length === 0) return;
-    const results = await Promise.all(nonPir.map(s =>
+    const nonFast = allSensors.filter(s => s.sensor_type !== 'PIR' && s.sensor_type !== 'REED');
+    if (nonFast.length === 0) return;
+    const results = await Promise.all(nonFast.map(s =>
       sb.from("sensor_readings")
-        .select("temperature, humidity, gas_value, motion, created_at")
+        .select("temperature, humidity, gas_value, motion, door_state, created_at")
         .eq("sensor_id", s.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -302,14 +314,14 @@ function showDashboard() {
     renderSensors();
   }, 20000);
 
-  // PIR sensor readings — 3s polling (fast)
+  // PIR + REED — 3s fast polling
   pirPollTimer = setInterval(async () => {
     if (!currentUser) return;
-    const pir = allSensors.filter(s => s.sensor_type === 'PIR');
-    if (pir.length === 0) return;
-    const results = await Promise.all(pir.map(s =>
+    const fast = allSensors.filter(s => s.sensor_type === 'PIR' || s.sensor_type === 'REED');
+    if (fast.length === 0) return;
+    const results = await Promise.all(fast.map(s =>
       sb.from("sensor_readings")
-        .select("temperature, humidity, gas_value, motion, created_at")
+        .select("temperature, humidity, gas_value, motion, door_state, created_at")
         .eq("sensor_id", s.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -349,7 +361,7 @@ async function loadAllData() {
 function formatTime(iso) {
   if (!iso) return "—";
   let diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 0) diff = 0;   // clock skew fix
+  if (diff < 0) diff = 0;
   if (diff < 60) return `${diff}s ago`;
   if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
@@ -547,12 +559,13 @@ async function deleteLight(id) {
   loadAllData();
 }
 
-// ---- Sensors (with PIR) ----
+// ---- Sensors (DHT / MQ / PIR / REED) ----
 function openSensorModal() {
   if (allGateways.length === 0) return showToast("Please add a gateway first!", true);
   document.getElementById("sensorName").value = "";
   document.getElementById("sensorType").value = "DHT11";
   document.getElementById("pirTriggerState").value = "HIGH";
+  document.getElementById("reedTriggerState").value = "HIGH";
   document.getElementById("sensorGateway").innerHTML = allGateways.map(g => `<option value="${g.id}">${g.gateway_name}</option>`).join('');
   updateSensorNodeDropdown();
   onSensorTypeChange();
@@ -562,13 +575,14 @@ function openSensorModal() {
 function updateSensorNodeDropdown() {
   const gwId = parseInt(document.getElementById("sensorGateway").value);
   const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
-  const isPIR = document.getElementById("sensorType").value === 'PIR';
+  const type = document.getElementById("sensorType").value;
+  const isSubOnly = (type === 'PIR' || type === 'REED');
   
-  let opts = `<option value="0" ${isPIR ? 'disabled' : ''}>Main ESP32 (Gateway)</option>`;
+  let opts = `<option value="0" ${isSubOnly ? 'disabled' : ''}>Main ESP32 (Gateway)</option>`;
   gwNodes.forEach(n => opts += `<option value="${n.id}">${n.node_name}</option>`);
   document.getElementById("sensorNode").innerHTML = opts;
   
-  if (isPIR) {
+  if (isSubOnly) {
     const nodeSelect = document.getElementById("sensorNode");
     if (parseInt(nodeSelect.value) === 0 && gwNodes.length > 0) {
       nodeSelect.value = gwNodes[0].id;
@@ -579,27 +593,36 @@ function updateSensorNodeDropdown() {
 function onSensorTypeChange() {
   const type = document.getElementById("sensorType").value;
   const pirGroup = document.getElementById("pirTriggerGroup");
+  const reedGroup = document.getElementById("reedTriggerGroup");
   const warningDiv = document.getElementById("pirWarning");
   const saveBtn = document.getElementById("sensorSaveBtn");
   const gwId = parseInt(document.getElementById("sensorGateway").value);
   const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
   
+  pirGroup.style.display = 'none';
+  reedGroup.style.display = 'none';
+  warningDiv.style.display = 'none';
+  saveBtn.disabled = false;
+  
+  const isSubOnly = (type === 'PIR' || type === 'REED');
+  
   if (type === 'PIR') {
     pirGroup.style.display = 'block';
     updateSensorNodeDropdown();
-    
     if (gwNodes.length === 0) {
-      warningDiv.textContent = "⚠️ PIR needs an approved Sub Node. Approve one first.";
+      warningDiv.textContent = "⚠️ PIR needs an approved Sub Node.";
       warningDiv.style.display = 'block';
       saveBtn.disabled = true;
-    } else {
-      warningDiv.style.display = 'none';
-      saveBtn.disabled = false;
+    }
+  } else if (type === 'REED') {
+    reedGroup.style.display = 'block';
+    updateSensorNodeDropdown();
+    if (gwNodes.length === 0) {
+      warningDiv.textContent = "⚠️ REED needs an approved Sub Node.";
+      warningDiv.style.display = 'block';
+      saveBtn.disabled = true;
     }
   } else {
-    pirGroup.style.display = 'none';
-    warningDiv.style.display = 'none';
-    saveBtn.disabled = false;
     updateSensorNodeDropdown();
   }
 }
@@ -607,13 +630,16 @@ function onSensorTypeChange() {
 function onSensorNodeChange() {
   const type = document.getElementById("sensorType").value;
   const nodeId = parseInt(document.getElementById("sensorNode").value);
-  if (type === 'PIR' && nodeId === 0) {
-    document.getElementById("pirWarning").textContent = "⚠️ PIR sensor must be on a Sub Node.";
-    document.getElementById("pirWarning").style.display = 'block';
-    document.getElementById("sensorSaveBtn").disabled = true;
+  const warningDiv = document.getElementById("pirWarning");
+  const saveBtn = document.getElementById("sensorSaveBtn");
+  
+  if ((type === 'PIR' || type === 'REED') && nodeId === 0) {
+    warningDiv.textContent = "⚠️ " + type + " sensor must be on a Sub Node.";
+    warningDiv.style.display = 'block';
+    saveBtn.disabled = true;
   } else {
-    document.getElementById("pirWarning").style.display = 'none';
-    document.getElementById("sensorSaveBtn").disabled = false;
+    warningDiv.style.display = 'none';
+    saveBtn.disabled = false;
   }
 }
 
@@ -621,7 +647,7 @@ async function loadSensorReadings() {
   if (allSensors.length === 0) { allReadings = {}; return; }
   const results = await Promise.all(allSensors.map(s =>
     sb.from("sensor_readings")
-      .select("temperature, humidity, gas_value, motion, created_at")
+      .select("temperature, humidity, gas_value, motion, door_state, created_at")
       .eq("sensor_id", s.id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -652,6 +678,7 @@ function renderSensors() {
     let dataHtml = '';
     let extraBadge = '';
     
+    // ---------- PIR ----------
     if (s.sensor_type === 'PIR') {
       const motionVal = r ? (getLatest(r.motion) !== null ? Number(getLatest(r.motion)) : null) : null;
       const isMotion = motionVal === 1;
@@ -669,7 +696,27 @@ function renderSensors() {
           </div>
           ${r ? `<div><div class="sensor-val" style="font-size:12px; color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Last Update</div></div>` : ''}
         </div>`;
-    } 
+    }
+    // ---------- REED ----------
+    else if (s.sensor_type === 'REED') {
+      const doorVal = r ? (getLatest(r.door_state) !== null ? Number(getLatest(r.door_state)) : null) : null;
+      const isOpen = doorVal === 1;
+      const statusColor = doorVal === null ? 'var(--text-muted)' : (isOpen ? 'var(--warning)' : 'var(--success)');
+      const statusIcon = doorVal === null ? '⚪' : (isOpen ? '🚪' : '🔒');
+      const statusText = doorVal === null ? 'NO DATA' : (isOpen ? 'OPEN' : 'CLOSED');
+      const pulseClass = isOpen ? 'door-open-active' : '';
+      extraBadge = `<span class="badge">Open: ${s.pir_trigger_state || 'HIGH'}</span>`;
+      
+      dataHtml = `
+        <div class="sensor-data">
+          <div style="flex: 1;">
+            <div class="sensor-val ${pulseClass}" style="color: ${statusColor}">${statusIcon} ${statusText}</div>
+            <div class="sensor-lbl">Door / Window Status</div>
+          </div>
+          ${r ? `<div><div class="sensor-val" style="font-size:12px; color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Last Update</div></div>` : ''}
+        </div>`;
+    }
+    // ---------- MQ ----------
     else if (s.sensor_type.startsWith('MQ')) {
       let gasVal = '--';
       if (r && r.gas_value) {
@@ -683,7 +730,8 @@ function renderSensors() {
             <div class="sensor-lbl">Gas Value</div>
           </div>
         </div>`;
-    } 
+    }
+    // ---------- DHT ----------
     else {
       let temp = '--', hum = '--';
       if (r) {
@@ -721,10 +769,15 @@ async function saveSensor() {
   const gwId = parseInt(document.getElementById("sensorGateway").value);
   const nodeId = parseInt(document.getElementById("sensorNode").value);
   const pin = parseInt(document.getElementById("sensorPin").value);
-  const pirTrigger = document.getElementById("pirTriggerState").value;
   
   if (!name) return showToast("Enter sensor name", true);
-  if (type === 'PIR' && nodeId === 0) return showToast("PIR must be on Sub Node", true);
+  if ((type === 'PIR' || type === 'REED') && nodeId === 0) {
+    return showToast(type + " must be on Sub Node", true);
+  }
+  
+  let triggerState = 'HIGH';
+  if (type === 'PIR') triggerState = document.getElementById("pirTriggerState").value;
+  else if (type === 'REED') triggerState = document.getElementById("reedTriggerState").value;
   
   const payload = {
     gateway_id: gwId,
@@ -732,7 +785,7 @@ async function saveSensor() {
     sensor_name: name,
     pin: pin,
     sensor_type: type,
-    pir_trigger_state: type === 'PIR' ? pirTrigger : 'HIGH'
+    pir_trigger_state: triggerState
   };
   
   const { error } = await sb.from("sensors").insert(payload);
