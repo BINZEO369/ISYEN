@@ -2,7 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const handle = require("../api");
+const handle = require("../src/server");
 
 process.env.SUPABASE_URL = "https://supabase.example.test";
 process.env.SUPABASE_ANON_KEY = "sb_publishable_test_key";

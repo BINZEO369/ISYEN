@@ -1,0 +1,15 @@
+{
+  "name": "isyen-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Independently hosted ISYEN Node.js API",
+  "main": "server.js",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test",
+    "check": "find . -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check"
+  }
+}
