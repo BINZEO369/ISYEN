@@ -260,105 +260,46 @@ a {
   margin: 0 10px;
 }
 .app-shell {
-  min-height: 100vh;
-}
-.sidebar {
-  width: 232px;
-  background: var(--navy);
-  color: #fff;
-  position: fixed;
-  inset: 72px auto 0 0;
-  padding: 27px 17px;
-  display: flex;
-  flex-direction: column;
-  z-index: 3;
-}
-.brand {
-  display: flex;
-  gap: 11px;
-  align-items: center;
-  text-decoration: none;
-  color: white;
-  font-weight: 700;
-  font-size: 19px;
-  padding: 0 7px;
-}
-.brand small {
-  display: block;
-  font:
-    600 8px Inter,
-    sans-serif;
-  letter-spacing: 1.6px;
-  color: #8c9caf;
-  margin-top: 1px;
-}
-.sidebar nav {
-  display: grid;
-  gap: 8px;
-  margin-top: 54px;
-}
-.nav-link {
-  height: 45px;
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 0 13px;
-  border-radius: 9px;
-  color: #aebdce;
-  text-decoration: none;
-  font-size: 14px;
-}
-.nav-link b {
-  width: 18px;
-  color: #89a2b4;
-  text-align: center;
-}
-.nav-link.active,
-.nav-link:hover {
-  background: #223750;
-  color: #fff;
-}
-.nav-link.active {
-  box-shadow: inset 3px 0 var(--teal);
-}
-.sidebar-bottom {
-  margin-top: auto;
-  border-top: 1px solid #ffffff18;
-  padding: 19px 9px 0;
-  display: flex;
-  align-items: center;
-  font-weight: 600;
-  font-size: 12px;
-}
-.sidebar-bottom small {
-  display: block;
-  font-size: 10px;
-  color: #92a3b8;
-  font-weight: 400;
-}
-.menu-toggle {
-  display: none;
+  min-height: calc(100vh - 142px);
 }
 .workspace {
-  margin-left: 232px;
+  margin: 0 auto;
   max-width: 1600px;
-  padding: 0 46px 65px;
+  padding: 32px 46px 65px;
 }
-.topbar {
-  height: 96px;
+.dashboard-heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 29px;
+  gap: 20px;
+  margin-bottom: 20px;
 }
-.topbar .eyebrow {
+.dashboard-heading .eyebrow {
   margin-bottom: 1px;
 }
-.topbar h1 {
+.dashboard-heading h1 {
   margin: 0;
   color: var(--navy);
   font-size: 23px;
+}
+.dashboard-section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 30px;
+}
+.dashboard-section-nav a {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+.dashboard-section-nav a:hover {
+  border-color: var(--teal);
+  color: var(--teal-dark);
 }
 .profile {
   display: flex;
@@ -799,13 +740,7 @@ a {
 }
 @media (max-width: 1100px) {
   .workspace {
-    padding: 0 27px 50px;
-  }
-  .sidebar {
-    width: 205px;
-  }
-  .workspace {
-    margin-left: 205px;
+    padding: 30px 27px 50px;
   }
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -821,65 +756,29 @@ a {
   .auth-panel {
     padding: 42px 0;
   }
-  .sidebar {
-    position: sticky;
-    inset: 68px 0 auto;
-    width: 100%;
-    height: auto;
-    padding: 11px 15px;
-    flex-direction: row;
-    align-items: center;
-    min-height: 64px;
-  }
-  .sidebar nav {
-    display: none;
-    position: absolute;
-    left: 10px;
-    right: 10px;
-    top: 58px;
-    margin: 0;
-    padding: 9px;
-    background: #172943;
-    border: 1px solid #31465e;
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    gap: 3px;
-  }
-  .sidebar.nav-open nav {
-    display: grid;
-  }
-  .nav-link {
-    height: 42px;
-    padding: 0 12px;
-  }
-  .nav-link span {
-    display: block;
-  }
-  .sidebar-bottom {
-    display: none;
-  }
-  .menu-toggle {
-    display: block;
-    margin-left: auto;
-    border: 1px solid #ffffff28;
-    background: #223750;
-    color: #fff;
-    border-radius: 8px;
-    width: 38px;
-    height: 38px;
-    font-size: 18px;
+  .app-shell {
+    min-height: calc(100vh - 144px);
   }
   .workspace {
-    margin: 0;
-    padding: 0 17px 45px;
+    padding: 26px 17px 45px;
   }
-  .topbar {
-    height: 77px;
-    margin-bottom: 21px;
+  .dashboard-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
   }
   .profile-meta,
   .avatar {
     display: none;
+  }
+  .dashboard-section-nav {
+    gap: 6px;
+    margin-bottom: 24px;
+  }
+  .dashboard-section-nav a {
+    padding: 7px 10px;
+    font-size: 11px;
   }
   .profile {
     gap: 5px;
@@ -922,7 +821,7 @@ a {
     font-size: 10px;
     padding: 7px;
   }
-  .topbar h1 {
+  .dashboard-heading h1 {
     font-size: 20px;
   }
   .card-grid {

@@ -59,7 +59,6 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
   const [gatewayId, setGatewayId] = useState("");
   const [nodeId, setNodeId] = useState("0");
   const [trigger, setTrigger] = useState("HIGH");
-  const [mobileNav, setMobileNav] = useState(false);
   const refresh = useCallback(async ({ showLoading = false } = {}) => {
     if (showLoading) setLoading(true);
     setError("");
@@ -284,51 +283,11 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
   }
   return (
     <div className="app-shell">
-      <aside className={`sidebar ${mobileNav ? "nav-open" : ""}`}>
-        <a className="brand" href="#overview">
-          <span className="brand-mark small">ন</span>
-          <span>
-            নিবাস<small>SMART HOME</small>
-          </span>
-        </a>
-        <button
-          className="menu-toggle"
-          aria-label="নেভিগেশন দেখান"
-          aria-expanded={mobileNav}
-          onClick={() => setMobileNav(!mobileNav)}
-        >
-          ☰
-        </button>
-        <nav aria-label="প্রধান নেভিগেশন" onClick={() => setMobileNav(false)}>
-          <a className="nav-link active" href="#overview">
-            <b>◈</b>
-            <span>ড্যাশবোর্ড</span>
-          </a>
-          <a className="nav-link" href="#gateways">
-            <b>⌘</b>
-            <span>Gateways</span>
-          </a>
-          <a className="nav-link" href="#devices">
-            <b>☼</b>
-            <span>ডিভাইস</span>
-          </a>
-          <a className="nav-link" href="#sensors">
-            <b>⌁</b>
-            <span>সেন্সর</span>
-          </a>
-        </nav>
-        <div className="sidebar-bottom">
-          <span className="live-dot" />
-          <span>
-            সিস্টেম সচল<small>লাইভ সংযোগ</small>
-          </span>
-        </div>
-      </aside>
       <main className="workspace">
-        <div className="topbar">
+        <section className="dashboard-heading" aria-labelledby="dashboard-title">
           <div>
             <p className="eyebrow">আপনার স্মার্ট হোম</p>
-            <h1>ড্যাশবোর্ড</h1>
+            <h1 id="dashboard-title">ড্যাশবোর্ড</h1>
           </div>
           <div className="profile">
             <div className="avatar">IS</div>
@@ -340,7 +299,13 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
               লগ আউট
             </button>
           </div>
-        </div>
+        </section>
+        <nav className="dashboard-section-nav" aria-label="ড্যাশবোর্ডের বিভাগ">
+          <a href="#overview">ড্যাশবোর্ড</a>
+          <a href="#gateways">Gateways</a>
+          <a href="#devices">ডিভাইস</a>
+          <a href="#sensors">সেন্সর</a>
+        </nav>
         {loading ? (
           <Loading />
         ) : error ? (
