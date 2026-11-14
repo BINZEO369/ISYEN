@@ -2,9 +2,9 @@ import "../styles/globals.css";
 import SiteChrome from "../components/SiteChrome";
 
 export const metadata = {
-  title: "নিবাস · ISYEN Smart Home",
+  title: "ISYEN Smart Home",
   description:
-    "আপনার স্মার্ট হোমের gateway, আলো, device ও sensor এক জায়গা থেকে পরিচালনা করুন।",
+    "Manage your smart-home gateways, lighting, devices, and sensors from one place.",
   applicationName: "ISYEN Home",
 };
 
@@ -14,7 +14,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="bn">
+    <html lang="en">
       <body>
         <SiteChrome>{children}</SiteChrome>
       </body>

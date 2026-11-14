@@ -3,31 +3,31 @@ import Link from "next/link";
 import styles from "./home.module.css";
 
 export const metadata = {
-  title: "ISYEN Smart Home | আপনার ঘর, এক ড্যাশবোর্ডে",
+  title: "ISYEN Smart Home | Your Home, One Dashboard",
   description:
-    "Gateway, device ও sensor—ISYEN Smart Home dashboard থেকে এক জায়গায় দেখুন ও পরিচালনা করুন।",
+    "View and manage your gateways, devices, and sensors in one place with the ISYEN Smart Home dashboard.",
 };
 
 const features = [
   {
     kind: "gateway",
-    title: "Gateway ও Node",
-    text: "Gateway এবং connected Sub Node-গুলো একটি জায়গা থেকে দেখুন ও পরিচালনা করুন।",
+    title: "Gateways and Nodes",
+    text: "View and manage gateways and connected Sub Nodes from one place.",
   },
   {
     kind: "device",
-    title: "সহজ Device Control",
-    text: "সমর্থিত device ড্যাশবোর্ড থেকেই চালু বা বন্ধ করুন।",
+    title: "Simple Device Control",
+    text: "Turn supported devices on or off from the dashboard.",
   },
   {
     kind: "sensor",
     title: "Sensor Reading",
-    text: "সেন্সর থেকে পাওয়া সর্বশেষ reading সহজে এক নজরে দেখুন।",
+    text: "See the latest sensor readings at a glance.",
   },
   {
     kind: "account",
-    title: "নিজস্ব Dashboard",
-    text: "নিজের account-এ sign in করে আপনার smart-home dashboard ব্যবহার করুন।",
+    title: "Your Dashboard",
+    text: "Sign in to your account to manage your smart home.",
   },
 ];
 
@@ -80,26 +80,26 @@ export default function HomePage() {
               <span className={styles.eyebrowDot} /> ISYEN SMART HOME
             </p>
             <h1>
-              আপনার ঘর,
+              Your home,
               <br />
-              <span>এক ড্যাশবোর্ডে।</span>
+              <span>all in one dashboard.</span>
             </h1>
             <p className={styles.heroText}>
-              Gateway, device আর sensor—ঘরের প্রয়োজনীয় smart-home নিয়ন্ত্রণ ও
-              তথ্য রাখুন এক সহজ জায়গায়।
+              Manage your smart-home gateways, devices, and sensors, and
+              view everything together in one simple place.
             </p>
             <div className={styles.heroActions}>
               <Link className={styles.primaryButton} href="/signin">
-                সাইন ইন করুন <span aria-hidden="true">→</span>
+                Sign in <span aria-hidden="true">→</span>
               </Link>
               <Link className={styles.secondaryButton} href="/dashboard">
-                ড্যাশবোর্ডে যান
+                Open Dashboard
               </Link>
             </div>
             <div className={styles.heroNote}>
-              নতুন এখানে? <Link href="/signup">অ্যাকাউন্ট তৈরি করুন</Link>
+              New here? <Link href="/signup">Create an account</Link>
             </div>
-            <div className={styles.quickTags} aria-label="প্ল্যাটফর্মের অংশ">
+            <div className={styles.quickTags} aria-label="Platform features">
               <span>Gateway</span>
               <span>Devices</span>
               <span>Sensors</span>
@@ -111,7 +111,7 @@ export default function HomePage() {
               <Image
                 className={styles.heroImage}
                 src="/images/isyen-home-hero-optimized.jpg"
-                alt="উষ্ণ আলোয় সাজানো একটি আরামদায়ক আধুনিক বসার ঘর"
+                alt="A comfortable modern living room with warm lighting"
                 fill
                 priority
                 sizes="(max-width: 760px) 100vw, 52vw"
@@ -122,8 +122,8 @@ export default function HomePage() {
                   <FeatureIcon kind="gateway" />
                 </span>
                 <span>
-                  <strong>আপনার ঘর, আপনার নিয়ন্ত্রণে</strong>
-                  <small>এক জায়গা থেকে দেখুন ও পরিচালনা করুন</small>
+                  <strong>Your home, under your control</strong>
+                  <small>View and manage everything in one place</small>
                 </span>
               </div>
               <span className={styles.imageLabel}>CONNECTED LIVING</span>
@@ -137,12 +137,12 @@ export default function HomePage() {
         <div className={styles.container}>
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.eyebrow}>সহজ, এক জায়গায়</p>
-              <h2>স্মার্ট হোমের দরকারি সবকিছু</h2>
+              <p className={styles.eyebrow}>Simple, all in one place</p>
+              <h2>Everything you need for a smart home</h2>
             </div>
             <p>
-              আলাদা আলাদা screen নয়—ঘরের সংযুক্ত device ও sensor দেখুন একটি
-              পরিষ্কার dashboard-এ।
+              Skip the app switching—see your connected devices and sensors in one
+              clear dashboard.
             </p>
           </div>
           <div className={styles.featureGrid}>
@@ -170,26 +170,26 @@ export default function HomePage() {
             <Image
               className={styles.detailImage}
               src="/images/isyen-home-sensor-optimized.jpg"
-              alt="ঘরের দেয়ালে স্থাপিত একটি সাধারণ smart-home sensor ও switch"
+              alt="A smart-home sensor and switch installed on a wall"
               fill
               sizes="(max-width: 760px) 100vw, 43vw"
             />
             <span className={styles.detailImageTag}>AT A GLANCE</span>
           </div>
           <div className={styles.detailCopy}>
-            <p className={styles.eyebrow}>ঘরের সঙ্গে সংযুক্ত</p>
-            <h2>যা দরকার, তা খুঁজে নিন সহজে</h2>
+            <p className={styles.eyebrow}>Connected to your home</p>
+            <h2>Find what you need, easily</h2>
             <p>
-              নিজের account-এ প্রবেশ করে gateway ও device পরিচালনা করুন, আর
-              connected sensor-এর সর্বশেষ reading দেখুন।
+              Sign in to manage your gateways and devices, and
+              view the latest readings from connected sensors.
             </p>
             <ul className={styles.detailList}>
-              <li><span>✓</span> Gateway ও Sub Node একসাথে</li>
-              <li><span>✓</span> সমর্থিত device-এর on/off control</li>
-              <li><span>✓</span> সর্বশেষ sensor reading</li>
+              <li><span>✓</span> Gateways and Sub Nodes in one place</li>
+              <li><span>✓</span> On/off control for supported devices</li>
+              <li><span>✓</span> Latest sensor readings</li>
             </ul>
             <Link className={styles.inlineLink} href="/signup">
-              শুরু করতে অ্যাকাউন্ট তৈরি করুন <span aria-hidden="true">→</span>
+              Create an account to get started <span aria-hidden="true">→</span>
             </Link>
           </div>
         </div>
@@ -199,12 +199,12 @@ export default function HomePage() {
         <div className={styles.container + " " + styles.finalCtaInner}>
           <div>
             <p className={styles.eyebrow}>ISYEN SMART HOME</p>
-            <h2>আপনার smart home শুরু হোক এখান থেকে।</h2>
-            <p>সাইন ইন করুন, অথবা নতুন account খুলে dashboard ব্যবহার শুরু করুন।</p>
+            <h2>Start your smart home here.</h2>
+            <p>Sign in or create an account to start using your dashboard.</p>
           </div>
           <div className={styles.finalActions}>
-            <Link className={styles.finalPrimary} href="/signin">সাইন ইন</Link>
-            <Link className={styles.finalSecondary} href="/signup">অ্যাকাউন্ট তৈরি</Link>
+            <Link className={styles.finalPrimary} href="/signin">Sign in</Link>
+            <Link className={styles.finalSecondary} href="/signup">Create account</Link>
           </div>
         </div>
       </section>

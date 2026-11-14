@@ -15,7 +15,7 @@ async function create(req, config, token) {
   const gateway_id = requireId(b.gateway_id, "gateway ID"),
     node_id = Number(b.node_id);
   if (!Number.isSafeInteger(node_id) || node_id < 0)
-    throw new HttpError(400, "সঠিক node ID দিন।");
+    throw new HttpError(400, "Please provide a valid node ID.");
   if (node_id > 0) await assertApprovedNode(config, token, node_id, gateway_id);
   const data = await supabaseRequest(config, token, "/rest/v1/devices", {
     method: "POST",
@@ -23,7 +23,7 @@ async function create(req, config, token) {
     body: {
       gateway_id,
       node_id,
-      device_name: requireText(b.device_name, "Device-এর নাম"),
+      device_name: requireText(b.device_name, "Device name"),
       pin: validatePin(b.pin, DEVICE_PINS),
     },
   });
@@ -33,7 +33,7 @@ async function state(req, config, token, id) {
   const b = await readBody(req);
   requireKeys(b, ["is_on"]);
   if (typeof b.is_on !== "boolean")
-    throw new HttpError(400, "is_on true/false হতে হবে।");
+    throw new HttpError(400, "is_on must be a boolean.");
   const data = await supabaseRequest(
     config,
     token,
@@ -48,7 +48,7 @@ async function state(req, config, token, id) {
     },
   );
   if (!Array.isArray(data) || !data.length)
-    throw new HttpError(404, "Device state পাওয়া যায়নি।");
+    throw new HttpError(404, "Device state not found.");
   return data[0];
 }
 async function remove(config, token, id) {
@@ -59,7 +59,7 @@ async function remove(config, token, id) {
     { method: "DELETE", prefer: "return=representation" },
   );
   if (!Array.isArray(data) || !data.length)
-    throw new HttpError(404, "Device পাওয়া যায়নি।");
+    throw new HttpError(404, "Device not found.");
   return { ok: true };
 }
 module.exports = { create, state, remove };

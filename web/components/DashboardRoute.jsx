@@ -17,11 +17,17 @@ async function apiRequest(path, options = {}) {
     try {
       payload = JSON.parse(text);
     } catch {
-      throw new Error("সার্ভার থেকে সঠিক JSON উত্তর আসেনি।");
+      throw new Error("The server returned an invalid response.");
     }
   }
   if (!response.ok) {
-    const error = new Error(payload?.error || `অনুরোধ ব্যর্থ হয়েছে (${response.status})`);
+    const message =
+      response.status === 401 || response.status === 403
+        ? "Your session has expired. Please sign in again."
+        : response.status === 404
+          ? "The requested resource was not found."
+          : `Request failed (${response.status}). Please try again.`;
+    const error = new Error(message);
     error.status = response.status;
     throw error;
   }
@@ -93,7 +99,7 @@ export default function DashboardRoute() {
       } catch (error) {
         if ([400, 401, 403].includes(error.status)) {
           sessionStorage.removeItem(SESSION_KEY);
-          notify("সেশনটি মেয়াদোত্তীর্ণ। আবার লগ ইন করুন।", true);
+          notify("Your session has expired. Please sign in again.", true);
         } else if (previousSession) {
           restored = previousSession;
         } else {
@@ -125,7 +131,7 @@ export default function DashboardRoute() {
           body: JSON.stringify({ refresh_token: session.refresh_token }),
         });
         const next = normalizeSession(result.session);
-        if (!next) throw new Error("Session refresh করা যায়নি।");
+        if (!next) throw new Error("Could not refresh your session.");
         if (active) {
           saveSession(next);
           setSession(next);
@@ -135,7 +141,7 @@ export default function DashboardRoute() {
         if ([400, 401, 403].includes(error.status)) {
           saveSession(null);
           setSession(null);
-          notify("সেশনটি শেষ হয়েছে। আবার লগ ইন করুন।", true);
+          notify("Your session has expired. Please sign in again.", true);
         } else {
           timer = setTimeout(refreshSession, 30000);
         }
@@ -165,7 +171,7 @@ export default function DashboardRoute() {
         });
       }
     } catch (error) {
-      notify(error.message || "লগ আউট অনুরোধ সম্পন্ন হয়নি।", true);
+      notify(error.message || "Sign-out could not be completed.", true);
     } finally {
       saveSession(null);
       setSession(null);
@@ -175,7 +181,7 @@ export default function DashboardRoute() {
   return (
     <>
       {starting || !session ? (
-        <Loading text="নিরাপদ সংযোগ প্রস্তুত হচ্ছে…" />
+        <Loading text="Preparing a secure connection…" />
       ) : (
         <DashboardShell
           key={session.user.id}

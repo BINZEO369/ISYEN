@@ -7,10 +7,10 @@ async function update(req, config, token, id) {
   const body = await readBody(req);
   requireKeys(body, ["node_name", "is_approved"]);
   if (typeof body.is_approved !== "boolean")
-    throw new HttpError(400, "is_approved true/false হতে হবে।");
+    throw new HttpError(400, "is_approved must be a boolean.");
   const patch = { is_approved: body.is_approved };
   if (Object.hasOwn(body, "node_name"))
-    patch.node_name = requireText(body.node_name, "Node-এর নাম");
+    patch.node_name = requireText(body.node_name, "Node name");
   const data = await supabaseRequest(
     config,
     token,
@@ -21,7 +21,7 @@ async function update(req, config, token, id) {
     { method: "PATCH", prefer: "return=representation", body: patch },
   );
   if (!Array.isArray(data) || !data.length)
-    throw new HttpError(404, "Node পাওয়া যায়নি।");
+    throw new HttpError(404, "Node not found.");
   return data[0];
 }
 async function remove(config, token, id) {
@@ -32,7 +32,7 @@ async function remove(config, token, id) {
     query("nodes", { id: `eq.${nodeId}`, select: "id", limit: "1" }),
   );
   if (!Array.isArray(owned) || !owned.length)
-    throw new HttpError(404, "Node পাওয়া যায়নি।");
+    throw new HttpError(404, "Node not found.");
   const filter = `eq.${nodeId}`;
   await supabaseRequest(
     config,
@@ -53,7 +53,7 @@ async function remove(config, token, id) {
     { method: "DELETE", prefer: "return=representation" },
   );
   if (!Array.isArray(data) || !data.length)
-    throw new HttpError(404, "Node পাওয়া যায়নি।");
+    throw new HttpError(404, "Node not found.");
   return { ok: true };
 }
 module.exports = { update, remove };

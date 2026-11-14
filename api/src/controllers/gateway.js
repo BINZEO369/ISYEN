@@ -7,7 +7,7 @@ const { requireKeys, requireText } = require("../validators");
 async function create(req, config, token, user) {
   const body = await readBody(req);
   requireKeys(body, ["gateway_name"]);
-  const gateway_name = requireText(body.gateway_name, "Gateway-এর নাম");
+  const gateway_name = requireText(body.gateway_name, "Gateway name");
   for (let attempt = 0; attempt < 4; attempt++) {
     const claim_code = Array.from(
       { length: 8 },
@@ -24,6 +24,6 @@ async function create(req, config, token, user) {
       if (error.code !== "23505" || attempt === 3) throw error;
     }
   }
-  throw new HttpError(500, "সার্ভারে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।");
+  throw new HttpError(500, "A server error occurred. Please try again later.");
 }
 module.exports = { create };

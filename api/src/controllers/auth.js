@@ -8,9 +8,9 @@ async function credentials(req) {
   const email = typeof body.email === "string" ? body.email.trim() : "";
   const password = typeof body.password === "string" ? body.password : "";
   if (!email || email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-    throw new HttpError(400, "সঠিক ইমেইল ঠিকানা দিন।");
+    throw new HttpError(400, "Please enter a valid email address.");
   if (password.length < 6 || password.length > 256)
-    throw new HttpError(400, "পাসওয়ার্ড ৬ থেকে ২৫৬ অক্ষরের মধ্যে হতে হবে।");
+    throw new HttpError(400, "Password must be between 6 and 256 characters.");
   return { email, password };
 }
 
@@ -19,7 +19,7 @@ function bearerToken(req) {
   const match = typeof authorization === "string"
     ? authorization.match(/^Bearer\s+(.+)$/i)
     : null;
-  if (!match) throw new HttpError(401, "সেশনটি নেই; আবার লগ ইন করুন।", "AUTH_REQUIRED");
+  if (!match) throw new HttpError(401, "No session found. Please sign in again.", "AUTH_REQUIRED");
   return match[1].trim();
 }
 
@@ -48,7 +48,7 @@ async function login(req, config) {
     { method: "POST", body },
   );
   if (!session?.access_token || !session?.refresh_token || !session?.user)
-    throw new HttpError(502, "লগ ইন হলেও নিরাপদ session তৈরি হয়নি।");
+    throw new HttpError(502, "Sign-in succeeded, but a secure session could not be created.");
   return { session };
 }
 
@@ -58,21 +58,21 @@ async function refresh(req, config) {
     ? body.refresh_token.trim()
     : "";
   if (!refreshToken)
-    throw new HttpError(400, "Session refresh token পাওয়া যায়নি।");
+    throw new HttpError(400, "Session refresh token is missing.");
   const session = await supabaseAuthRequest(
     config,
     "/auth/v1/token?grant_type=refresh_token",
     { method: "POST", body: { refresh_token: refreshToken } },
   );
   if (!session?.access_token || !session?.refresh_token || !session?.user)
-    throw new HttpError(401, "সেশনটি মেয়াদোত্তীর্ণ; আবার লগ ইন করুন।", "INVALID_SESSION");
+    throw new HttpError(401, "Your session has expired. Please sign in again.", "INVALID_SESSION");
   return { session };
 }
 
 async function currentUser(req, config) {
   const user = await supabaseRequest(config, bearerToken(req), "/auth/v1/user");
   if (!user?.id)
-    throw new HttpError(401, "সেশনটি মেয়াদোত্তীর্ণ; আবার লগ ইন করুন।", "INVALID_SESSION");
+    throw new HttpError(401, "Your session has expired. Please sign in again.", "INVALID_SESSION");
   return { user };
 }
 

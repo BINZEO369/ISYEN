@@ -12,7 +12,7 @@ const TYPES = ["DHT11", "DHT22", "MQ2", "MQ135", "PIR", "REED"];
 
 // Dashboard actions call their backend endpoints; Supabase credentials stay on the server.
 async function requestBackendEndpoint(accessToken, path, options = {}) {
-  if (!accessToken) throw new Error("আপনার সেশন শেষ হয়েছে। আবার লগ ইন করুন।");
+  if (!accessToken) throw new Error("Your session has expired. Please sign in again.");
   const headers = new Headers(options.headers || {});
   headers.set("Authorization", `Bearer ${accessToken}`);
   headers.set("Accept", "application/json");
@@ -22,7 +22,7 @@ async function requestBackendEndpoint(accessToken, path, options = {}) {
   try {
     response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
   } catch (error) {
-    throw new Error(error.message || "সার্ভারের সঙ্গে সংযোগ করা যাচ্ছে না।");
+    throw new Error(error.message || "Could not connect to the server. Check your connection and try again.");
   }
   const raw = await response.text();
   let payload = null;
@@ -30,13 +30,17 @@ async function requestBackendEndpoint(accessToken, path, options = {}) {
     try {
       payload = JSON.parse(raw);
     } catch {
-      throw new Error("সার্ভার থেকে সঠিক JSON উত্তর আসেনি।");
+      throw new Error("The server returned an invalid response.");
     }
   }
   if (!response.ok) {
-    const message = payload?.error || payload?.message || payload?.details ||
-      `অনুরোধ ব্যর্থ হয়েছে (${response.status})`;
-    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+    const message =
+      response.status === 401 || response.status === 403
+        ? "Your session has expired. Please sign in again."
+        : response.status === 404
+          ? "The requested item was not found."
+          : `Request failed (${response.status}). Please try again.`;
+    throw new Error(message);
   }
   return payload;
 }
@@ -133,7 +137,7 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
     : [{ id: "0", node_name: "Main ESP32 (Gateway)" }, ...approved];
   function startModal(name) {
     if (["device", "sensor"].includes(name) && !data.gateways.length) {
-      notify("আগে একটি Gateway যোগ করুন।", true);
+      notify("Add a gateway first.", true);
       return;
     }
     setModal(name);
@@ -167,13 +171,13 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
         );
         setModal("");
         notify(
-          `Gateway তৈরি হয়েছে${result?.claim_code ? ` · Claim Code ${result.claim_code}` : ""}`,
+          `Gateway created${result?.claim_code ? ` · Claim Code ${result.claim_code}` : ""}`,
         );
         await refresh();
       } else if (modal === "device") {
         const pin = Number(f.get("pin"));
         if (!DEVICE_PINS.includes(pin))
-          throw new Error("নিরাপদ GPIO Pin নির্বাচন করুন।");
+          throw new Error("Select a valid GPIO pin.");
         await requestBackendEndpoint(session.access_token, "/api/devices", jsonRequest("POST", {
           gateway_id: Number(f.get("gateway")),
           node_id: Number(f.get("node")),
@@ -181,19 +185,19 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
           pin,
         }));
         setModal("");
-        notify("ডিভাইস যোগ হয়েছে।");
+        notify("Device added.");
         await refresh();
       } else if (modal === "sensor") {
         const pin = Number(f.get("pin")),
           node = Number(f.get("node"));
         if (!SENSOR_PINS.includes(pin))
-          throw new Error("নিরাপদ GPIO Pin নির্বাচন করুন।");
+          throw new Error("Select a valid GPIO pin.");
         if (
           subOnly &&
           (!node || !approved.some((n) => String(n.id) === String(node)))
         )
           throw new Error(
-            `${sensorType} শুধু অনুমোদিত Sub Node-এ যোগ করা যাবে।`,
+            `${sensorType} can only be assigned to an approved Sub Node.`,
           );
         await requestBackendEndpoint(session.access_token, "/api/sensors", jsonRequest("POST", {
           gateway_id: Number(f.get("gateway")),
@@ -204,7 +208,7 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
           pir_trigger_state: trigger,
         }));
         setModal("");
-        notify("সেন্সর যোগ হয়েছে।");
+        notify("Sensor added.");
         await refresh();
       }
     } catch (err) {
@@ -214,7 +218,7 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
     }
   }
   async function approve(n) {
-    const name = window.prompt("এই Node-এর নাম লিখুন:", "Room Node");
+    const name = window.prompt("Enter a name for this Node:", "Room Node");
     if (!name?.trim()) return;
     await run(
       () => requestBackendEndpoint(
@@ -222,7 +226,7 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
         `/api/nodes/${endpointId(n.id)}`,
         jsonRequest("PATCH", { node_name: name.trim(), is_approved: true }),
       ),
-      "Node অনুমোদিত হয়েছে।",
+      "Node approved.",
     );
   }
   async function removeNode(n) {
@@ -234,12 +238,12 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
       ).length;
     if (
       window.confirm(
-        `“${n.node_name || "Node"}” মুছবেন? এর সঙ্গে ${devices}টি ডিভাইস ও ${sensors}টি সেন্সরও মুছে যাবে।`,
+        `Delete “${n.node_name || "Node"}”? This will also delete ${devices} device${devices === 1 ? "" : "s"} and ${sensors} sensor${sensors === 1 ? "" : "s"}.`,
       )
     )
       await run(
         () => requestBackendEndpoint(session.access_token, `/api/nodes/${endpointId(n.id)}`, { method: "DELETE" }),
-        "Node ও সংশ্লিষ্ট resources মুছে ফেলা হয়েছে।",
+        "Node and related resources deleted.",
       );
   }
   async function toggle(d) {
@@ -269,7 +273,7 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
   async function remove(type, item) {
     if (
       !window.confirm(
-        type === "device" ? "এই ডিভাইসটি মুছবেন?" : "এই সেন্সরটি মুছবেন?",
+        type === "device" ? "Delete this device?" : "Delete this sensor?",
       )
     )
       return;
@@ -278,7 +282,7 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
         type === "device"
           ? requestBackendEndpoint(session.access_token, `/api/devices/${endpointId(item.id)}`, { method: "DELETE" })
           : requestBackendEndpoint(session.access_token, `/api/sensors/${endpointId(item.id)}`, { method: "DELETE" }),
-      `${type === "device" ? "ডিভাইস" : "সেন্সর"} মুছে ফেলা হয়েছে।`,
+      `${type === "device" ? "Device" : "Sensor"} deleted.`,
     );
   }
   return (
@@ -286,25 +290,25 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
       <main className="workspace">
         <section className="dashboard-heading" aria-labelledby="dashboard-title">
           <div>
-            <p className="eyebrow">আপনার স্মার্ট হোম</p>
-            <h1 id="dashboard-title">ড্যাশবোর্ড</h1>
+            <p className="eyebrow">Your Smart Home</p>
+            <h1 id="dashboard-title">Dashboard</h1>
           </div>
           <div className="profile">
             <div className="avatar">IS</div>
             <div className="profile-meta">
               <b>{user.email}</b>
-              <small>অ্যাকাউন্ট</small>
+              <small>Account</small>
             </div>
             <button className="btn btn-quiet" onClick={onLogout}>
-              লগ আউট
+              Sign out
             </button>
           </div>
         </section>
-        <nav className="dashboard-section-nav" aria-label="ড্যাশবোর্ডের বিভাগ">
-          <a href="#overview">ড্যাশবোর্ড</a>
+        <nav className="dashboard-section-nav" aria-label="Dashboard sections">
+          <a href="#overview">Dashboard</a>
           <a href="#gateways">Gateways</a>
-          <a href="#devices">ডিভাইস</a>
-          <a href="#sensors">সেন্সর</a>
+          <a href="#devices">Devices</a>
+          <a href="#sensors">Sensors</a>
         </nav>
         {loading ? (
           <Loading />
@@ -312,13 +316,13 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
           <div className="error-panel" role="alert">
             <span className="error-mark">!</span>
             <div>
-              <h2>ড্যাশবোর্ড লোড করা যায়নি</h2>
+              <h2>Could not load the dashboard</h2>
               <p>{error}</p>
               <button
                 className="btn btn-primary"
                 onClick={() => refresh({ showLoading: true })}
               >
-                আবার চেষ্টা করুন
+                Try again
               </button>
             </div>
           </div>
@@ -326,15 +330,15 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
           <>
             <section id="overview" className="welcome-row">
               <div>
-                <p className="eyebrow">শুভেচ্ছা</p>
-                <h2>আপনার বাড়ির অবস্থা</h2>
-                <p className="muted">সংযুক্ত সবকিছুর এক নজরের সারাংশ।</p>
+                <p className="eyebrow">Overview</p>
+                <h2>Your home at a glance</h2>
+                <p className="muted">A quick summary of everything connected.</p>
               </div>
               <span className="sync-label">
-                <i className="live-dot" /> লাইভ আপডেট
+                <i className="live-dot" /> Live updates
               </span>
             </section>
-            <section className="stats-grid" aria-label="সারাংশ">
+            <section className="stats-grid" aria-label="Summary">
               <Stat
                 icon="⌘"
                 tint="teal"
@@ -344,35 +348,35 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
               <Stat
                 icon="⌂"
                 tint="violet"
-                label="অনুমোদিত Sub Nodes"
+                label="Approved Sub Nodes"
                 value={data.nodes.filter((n) => n.is_approved).length}
               />
               <Stat
                 icon="☼"
                 tint="amber"
-                label="ডিভাইস"
+                label="Devices"
                 value={data.devices.length}
               />
               <Stat
                 icon="⌁"
                 tint="blue"
-                label="সেন্সর"
+                label="Sensors"
                 value={data.sensors.length}
               />
             </section>
             <section id="gateways">
-              <Heading eyebrow="সংযোগ ব্যবস্থাপনা" title="আপনার Gateways">
+              <Heading eyebrow="Connection Management" title="Your Gateways">
                 <button
                   className="btn btn-primary"
                   onClick={() => startModal("gateway")}
                 >
-                  ＋ Gateway যোগ করুন
+                  ＋ Add Gateway
                 </button>
               </Heading>
               <GatewayCards items={data.gateways} />
             </section>
             <section>
-              <Heading eyebrow="অনুমোদনের অপেক্ষায়" title="নতুন Sub Nodes" />
+              <Heading eyebrow="Awaiting Approval" title="New Sub Nodes" />
               <NodeCards
                 items={data.nodes}
                 gateways={data.gateways}
@@ -381,7 +385,7 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
               />
             </section>
             <section>
-              <Heading eyebrow="অনুমোদিত সংযোগ" title="Sub Nodes" />
+              <Heading eyebrow="Approved Connections" title="Sub Nodes" />
               <NodeCards
                 items={data.nodes}
                 gateways={data.gateways}
@@ -389,12 +393,12 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
               />
             </section>
             <section id="devices">
-              <Heading eyebrow="নিয়ন্ত্রণ" title="আলো ও ডিভাইস">
+              <Heading eyebrow="Controls" title="Lights and Devices">
                 <button
                   className="btn btn-primary"
                   onClick={() => startModal("device")}
                 >
-                  ＋ ডিভাইস যোগ করুন
+                  ＋ Add Device
                 </button>
               </Heading>
               <DeviceCards
@@ -406,12 +410,12 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
               />
             </section>
             <section id="sensors">
-              <Heading eyebrow="পরিবেশ পর্যবেক্ষণ" title="সেন্সর">
+              <Heading eyebrow="Environmental Monitoring" title="Sensors">
                 <button
                   className="btn btn-primary"
                   onClick={() => startModal("sensor")}
                 >
-                  ＋ সেন্সর যোগ করুন
+                  ＋ Add Sensor
                 </button>
               </Heading>
               <SensorCards
@@ -429,21 +433,21 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
         <Modal
           title={
             modal === "gateway"
-              ? "Gateway যোগ করুন"
+              ? "Add Gateway"
               : modal === "device"
-                ? "আলো / ডিভাইস যোগ করুন"
-                : "সেন্সর যোগ করুন"
+                ? "Add Light / Device"
+                : "Add Sensor"
           }
           eyebrow={
             modal === "gateway"
-              ? "নতুন সংযোগ"
+              ? "New Connection"
               : modal === "device"
-                ? "ডিভাইস সেটআপ"
-                : "পরিবেশ পর্যবেক্ষণ"
+                ? "Device Setup"
+                : "Environmental Monitoring"
           }
           description={
             modal === "gateway"
-              ? "আপনার ESP32-তে ব্যবহারের জন্য একটি Claim Code তৈরি হবে।"
+              ? "A claim code will be generated for your ESP32."
               : null
           }
           onClose={() => setModal("")}
@@ -451,17 +455,17 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
           <form onSubmit={submit}>
             <label htmlFor="resource-name">
               {modal === "gateway"
-                ? "Gateway-এর নাম"
+                ? "Gateway name"
                 : modal === "device"
-                  ? "ডিভাইসের নাম"
-                  : "সেন্সরের নাম"}
+                  ? "Device name"
+                  : "Sensor name"}
             </label>
             <input
               id="resource-name"
               name="name"
               required
               maxLength={80}
-              placeholder="যেমন: বসার ঘরের আলো"
+              placeholder="e.g., Living room light"
               autoFocus
             />
             {modal !== "gateway" && (
@@ -526,14 +530,14 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
                     <option key={t} value={t}>
                       {t}
                       {t === "PIR"
-                        ? " · গতি (শুধু Sub Node)"
+                        ? " · motion (Sub Node only)"
                         : t === "REED"
-                          ? " · দরজা/জানালা (শুধু Sub Node)"
+                          ? " · door/window (Sub Node only)"
                           : t.startsWith("DHT")
-                            ? " · তাপমাত্রা ও আর্দ্রতা"
+                            ? " · temperature and humidity"
                             : t === "MQ2"
-                              ? " · গ্যাস"
-                              : " · বায়ুর মান"}
+                              ? " · gas"
+                              : " · air quality"}
                     </option>
                   ))}
                 </select>
@@ -549,20 +553,19 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
                       value={trigger}
                       onChange={(e) => setTrigger(e.target.value)}
                     >
-                      <option value="HIGH">HIGH — সক্রিয় হলে pin HIGH</option>
-                      <option value="LOW">LOW — সক্রিয় হলে pin LOW</option>
+                      <option value="HIGH">HIGH — pin is HIGH when triggered</option>
+                      <option value="LOW">LOW — pin is LOW when triggered</option>
                     </select>
                     <p className="hint">
                       {sensorType === "PIR"
-                        ? "HC-SR501-এর জন্য HIGH রাখুন।"
-                        : "সাধারণ NO reed + internal pull-up-এ HIGH রাখুন।"}
+                        ? "Use HIGH for the HC-SR501."
+                        : "Use HIGH for a standard NO reed switch with internal pull-up."}
                     </p>
                   </div>
                 )}
                 {subOnly && !approved.length && (
                   <p className="warning" role="alert">
-                    {sensorType} সেন্সরের জন্য এই Gateway-তে অন্তত একটি অনুমোদিত
-                    Sub Node প্রয়োজন।
+                    {sensorType} sensors require at least one approved Sub Node on this Gateway.
                   </p>
                 )}
                 <label htmlFor="sensor-pin">GPIO Pin</label>
@@ -581,7 +584,7 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
                 type="button"
                 onClick={() => setModal("")}
               >
-                বাতিল
+                Cancel
               </button>
               <button
                 className="btn btn-primary"
@@ -591,12 +594,12 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
                 }
               >
                 {busy
-                  ? "সংরক্ষণ হচ্ছে…"
+                  ? "Saving…"
                   : modal === "gateway"
-                    ? "Claim Code তৈরি"
+                    ? "Generate Claim Code"
                     : modal === "device"
-                      ? "ডিভাইস যোগ করুন"
-                      : "সেন্সর যোগ করুন"}
+                      ? "Add Device"
+                      : "Add Sensor"}
               </button>
             </div>
           </form>

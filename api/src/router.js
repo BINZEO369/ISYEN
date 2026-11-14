@@ -35,13 +35,13 @@ async function route(req, path, searchParams) {
     typeof authorization === "string" &&
     authorization.match(/^Bearer\s+(.+)$/i);
   if (!match)
-    throw new HttpError(401, "চালিয়ে যেতে লগইন করুন।", "AUTH_REQUIRED");
+    throw new HttpError(401, "Please sign in to continue.", "AUTH_REQUIRED");
   const token = match[1].trim();
   const user = await supabaseRequest(config, token, "/auth/v1/user");
   if (!user || !user.id)
     throw new HttpError(
       401,
-      "সেশনটি মেয়াদোত্তীর্ণ; আবার লগইন করুন।",
+      "Your session has expired. Please sign in again.",
       "INVALID_SESSION",
     );
   if (method === "GET" && path === "/dashboard")
@@ -67,10 +67,10 @@ async function route(req, path, searchParams) {
   m = path.match(/^\/sensors\/(\d+)$/);
   if (m && method === "DELETE") return sensor.remove(config, token, m[1]);
   if (!["GET", "POST", "PATCH", "DELETE"].includes(method)) {
-    const error = new HttpError(405, "এই HTTP method অনুমোদিত নয়।");
+    const error = new HttpError(405, "This HTTP method is not allowed.");
     error.allow = "GET, POST, PATCH, DELETE, OPTIONS";
     throw error;
   }
-  throw new HttpError(404, "API endpoint পাওয়া যায়নি।");
+  throw new HttpError(404, "API endpoint not found.");
 }
 module.exports = route;

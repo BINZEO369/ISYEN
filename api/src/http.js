@@ -23,7 +23,7 @@ function applyCors(req, res) {
   if (!allowed.includes(origin))
     throw new HttpError(
       403,
-      "এই website origin থেকে API access অনুমোদিত নয়।",
+      "API access is not allowed from this website origin.",
       "ORIGIN_NOT_ALLOWED",
     );
   res.setHeader("access-control-allow-origin", origin);
@@ -52,13 +52,13 @@ async function readBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
   const length = Number(req.headers && req.headers["content-length"]);
   if (Number.isFinite(length) && length > MAX_BODY_BYTES)
-    throw new HttpError(413, "অনুরোধের তথ্য অতিরিক্ত বড়।");
+    throw new HttpError(413, "Request body is too large.");
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
     if (size > MAX_BODY_BYTES)
-      throw new HttpError(413, "অনুরোধের তথ্য অতিরিক্ত বড়।");
+      throw new HttpError(413, "Request body is too large.");
     chunks.push(chunk);
   }
   if (!size) return {};
@@ -68,7 +68,7 @@ async function readBody(req) {
       throw Error("invalid");
     return value;
   } catch {
-    throw new HttpError(400, "সঠিক JSON তথ্য পাঠান।");
+    throw new HttpError(400, "Please send valid JSON.");
   }
 }
 module.exports = { send, applyCors, getRoute, readBody };

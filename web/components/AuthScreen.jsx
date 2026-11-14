@@ -16,11 +16,17 @@ async function authRequest(path, body) {
     try {
       payload = JSON.parse(text);
     } catch {
-      throw new Error("সার্ভার থেকে সঠিক JSON উত্তর আসেনি।");
+      throw new Error("The server returned an invalid response.");
     }
   }
   if (!response.ok) {
-    throw new Error(payload?.error || `অনুরোধ ব্যর্থ হয়েছে (${response.status})`);
+    const message =
+      response.status === 400
+        ? "Please check your email and password."
+        : response.status === 429
+          ? "Too many attempts. Please wait a moment and try again."
+          : `Request failed (${response.status}). Please try again.`;
+    throw new Error(message);
   }
   return payload;
 }
@@ -50,16 +56,16 @@ export default function AuthScreen({ mode = "signin" }) {
         { email, password },
       );
       if (signup && !result.session?.access_token) {
-        setNotice("অ্যাকাউন্ট তৈরি হয়েছে—ইমেইল যাচাই করে লগ ইন করুন।");
+        setNotice("Account created. Check your email to verify it, then sign in.");
         form.reset();
         return;
       }
       if (!result.session?.access_token)
-        throw new Error("সার্ভার থেকে লগইন session পাওয়া যায়নি।");
+        throw new Error("The server did not return a valid sign-in session.");
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(result.session));
       router.replace("/dashboard");
     } catch (e) {
-      setError(e.message || "লগ ইন করা যায়নি।");
+      setError(e.message || "Unable to sign in.");
     } finally {
       setBusy(false);
     }
@@ -67,18 +73,18 @@ export default function AuthScreen({ mode = "signin" }) {
   return (
     <main className="auth-screen">
       <section className="auth-panel">
-        <div className="brand-mark">ন</div>
+        <div className="brand-mark">I</div>
         <p className="eyebrow auth-eyebrow">SMART LIVING · ISYEN</p>
         <h1>
-          আপনার ঘর,
+          Your home,
           <br />
-          <span>আপনার নিয়ন্ত্রণে।</span>
+          <span>under your control.</span>
         </h1>
         <p className="auth-intro">
-          স্মার্ট ডিভাইস ও সেন্সরগুলোকে এক জায়গা থেকে পরিচালনা করুন।
+          Manage your smart devices and sensors from one place.
         </p>
         <form onSubmit={submit}>
-          <label htmlFor="email">ইমেইল ঠিকানা</label>
+          <label htmlFor="email">Email address</label>
           <input
             id="email"
             name="email"
@@ -87,14 +93,14 @@ export default function AuthScreen({ mode = "signin" }) {
             placeholder="you@example.com"
             required
           />
-          <label htmlFor="password">পাসওয়ার্ড</label>
+          <label htmlFor="password">Password</label>
           <input
             id="password"
             name="password"
             type="password"
             autoComplete={signup ? "new-password" : "current-password"}
             minLength={6}
-            placeholder="কমপক্ষে ৬ অক্ষর"
+            placeholder="At least 6 characters"
             required
           />
           {error && (
@@ -113,14 +119,14 @@ export default function AuthScreen({ mode = "signin" }) {
             disabled={busy}
           >
             {busy
-              ? "অপেক্ষা করুন…"
+              ? "Please wait…"
               : signup
-                ? "অ্যাকাউন্ট তৈরি করুন"
-                : "লগ ইন করুন"}
+                ? "Create account"
+                : "Sign in"}
           </button>
         </form>
         <p className="auth-switch">
-          {signup ? "আগে থেকেই অ্যাকাউন্ট আছে?" : "নতুন অ্যাকাউন্ট তৈরি করবেন?"}{" "}
+          {signup ? "Already have an account?" : "New to ISYEN?"}{" "}
           <button
             type="button"
             className="text-button"
@@ -130,21 +136,21 @@ export default function AuthScreen({ mode = "signin" }) {
               router.push(signup ? "/signin" : "/signup");
             }}
           >
-            {signup ? "লগ ইন" : "সাইন আপ"}
+            {signup ? "Sign in" : "Sign up"}
           </button>
         </p>
       </section>
-      <aside className="auth-art" aria-label="নিবাস স্মার্ট হোম">
+      <aside className="auth-art" aria-label="ISYEN Smart Home">
         <div className="art-orbit orbit-one" />
         <div className="art-orbit orbit-two" />
         <div className="art-copy">
-          <span className="live-dot" /> সংযুক্ত, নিরাপদ, স্মার্ট
+          <span className="live-dot" /> Connected, secure, smart
           <h2>
-            প্রযুক্তি যখন
+            Technology that feels
             <br />
-            ঘরের আপনজন।
+            at home.
           </h2>
-          <p>আপনার gateway, আলো ও পরিবেশের তথ্য—সহজে, এক ড্যাশবোর্ডে।</p>
+          <p>Your gateway, lighting, and environmental data—all in one dashboard.</p>
         </div>
         <div className="art-foot">
           ISYEN SMART HOME <span>●</span> CONNECTED LIVING

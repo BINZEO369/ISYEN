@@ -58,7 +58,7 @@ async function dashboard(config, token) {
 async function readings(config, token, type) {
   if (!["fast", "slow", null].includes(type)) {
     const { HttpError } = require("../errors");
-    throw new HttpError(400, "type fast বা slow হতে হবে।");
+    throw new HttpError(400, "Type must be fast or slow.");
   }
   let sensors = await supabaseRequest(
     config,

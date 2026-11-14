@@ -1,1 +1,1 @@
-{"routes":[{"path":"/","title":"ISYEN Smart Home"},{"path":"/signin","title":"সাইন ইন"},{"path":"/signup","title":"সাইন আপ"},{"path":"/dashboard","title":"ড্যাশবোর্ড"}]}
+{"routes":[{"path":"/","title":"ISYEN Smart Home"},{"path":"/signin","title":"Sign In"},{"path":"/signup","title":"Sign Up"},{"path":"/dashboard","title":"Dashboard"}]}

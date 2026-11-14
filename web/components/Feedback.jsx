@@ -40,7 +40,7 @@ export function Modal({ title, eyebrow, description, onClose, children }) {
           type="button"
           className="modal-close"
           onClick={onClose}
-          aria-label="বন্ধ করুন"
+          aria-label="Close"
         >
           ×
         </button>
@@ -53,7 +53,7 @@ export function Modal({ title, eyebrow, description, onClose, children }) {
   );
 }
 
-export function Loading({ text = "আপনার ড্যাশবোর্ড প্রস্তুত হচ্ছে…" }) {
+export function Loading({ text = "Preparing your dashboard…" }) {
   return (
     <div className="loading-state" role="status">
       <span className="spinner" />

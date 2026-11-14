@@ -8,12 +8,12 @@ const ago = (value) => {
     Math.floor((Date.now() - new Date(value).getTime()) / 1000),
   );
   return n < 60
-    ? `${n}s আগে`
+    ? `${n}s ago`
     : n < 3600
-      ? `${Math.floor(n / 60)}m আগে`
+      ? `${Math.floor(n / 60)}m ago`
       : n < 86400
-        ? `${Math.floor(n / 3600)}h আগে`
-        : `${Math.floor(n / 86400)}d আগে`;
+        ? `${Math.floor(n / 3600)}h ago`
+        : `${Math.floor(n / 86400)}d ago`;
 };
 const Empty = ({ children }) => <div className="empty-state">{children}</div>;
 export function GatewayCards({ items }) {
@@ -30,7 +30,7 @@ export function GatewayCards({ items }) {
                 <div>
                   <div className="card-title">{g.gateway_name}</div>
                   <div className="card-sub">
-                    MAC · {g.mac_address || "সংযোগের অপেক্ষায়"}
+                    MAC · {g.mac_address || "Waiting for connection"}
                   </div>
                 </div>
                 {g.mac_address ? (
@@ -45,7 +45,7 @@ export function GatewayCards({ items }) {
               </div>
               <div className="badge-row">
                 {g.last_seen && (
-                  <span className="badge">সর্বশেষ · {ago(g.last_seen)}</span>
+                  <span className="badge">Last seen · {ago(g.last_seen)}</span>
                 )}
               </div>
             </article>
@@ -53,7 +53,7 @@ export function GatewayCards({ items }) {
         })
       ) : (
         <Empty>
-          এখনও কোনো Gateway যোগ করা হয়নি। শুরু করতে Gateway যোগ করুন।
+          No gateways added yet. Add a gateway to get started.
         </Empty>
       )}
     </div>
@@ -78,7 +78,7 @@ export function NodeCards({
                 <div>
                   <div className="card-title">
                     {pending
-                      ? "নতুন Node শনাক্ত হয়েছে"
+                      ? "New Node detected"
                       : n.node_name || "Sub Node"}
                   </div>
                   <div className="card-sub">
@@ -87,7 +87,7 @@ export function NodeCards({
                   </div>
                 </div>
                 <span className={`status ${pending ? "offline" : ""}`}>
-                  {pending ? "অনুমোদন প্রয়োজন" : "অনুমোদিত"}
+                  {pending ? "Approval required" : "Approved"}
                 </span>
               </div>
               <div className="card-actions">
@@ -96,7 +96,7 @@ export function NodeCards({
                     className="btn btn-primary"
                     onClick={() => onApprove(n)}
                   >
-                    অনুমোদন ও নাম দিন
+                    Approve and name
                   </button>
                 ) : (
                   <>
@@ -105,10 +105,10 @@ export function NodeCards({
                     </span>
                     <button
                       className="icon-button"
-                      aria-label={`${n.node_name || "Node"} মুছুন`}
+                      aria-label={`Delete ${n.node_name || "Node"}`}
                       onClick={() => onDelete(n)}
                     >
-                      মুছুন
+                      Delete
                     </button>
                   </>
                 )}
@@ -119,8 +119,8 @@ export function NodeCards({
       ) : (
         <Empty>
           {pending
-            ? "কোনো অপেক্ষমাণ Sub Node নেই।"
-            : "এখনও কোনো Sub Node অনুমোদিত হয়নি।"}
+            ? "There are no pending Sub Nodes."
+            : "No Sub Nodes have been approved yet."}
         </Empty>
       )}
     </div>
@@ -138,7 +138,7 @@ export function DeviceCards({ items, gateways, nodes, onToggle, onDelete }) {
           const node =
             d.node_id && Number(d.node_id) !== 0
               ? nodes.find((n) => same(n.id, d.node_id))?.node_name ||
-                "অজানা Node"
+                "Unknown Node"
               : "Main Board";
           return (
             <article className="card" key={d.id}>
@@ -161,22 +161,22 @@ export function DeviceCards({ items, gateways, nodes, onToggle, onDelete }) {
                   className={`toggle ${on ? "on" : ""}`}
                   role="switch"
                   aria-checked={on}
-                  aria-label={`${d.device_name} চালু বা বন্ধ`}
+                  aria-label={`Toggle ${d.device_name}`}
                   onClick={() => onToggle(d)}
                 />
                 <button
                   className="icon-button"
-                  aria-label={`${d.device_name} মুছুন`}
+                  aria-label={`Delete ${d.device_name}`}
                   onClick={() => onDelete(d)}
                 >
-                  মুছুন
+                  Delete
                 </button>
               </div>
             </article>
           );
         })
       ) : (
-        <Empty>এখনও কোনো আলো বা ডিভাইস যোগ করা হয়নি।</Empty>
+        <Empty>No lights or devices added yet.</Empty>
       )}
     </div>
   );
@@ -187,7 +187,7 @@ function Reading({ sensor, reading: r }) {
   if (!r)
     return (
       <div className="sensor-reading">
-        <span className="reading-label">এখনও কোনো reading পাওয়া যায়নি</span>
+        <span className="reading-label">No readings available yet</span>
       </div>
     );
   if (["PIR", "REED"].includes(sensor.sensor_type)) {
@@ -215,7 +215,7 @@ function Reading({ sensor, reading: r }) {
         </div>
         <div>
           <div className="reading-value compact">{ago(r.created_at)}</div>
-          <div className="reading-label">সর্বশেষ আপডেট</div>
+          <div className="reading-label">Last updated</div>
         </div>
       </div>
     );
@@ -241,13 +241,13 @@ function Reading({ sensor, reading: r }) {
         <div className="reading-value">
           {t == null ? "—" : Number(t).toFixed(1)}°C
         </div>
-        <div className="reading-label">তাপমাত্রা</div>
+        <div className="reading-label">Temperature</div>
       </div>
       <div>
         <div className="reading-value">
           {h == null ? "—" : Number(h).toFixed(1)}%
         </div>
-        <div className="reading-label">আর্দ্রতা</div>
+        <div className="reading-label">Humidity</div>
       </div>
     </div>
   );
@@ -261,7 +261,7 @@ export function SensorCards({ items, gateways, nodes, readings, onDelete }) {
           const node =
             s.node_id && Number(s.node_id) !== 0
               ? nodes.find((n) => same(n.id, s.node_id))?.node_name ||
-                "অজানা Node"
+                "Unknown Node"
               : "Main Board";
           const trigger = ["PIR", "REED"].includes(s.sensor_type);
           return (
@@ -290,17 +290,17 @@ export function SensorCards({ items, gateways, nodes, readings, onDelete }) {
                 </span>
                 <button
                   className="icon-button"
-                  aria-label={`${s.sensor_name} মুছুন`}
+                  aria-label={`Delete ${s.sensor_name}`}
                   onClick={() => onDelete(s)}
                 >
-                  মুছুন
+                  Delete
                 </button>
               </div>
             </article>
           );
         })
       ) : (
-        <Empty>এখনও কোনো সেন্সর যোগ করা হয়নি।</Empty>
+        <Empty>No sensors added yet.</Empty>
       )}
     </div>
   );

@@ -15,24 +15,24 @@ const SENSOR_PINS = new Set([
 ]);
 function requireText(value, field, max = 80) {
   if (typeof value !== "string" || !value.trim() || value.trim().length > max)
-    throw new HttpError(400, `${field} আবশ্যক (সর্বোচ্চ ${max} অক্ষর)।`);
+    throw new HttpError(400, `${field} is required (maximum ${max} characters).`);
   return value.trim();
 }
 function requireId(value, field = "ID") {
   const id = Number(value);
   if (!Number.isSafeInteger(id) || id < 1)
-    throw new HttpError(400, `সঠিক ${field} দিন।`);
+    throw new HttpError(400, `Please provide a valid ${field}.`);
   return id;
 }
 function validatePin(value, allowed) {
   const pin = Number(value);
   if (!Number.isInteger(pin) || !allowed.has(pin))
-    throw new HttpError(400, "এই GPIO pin অনুমোদিত নয়।");
+    throw new HttpError(400, "This GPIO pin is not allowed.");
   return pin;
 }
 function requireKeys(body, keys) {
   if (Object.keys(body).some((key) => !keys.includes(key)))
-    throw new HttpError(400, "অনুরোধে অচেনা field রয়েছে।");
+    throw new HttpError(400, "The request contains an unexpected field.");
 }
 module.exports = {
   VALID_SENSOR_TYPES,

@@ -21,26 +21,26 @@ async function create(req, config, token) {
     "pir_trigger_state",
   ]);
   if (!VALID_SENSOR_TYPES.has(b.sensor_type))
-    throw new HttpError(400, "Sensor type অনুমোদিত নয়।");
+    throw new HttpError(400, "Sensor type is not supported.");
   const node_id = Number(b.node_id);
   if (!Number.isSafeInteger(node_id) || node_id < 0)
-    throw new HttpError(400, "সঠিক node ID দিন।");
+    throw new HttpError(400, "Please provide a valid node ID.");
   if (["PIR", "REED"].includes(b.sensor_type) && node_id === 0)
     throw new HttpError(
       400,
-      "PIR ও REED sensor approved subnode-এ যুক্ত করতে হবে।",
+      "PIR and REED sensors must be connected to an approved Sub Node.",
     );
   const gateway_id = requireId(b.gateway_id, "gateway ID");
   if (node_id > 0) await assertApprovedNode(config, token, node_id, gateway_id);
   if (!["HIGH", "LOW"].includes(b.pir_trigger_state))
-    throw new HttpError(400, "Trigger state HIGH বা LOW হতে হবে।");
+    throw new HttpError(400, "Trigger state must be HIGH or LOW.");
   const data = await supabaseRequest(config, token, "/rest/v1/sensors", {
     method: "POST",
     prefer: "return=representation",
     body: {
       gateway_id,
       node_id,
-      sensor_name: requireText(b.sensor_name, "Sensor-এর নাম"),
+      sensor_name: requireText(b.sensor_name, "Sensor name"),
       pin: validatePin(b.pin, SENSOR_PINS),
       sensor_type: b.sensor_type,
       pir_trigger_state: b.pir_trigger_state,
@@ -56,7 +56,7 @@ async function remove(config, token, id) {
     { method: "DELETE", prefer: "return=representation" },
   );
   if (!Array.isArray(data) || !data.length)
-    throw new HttpError(404, "Sensor পাওয়া যায়নি।");
+    throw new HttpError(404, "Sensor not found.");
   return { ok: true };
 }
 module.exports = { create, remove };

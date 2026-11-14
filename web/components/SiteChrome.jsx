@@ -7,20 +7,20 @@ export default function SiteChrome({ children }) {
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <Link className={styles.brand} href="/" aria-label="ISYEN Home">
-            <span className={styles.brandMark}>ই</span>
+            <span className={styles.brandMark}>I</span>
             <span className={styles.brandWord}>
               ISYEN <small>SMART HOME</small>
             </span>
           </Link>
-          <nav className={styles.nav} aria-label="প্রধান নেভিগেশন">
-            <Link href="/">হোম</Link>
-            <Link href="/#features">ফিচার</Link>
-            <Link href="/#how-it-works">কীভাবে কাজ করে</Link>
+          <nav className={styles.nav} aria-label="Main navigation">
+            <Link href="/">Home</Link>
+            <Link href="/#features">Features</Link>
+            <Link href="/#how-it-works">How it works</Link>
           </nav>
           <div className={styles.actions}>
-            <Link className={styles.signIn} href="/signin">সাইন ইন</Link>
-            <Link className={styles.signUp} href="/signup">সাইন আপ</Link>
-            <Link className={styles.dashboard} href="/dashboard">ড্যাশবোর্ড</Link>
+            <Link className={styles.signIn} href="/signin">Sign in</Link>
+            <Link className={styles.signUp} href="/signup">Sign up</Link>
+            <Link className={styles.dashboard} href="/dashboard">Dashboard</Link>
           </div>
         </div>
       </header>
@@ -28,12 +28,12 @@ export default function SiteChrome({ children }) {
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
           <span>© {new Date().getFullYear()} ISYEN Smart Home</span>
-          <nav aria-label="ফুটার নেভিগেশন">
-            <Link href="/">হোম</Link>
-            <Link href="/#features">ফিচার</Link>
-            <Link href="/signin">সাইন ইন</Link>
-            <Link href="/signup">সাইন আপ</Link>
-            <Link href="/dashboard">ড্যাশবোর্ড</Link>
+          <nav aria-label="Footer navigation">
+            <Link href="/">Home</Link>
+            <Link href="/#features">Features</Link>
+            <Link href="/signin">Sign in</Link>
+            <Link href="/signup">Sign up</Link>
+            <Link href="/dashboard">Dashboard</Link>
           </nav>
         </div>
       </footer>

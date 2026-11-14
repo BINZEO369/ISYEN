@@ -23,7 +23,7 @@ function getSupabaseConfig(req) {
   if (!anonKey || isPrivilegedKey(String(anonKey)))
     throw new HttpError(
       503,
-      "Supabase public anon key server configuration-এ দিন।",
+      "Set the Supabase public anon key in the server configuration.",
       "SUPABASE_CONFIG_MISSING",
     );
   return { url: url.replace(/\/+$/, ""), anonKey: String(anonKey) };
@@ -55,7 +55,7 @@ async function supabaseRequest(config, accessToken, path, options = {}) {
     const msg =
       data && typeof data.message === "string"
         ? data.message
-        : "Supabase অনুরোধটি সম্পন্ন করতে পারেনি।";
+        : "The Supabase request could not be completed.";
     throw new HttpError(response.status, msg, code);
   }
   return data;
@@ -88,7 +88,7 @@ async function supabaseAuthRequest(config, path, options = {}) {
       (data && (data.code || data.error_code)) || undefined;
     const message =
       (data && (data.message || data.msg || data.error_description)) ||
-      "Supabase Auth অনুরোধটি সম্পন্ন করতে পারেনি।";
+      "The Supabase Auth request could not be completed.";
     throw new HttpError(response.status, message, code);
   }
   return data;
@@ -135,7 +135,7 @@ async function assertApprovedNode(config, token, nodeId, gatewayId) {
   if (!Array.isArray(nodes) || !nodes.length)
     throw new HttpError(
       400,
-      "নির্বাচিত Gateway-এর অনুমোদিত Sub Node নির্বাচন করুন।",
+      "Select an approved Sub Node for the selected Gateway.",
     );
 }
 module.exports = {
