@@ -3,8 +3,8 @@ const { HttpError } = require("./errors");
 const {
   getSupabaseConfig,
   supabaseRequest,
-  isPrivilegedKey,
 } = require("./supabase");
+const authController = require("./controllers/auth");
 const dashboard = require("./controllers/dashboard"),
   gateway = require("./controllers/gateway"),
   node = require("./controllers/node"),
@@ -17,19 +17,23 @@ async function route(req, path, searchParams) {
       service: "ISYEN API",
       timestamp: new Date().toISOString(),
     };
-  if (req.method === "GET" && path === "/config") {
-    const key = process.env.SUPABASE_ANON_KEY;
-    const result = {
-      apiBaseUrl: process.env.PUBLIC_API_BASE_URL || "",
-      supabaseUrl:
-        process.env.SUPABASE_URL || "https://fabasazefdnkpygglajz.supabase.co",
-    };
-    if (key && !isPrivilegedKey(key)) result.supabaseAnonKey = key;
-    return result;
-  }
-  const config = getSupabaseConfig(req),
-    auth = req.headers && req.headers.authorization,
-    match = typeof auth === "string" && auth.match(/^Bearer\s+(.+)$/i);
+  const config = getSupabaseConfig(req);
+  const method = req.method || "GET";
+  if (method === "POST" && path === "/auth/register")
+    return authController.register(req, config);
+  if (method === "POST" && path === "/auth/login")
+    return authController.login(req, config);
+  if (method === "POST" && path === "/auth/refresh")
+    return authController.refresh(req, config);
+  if (method === "GET" && path === "/auth/session")
+    return authController.currentUser(req, config);
+  if (method === "POST" && path === "/auth/logout")
+    return authController.logout(req, config);
+
+  const authorization = req.headers && req.headers.authorization;
+  const match =
+    typeof authorization === "string" &&
+    authorization.match(/^Bearer\s+(.+)$/i);
   if (!match)
     throw new HttpError(401, "চালিয়ে যেতে লগইন করুন।", "AUTH_REQUIRED");
   const token = match[1].trim();
@@ -40,7 +44,6 @@ async function route(req, path, searchParams) {
       "সেশনটি মেয়াদোত্তীর্ণ; আবার লগইন করুন।",
       "INVALID_SESSION",
     );
-  const method = req.method || "GET";
   if (method === "GET" && path === "/dashboard")
     return dashboard.dashboard(config, token);
   if (method === "GET" && path === "/readings")

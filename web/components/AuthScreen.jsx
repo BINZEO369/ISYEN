@@ -1,7 +1,28 @@
 import { useState } from "react";
-import { getSupabase } from "../services/config";
+import { apiUrl } from "../services/config";
 
-export default function AuthScreen() {
+async function authRequest(path, body) {
+  const response = await fetch(apiUrl(path), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(body),
+  });
+  const text = await response.text();
+  let payload = null;
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      throw new Error("সার্ভার থেকে সঠিক JSON উত্তর আসেনি।");
+    }
+  }
+  if (!response.ok) {
+    throw new Error(payload?.error || `অনুরোধ ব্যর্থ হয়েছে (${response.status})`);
+  }
+  return payload;
+}
+
+export default function AuthScreen({ onAuthenticated }) {
   const [signup, setSignup] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -13,18 +34,21 @@ export default function AuthScreen() {
     setError("");
     setNotice("");
     try {
-      const sb = await getSupabase();
       const email = form.email.value.trim();
       const password = form.password.value;
-      const result = signup
-        ? await sb.auth.signUp({ email, password })
-        : await sb.auth.signInWithPassword({ email, password });
-      if (result.error) throw result.error;
-      if (signup && !result.data.session) {
+      const result = await authRequest(
+        signup ? "/api/auth/register" : "/api/auth/login",
+        { email, password },
+      );
+      if (signup && !result.session?.access_token) {
         setNotice("অ্যাকাউন্ট তৈরি হয়েছে—ইমেইল যাচাই করে লগ ইন করুন।");
         setSignup(false);
         form.reset();
+        return;
       }
+      if (!result.session?.access_token)
+        throw new Error("সার্ভার থেকে লগইন session পাওয়া যায়নি।");
+      onAuthenticated(result.session);
     } catch (e) {
       setError(e.message || "লগ ইন করা যায়নি।");
     } finally {

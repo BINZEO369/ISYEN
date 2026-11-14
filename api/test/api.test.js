@@ -52,6 +52,79 @@ function mockAuthAndDatabase(routeHandler) {
   return calls;
 }
 
+test("registers through Supabase Auth with the server-side publishable key", async () => {
+  let request;
+  global.fetch = async (url, options) => {
+    request = { url: String(url), ...options };
+    return mockResponse(200, {
+      id: "user-new",
+      email: "new@example.com",
+    });
+  };
+  const result = await callApi({
+    method: "POST",
+    url: "/api/auth/register",
+    body: { email: "new@example.com", password: "correct-horse" },
+  });
+  assert.equal(result.status, 201);
+  assert.equal(result.body.session, null);
+  assert.equal(result.body.needsEmailVerification, true);
+  assert.equal(request.url, "https://supabase.example.test/auth/v1/signup");
+  assert.equal(request.headers.apikey, "sb_publishable_test_key");
+  assert.equal(request.headers.authorization, undefined);
+});
+
+test("logs in through Supabase Auth and returns its session", async () => {
+  const session = {
+    access_token: "access-token",
+    refresh_token: "refresh-token",
+    expires_in: 3600,
+    user: { id: "user-123", email: "owner@example.com" },
+  };
+  let request;
+  global.fetch = async (url, options) => {
+    request = { url: String(url), ...options };
+    return mockResponse(200, session);
+  };
+  const result = await callApi({
+    method: "POST",
+    url: "/api/auth/login",
+    body: { email: "owner@example.com", password: "correct-horse" },
+  });
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.session, session);
+  assert.equal(
+    request.url,
+    "https://supabase.example.test/auth/v1/token?grant_type=password",
+  );
+  assert.equal(request.headers.apikey, "sb_publishable_test_key");
+  assert.equal(request.headers.authorization, undefined);
+});
+
+test("refreshes an expired session through the server API", async () => {
+  let request;
+  global.fetch = async (url, options) => {
+    request = { url: String(url), ...options };
+    return mockResponse(200, {
+      access_token: "new-access-token",
+      refresh_token: "rotated-refresh-token",
+      user: { id: "user-123", email: "owner@example.com" },
+    });
+  };
+  const result = await callApi({
+    method: "POST",
+    url: "/api/auth/refresh",
+    body: { refresh_token: "old-refresh-token" },
+  });
+  assert.equal(result.status, 200);
+  assert.equal(result.body.session.access_token, "new-access-token");
+  assert.equal(
+    request.url,
+    "https://supabase.example.test/auth/v1/token?grant_type=refresh_token",
+  );
+  assert.equal(request.headers.apikey, "sb_publishable_test_key");
+});
+
 test("rejects protected dashboard requests without a user session", async () => {
   let networkCalls = 0;
   global.fetch = async () => {

@@ -1,6 +1,6 @@
 # ISYEN Smart Home — পৃথক Web ও API apps
 
-এটি একটি repository হলেও website এবং backend **দুটি পৃথক app**: তাদের আলাদা package, build/start command, root directory, deploy target এবং URL/origin। `web/` হলো Next.js + React dashboard; `api/` হলো independently hosted native Node.js REST service। Admin এই কাজের scope-এ নেই এবং অপরিবর্তিত রাখা হয়েছে।
+এটি একটি repository হলেও website এবং backend **দুটি পৃথক app**: তাদের আলাদা package, build/start command, root directory, deploy target এবং URL/origin। `web/` হলো Next.js + React dashboard; `api/` হলো native Node.js REST service। Browser সরাসরি Supabase Auth/REST-এ যায় না: login, registration, session refresh, dashboard ও CRUD endpoint সবই `isyen-api`-র মাধ্যমে যায়। Supabase configuration শুধু API service-এর runtime-এ থাকে। Admin এই কাজের scope-এ নেই এবং অপরিবর্তিত রাখা হয়েছে।
 
 ## Project structure
 
@@ -8,7 +8,7 @@
 web/                         # Vercel website project root
   app/                       # Next.js App Router
   components/                # auth, dashboard, cards, feedback
-  services/                  # Supabase Auth client and runtime configuration
+  services/                  # API origin/configuration only; no Supabase browser key
   styles/                    # responsive dashboard styles
   package.json               # web-only dependencies and scripts
   .env.example
@@ -18,9 +18,9 @@ api/                         # separate Node.js API host root
   src/
     server.js                # request lifecycle, CORS, error mapping
     router.js                # endpoint dispatch
-    controllers/              # dashboard, gateway, node, device, sensor
+    controllers/              # auth, dashboard, gateway, node, device, sensor
     http.js                  # request/response, CORS, URL helpers
-    supabase.js               # per-user JWT Supabase REST access
+    supabase.js               # server-side Supabase Auth/REST requests
     validators.js             # IDs, pins, fields and payload validation
   test/                       # isolated Node built-in tests
   package.json
@@ -59,36 +59,32 @@ Local API env-তে `ALLOWED_ORIGINS=http://localhost:3000`; production API env
 
 ### 1. Website — Vercel project root `web/`
 
-GitHub repository-টি Vercel-এ import করে **Root Directory = `web`** দিন; Framework Preset Next.js/auto-detect, build command `npm run build`। Vercel Project Environment Variables-এ রাখুন:
+GitHub repository-টি Vercel-এ import করে **Root Directory = `web`** দিন; Framework Preset Next.js/auto-detect, build command `npm run build`। Production website-এর কোনো environment variable দরকার নেই: code-এর default API origin `https://isyen-api.vercel.app`। Local/staging API আলাদা হলে শুধু সে ক্ষেত্রে `NEXT_PUBLIC_API_BASE_URL` override দিন। Frontend-এ Supabase URL/key দেবেন না।
 
-| Variable                        | Value                                                                   |
-| ------------------------------- | ----------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL                                                    |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase publishable/anon key—browser-এ ব্যবহারের জন্য public key       |
-| `NEXT_PUBLIC_API_BASE_URL`      | API host-এর origin, যেমন `https://api.example.com`—শেষে `/api` দেবেন না |
+### 2. API — Vercel project root `api/`
 
-Deploy করলে website URL হবে Vercel-এর website URL; Vercel-এ environment বদলালে নতুন deployment করতে হবে।
-
-### 2. API — স্বতন্ত্র Node.js service root `api/`
-
-API-র জন্য আলাদা Node host/service তৈরি করুন (যেমন Render/Fly.io বা আপনার Node host) এবং একই repository থেকে **Root Directory = `api`**, build/install `npm install`, start command `npm start` দিন। Host-এর environment variables:
+`isyen-api` Vercel project-এ **Root Directory = `api`**, Node framework রাখুন। Vercel Project Environment Variables-এ (শুধু এই API project-এ) দিন:
 
 | Variable            | Value                                                                           |
 | ------------------- | ------------------------------------------------------------------------------- |
 | `SUPABASE_URL`      | Supabase project URL                                                            |
-| `SUPABASE_ANON_KEY` | একই Supabase publishable/anon key—service-role নয়                              |
+| `SUPABASE_ANON_KEY` | Supabase publishable/anon key—service-role নয়                                   |
 | `ALLOWED_ORIGINS`   | Website deployment-এর exact origin; custom domain থাকলে comma-separated origins |
-| `PORT`              | Host সাধারণত নিজে দেয়; না দিলে API default `3001`                              |
+| `PORT`              | Vercel নিজে দেয়; local API default `3001`                                      |
 
-এরপর website Vercel-এর `NEXT_PUBLIC_API_BASE_URL`-এ এই API service origin বসিয়ে redeploy করুন। API host-এর `ALLOWED_ORIGINS`-এ Vercel/custom domain-এর website origin থাকতে হবে। API health URL: `https://api.example.com/api/health`। Website API-তে Supabase access token পাঠায়; API token যাচাই করে একই user JWT দিয়ে database request করে, ফলে Supabase RLS owner isolation বজায় থাকে।
+`ALLOWED_ORIGINS`-এ website-এর exact origin (`https://isyen-web.vercel.app`) থাকতে হবে। API health URL: `https://isyen-api.vercel.app/api/health`। Login/register/refresh ও dashboard request API দিয়ে হয়; server-side publishable key এবং user access token দিয়ে Supabase Auth/REST ব্যবহার হয়, ফলে Supabase RLS owner isolation বজায় থাকে।
 
-> `NEXT_PUBLIC_*` variables browser-এ প্রকাশিত হয়। এগুলোতে শুধু Supabase URL/anon key এবং API origin দিন। `SUPABASE_SERVICE_ROLE_KEY` কোনো app-এ যোগ করবেন না।
+> Supabase anon/publishable key API runtime-এ রাখা হয়; `SUPABASE_SERVICE_ROLE_KEY` কোনো app-এ যোগ করবেন না। Email confirmation চালু থাকলে Supabase Auth URL Configuration-এ `https://isyen-web.vercel.app` Site URL/redirect origin হিসেবে অনুমোদন করুন।
 
 ## API endpoints
 
 | Method         | Endpoint                           | উদ্দেশ্য                                               |
 | -------------- | ---------------------------------- | ------------------------------------------------------ |
 | GET            | `/api/health`                      | API health check                                       |
+| POST           | `/api/auth/register`               | Supabase Auth-এ account registration                  |
+| POST           | `/api/auth/login`                  | Password login এবং session ফেরানো                     |
+| POST           | `/api/auth/refresh`                | Expired access token refresh                           |
+| GET / POST     | `/api/auth/session`, `/api/auth/logout` | Current user যাচাই / logout                       |
 | GET            | `/api/dashboard`                   | Gateways, nodes, devices, sensors ও readings           |
 | GET            | `/api/readings?type=fast\|slow`    | latest sensor reading polling                          |
 | POST           | `/api/gateways`                    | লগ-ইন করা user-এর Gateway ও claim code তৈরি            |
@@ -97,7 +93,7 @@ API-র জন্য আলাদা Node host/service তৈরি করুন
 | PATCH          | `/api/devices/:id/state`           | Device on/off                                          |
 | POST / DELETE  | `/api/sensors`, `/api/sensors/:id` | Sensor তৈরি/মুছুন                                      |
 
-API validation-এ অনুমোদিত GPIO, sensor type, approved Sub Node ownership এবং request size পরীক্ষা হয়। Fast/slow reading polling, Gateway status এবং realtime dashboard refresh frontend-এ আছে। Login ও registration page Supabase Auth-এ সরাসরি sign-in/sign-up request পাঠায়; Dashboard component নিজ নিজ backend endpoint-এ সরাসরি request পাঠায়। Frontend-এ আলাদা কেন্দ্রীয় API client file নেই; API server Supabase-এর সঙ্গে যোগাযোগ করে।
+API validation-এ অনুমোদিত GPIO, sensor type, approved Sub Node ownership এবং request size পরীক্ষা হয়। Login, registration, refresh, logout ও dashboard CRUD নির্দিষ্ট API endpoints-এ যায়; browser-এ Supabase client/key নেই। Dashboard overview ১৫ সেকেন্ডে refresh হয়; sensor readings API দিয়ে fast/slow interval-এ poll হয়। Access/refresh session শুধু tab-এর `sessionStorage`-এ থাকে; browser/tab বন্ধ হলে পুনরায় login লাগতে পারে।
 
 ## Checks
 

@@ -60,6 +60,39 @@ async function supabaseRequest(config, accessToken, path, options = {}) {
   }
   return data;
 }
+async function supabaseAuthRequest(config, path, options = {}) {
+  const headers = {
+    apikey: config.anonKey,
+    accept: "application/json",
+    ...(options.body ? { "content-type": "application/json" } : {}),
+    ...(options.accessToken
+      ? { authorization: `Bearer ${options.accessToken}` }
+      : {}),
+  };
+  const response = await fetch(`${config.url}${path}`, {
+    method: options.method || "POST",
+    headers,
+    ...(options.body ? { body: JSON.stringify(options.body) } : {}),
+  });
+  const text = await response.text();
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = null;
+    }
+  }
+  if (!response.ok) {
+    const code =
+      (data && (data.code || data.error_code)) || undefined;
+    const message =
+      (data && (data.message || data.msg || data.error_description)) ||
+      "Supabase Auth অনুরোধটি সম্পন্ন করতে পারেনি।";
+    throw new HttpError(response.status, message, code);
+  }
+  return data;
+}
 function query(table, params) {
   return `/rest/v1/${table}?${new URLSearchParams(params).toString()}`;
 }
@@ -109,6 +142,7 @@ module.exports = {
   isPrivilegedKey,
   getSupabaseConfig,
   supabaseRequest,
+  supabaseAuthRequest,
   query,
   loadLatestReadings,
   assertApprovedNode,
