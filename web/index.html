@@ -14,7 +14,6 @@
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; padding: 40px 20px; }
   .container { max-width: 1100px; margin: 0 auto; }
   
-  /* Auth Screen */
   #auth-screen { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
   .auth-box { background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 400px; }
   .auth-box h2 { margin-bottom: 20px; text-align: center; }
@@ -22,7 +21,6 @@
   .auth-box button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
   .auth-box .toggle-auth { text-align: center; font-size: 13px; color: var(--primary); cursor: pointer; margin-top: 15px; }
 
-  /* Main App */
   #main-app { display: none; }
   header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
   h1 { font-size: 22px; font-weight: 600; }
@@ -38,7 +36,7 @@
 
   .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
   .name { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
-  .badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--border); display: inline-block; margin-right: 4px;}
+  .badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--border); display: inline-block; margin-right: 4px; margin-top: 4px;}
   .code-badge { background: #dbeafe; color: #1e40af; font-weight: bold; font-size: 14px; letter-spacing: 1px; }
   
   .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
@@ -54,18 +52,23 @@
   .sensor-data { display: flex; gap: 15px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-top: 5px;}
   .sensor-val { font-size: 20px; font-weight: 700; color: var(--text-main); }
   .sensor-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
+  .motion-active { animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 
   .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
   .modal.active { display: flex; }
-  .modal-content { background: var(--card-bg); border-radius: 12px; padding: 24px; max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 16px; }
+  .modal-content { background: var(--card-bg); border-radius: 12px; padding: 24px; max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 16px; max-height: 90vh; overflow-y: auto;}
   .modal-content h2 { font-size: 18px; font-weight: 600; }
   .modal-content label { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: -8px; }
   .modal-content input, .modal-content select { padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); width: 100%; font-size: 14px; }
+  .modal-content select option:disabled { color: #cbd5e1; }
   .modal-actions { display: flex; gap: 12px; margin-top: 8px; }
   .btn-primary { background: var(--primary); color: #fff; border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; }
+  .btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
   .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; }
+  .warning-text { font-size: 12px; color: var(--danger); padding: 8px 10px; background: #fef2f2; border-radius: 6px; border: 1px solid #fecaca; display: none; }
 
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-main); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transition: 0.3s; z-index: 200; pointer-events: none; }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-main); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transition: 0.3s; z-index: 200; pointer-events: none; max-width: 320px; }
   .toast.show { opacity: 1; transform: translateY(0); }
   .empty-text { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
 </style>
@@ -93,33 +96,28 @@
     </div>
   </header>
 
-  <!-- Gateways Section -->
   <div class="section-title">
-    <span>Gateways (Main ESP32)</span>
+    <span>Gateways</span>
     <button class="add-btn" onclick="openGatewayModal()">+ Add Gateway</button>
   </div>
   <div id="gatewayGrid" class="grid"></div>
 
-  <!-- Pending Nodes Section -->
   <div class="section-title" id="pendingSection" style="display: none;">
     <span>New Devices Found (Pending)</span>
   </div>
   <div id="pendingGrid" class="grid"></div>
 
-  <!-- Approved Nodes Section -->
   <div class="section-title">
     <span>Sub Nodes</span>
   </div>
   <div id="nodeGrid" class="grid"></div>
 
-  <!-- Lights Section -->
   <div class="section-title">
     <span>Lights & Devices</span>
     <button class="add-btn" onclick="openLightModal()">+ Add Light</button>
   </div>
   <div id="lightGrid" class="grid"></div>
 
-  <!-- Sensors Section -->
   <div class="section-title">
     <span>Sensors</span>
     <button class="add-btn" onclick="openSensorModal()">+ Add Sensor</button>
@@ -127,7 +125,7 @@
   <div id="sensorGrid" class="grid"></div>
 </div>
 
-<!-- Modals -->
+<!-- ================= MODALS ================= -->
 <div id="gatewayModal" class="modal">
   <div class="modal-content">
     <h2>Add New Gateway</h2>
@@ -165,21 +163,30 @@
     <label>Sensor Name</label>
     <input type="text" id="sensorName" placeholder="e.g. Room Temp" />
     <label>Sensor Type</label>
-    <select id="sensorType">
+    <select id="sensorType" onchange="onSensorTypeChange()">
       <option value="DHT11">DHT11 (Temp + Humidity)</option>
       <option value="DHT22">DHT22 (Temp + Humidity)</option>
       <option value="MQ2">MQ2 (Gas)</option>
       <option value="MQ135">MQ135 (Air Quality)</option>
+      <option value="PIR">PIR (Motion) — Sub Node only</option>
     </select>
+    <div id="pirTriggerGroup" style="display: none; margin-top: 4px;">
+      <label>Motion Trigger</label>
+      <select id="pirTriggerState">
+        <option value="HIGH">HIGH (default — most modules)</option>
+        <option value="LOW">LOW (some modules)</option>
+      </select>
+    </div>
+    <div id="pirWarning" class="warning-text">⚠️ PIR sensor must be on a Sub Node, not the Main Gateway.</div>
     <label>Select Gateway</label>
     <select id="sensorGateway" onchange="updateSensorNodeDropdown()"></select>
     <label>Select Node</label>
-    <select id="sensorNode"></select>
+    <select id="sensorNode" onchange="onSensorNodeChange()"></select>
     <label>GPIO Pin</label>
     <select id="sensorPin"></select>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('sensorModal')">Cancel</button>
-      <button class="btn-primary" onclick="saveSensor()">Save</button>
+      <button class="btn-primary" id="sensorSaveBtn" onclick="saveSensor()">Save</button>
     </div>
   </div>
 </div>
@@ -191,7 +198,10 @@ const SUPABASE_URL = "https://fabasazefdnkpygglajz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhYmFzYXplZmRua3B5Z2dsYWp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQzNjUyMjksImV4cCI6MjEwOTk0MTIyOX0.MgUDDJ79RekwPDhc6LB0pIyM2jxyncSnnmiKwaqxo6U";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const SAFE_PINS = [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 38, 39, 40, 41, 42, 47, 48];
+// FIX: safe pins — no flash/UART/strapping/USB
+const DEVICE_PINS = [4, 5, 13, 14, 16, 17, 18, 21, 22, 23, 25, 33];
+const SENSOR_PINS = [4, 5, 13, 14, 15, 16, 17, 18, 21, 22, 23, 25, 33, 34, 35, 36, 39];
+
 let currentUser = null;
 let isSignUp = false;
 let allGateways = [];
@@ -199,11 +209,17 @@ let allNodes = [];
 let allDevices = [];
 let allSensors = [];
 let allReadings = {};
+let rtChannel = null;
+let dashboardInitialized = false;
+let toastTimer = null;
+let reloadTimer = null;
 
-// ================= 1. AUTHENTICATION =================
+// ================= AUTH =================
 document.addEventListener("DOMContentLoaded", async () => {
-  SAFE_PINS.forEach(p => {
+  DEVICE_PINS.forEach(p => {
     document.getElementById("lightPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`;
+  });
+  SENSOR_PINS.forEach(p => {
     document.getElementById("sensorPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`;
   });
 
@@ -211,7 +227,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (session) { currentUser = session.user; showDashboard(); } else { showAuth(); }
 
   sb.auth.onAuthStateChange((event, session) => {
-    if (session) { currentUser = session.user; showDashboard(); } else { currentUser = null; showAuth(); }
+    if (session) { currentUser = session.user; showDashboard(); }
+    else { currentUser = null; dashboardInitialized = false; showAuth(); }
   });
 });
 
@@ -223,82 +240,140 @@ function toggleAuthMode() {
 }
 
 async function handleAuth() {
-  const email = document.getElementById("auth-email").value;
+  const email = document.getElementById("auth-email").value.trim();
   const password = document.getElementById("auth-password").value;
-  if(!email || !password) return showToast("Enter email and password", true);
-  let error;
+  if (!email || !password) return showToast("Enter email and password", true);
+  
   if (isSignUp) {
     const res = await sb.auth.signUp({ email, password });
-    error = res.error;
-    if(!error) showToast("Account created! Check email or login.");
+    if (res.error) return showToast(res.error.message, true);
+    if (!res.data.session) {
+      showToast("Account created! Check email to confirm.");
+      document.getElementById("auth-email").value = "";
+      document.getElementById("auth-password").value = "";
+      toggleAuthMode();
+      return;
+    }
   } else {
     const res = await sb.auth.signInWithPassword({ email, password });
-    error = res.error;
+    if (res.error) showToast(res.error.message, true);
   }
-  if (error) showToast(error.message, true);
 }
 
-async function handleLogout() { await sb.auth.signOut(); }
-function showAuth() { document.getElementById("auth-screen").style.display = "flex"; document.getElementById("main-app").style.display = "none"; }
-function showDashboard() { 
-  document.getElementById("auth-screen").style.display = "none"; 
-  document.getElementById("main-app").style.display = "block"; 
-  document.getElementById("user-email").textContent = currentUser.email; 
-  loadAllData(); 
-  subscribeRealtime(); 
+async function handleLogout() {
+  if (rtChannel) { await sb.removeChannel(rtChannel); rtChannel = null; }
+  dashboardInitialized = false;
+  await sb.auth.signOut();
 }
 
-// ================= 2. LOAD & RENDER =================
+function showAuth() {
+  document.getElementById("auth-screen").style.display = "flex";
+  document.getElementById("main-app").style.display = "none";
+}
+
+function showDashboard() {
+  if (dashboardInitialized && currentUser) return;   // FIX: idempotent
+  dashboardInitialized = true;
+  document.getElementById("auth-screen").style.display = "none";
+  document.getElementById("main-app").style.display = "block";
+  document.getElementById("user-email").textContent = currentUser.email;
+  loadAllData();
+  subscribeRealtime();
+  // FIX: poll sensor readings every 20s (no realtime spam)
+  setInterval(async () => {
+    if (currentUser) { await loadSensorReadings(); renderSensors(); }
+  }, 20000);
+}
+
+// ================= LOAD & RENDER =================
 async function loadAllData() {
-  if(!currentUser) return;
+  if (!currentUser) return;
 
-  const { data: gws } = await sb.from("gateways").select("*").order("created_at");
-  allGateways = gws || [];
-  renderGateways();
+  const [gwRes, ndsRes, devsRes, sensRes] = await Promise.all([
+    sb.from("gateways").select("*").order("created_at"),
+    sb.from("nodes").select("*").order("id"),
+    sb.from("devices").select("*, device_states(is_on)").order("id"),
+    sb.from("sensors").select("*").order("id")
+  ]);
 
-  const { data: nds } = await sb.from("nodes").select("*").order("id");
-  allNodes = nds || [];
-  renderNodes();
-
-  const { data: devs } = await sb.from("devices").select("*, device_states(is_on)").order("id");
-  allDevices = (devs || []).map(d => ({
+  allGateways = gwRes.data || [];
+  allNodes = ndsRes.data || [];
+  allDevices = (devsRes.data || []).map(d => ({
     ...d,
     isOn: Array.isArray(d.device_states) ? (d.device_states[0]?.is_on || false) : (d.device_states?.is_on || false)
   }));
-  renderDevices();
+  allSensors = sensRes.data || [];
 
-  const { data: sens } = await sb.from("sensors").select("*").order("id");
-  allSensors = sens || [];
+  renderGateways();
+  renderNodes();
+  renderDevices();
   await loadSensorReadings();
   renderSensors();
 }
 
-// --- Gateways ---
-function openGatewayModal() { document.getElementById("gatewayModal").classList.add("active"); }
+function formatTime(iso) {
+  if (!iso) return "—";
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
+}
+
+function isGatewayOnline(g) {
+  if (!g.last_seen) return false;
+  return (Date.now() - new Date(g.last_seen).getTime()) < 90000;
+}
+
+// ---- Gateways ----
+function openGatewayModal() {
+  document.getElementById("gatewayName").value = "";
+  document.getElementById("gatewayModal").classList.add("active");
+}
+
 async function saveGateway() {
   const name = document.getElementById("gatewayName").value.trim();
   if (!name) return showToast("Enter gateway name", true);
-  const claimCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+  
+  // FIX: crypto-secure claim code
+  const buf = new Uint8Array(4);
+  crypto.getRandomValues(buf);
+  const claimCode = Array.from(buf).map(b => (b % 36).toString(36)).join('').toUpperCase();
+  
   const { error } = await sb.from("gateways").insert({ user_id: currentUser.id, gateway_name: name, claim_code: claimCode });
-  if (error) showToast(error.message, true);
-  else { showToast("Gateway created!"); closeModal("gatewayModal"); loadAllData(); }
-}
-function renderGateways() {
-  if (allGateways.length === 0) return document.getElementById("gatewayGrid").innerHTML = `<div class="empty-text">No gateways added.</div>`;
-  document.getElementById("gatewayGrid").innerHTML = allGateways.map(g => `
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="name">${g.gateway_name}</div>
-          <span class="badge">MAC: ${g.mac_address || 'Waiting...'}</span>
-        </div>
-        ${g.mac_address ? '<span class="badge" style="color:var(--success)">Online</span>' : `<span class="badge code-badge">Code: ${g.claim_code}</span>`}
-      </div>
-    </div>
-  `).join("");
+  if (error) return showToast(error.message, true);
+  showToast("Gateway created!");
+  closeModal("gatewayModal");
+  loadAllData();
 }
 
-// --- Nodes ---
+function renderGateways() {
+  if (allGateways.length === 0) return document.getElementById("gatewayGrid").innerHTML = `<div class="empty-text">No gateways added.</div>`;
+  document.getElementById("gatewayGrid").innerHTML = allGateways.map(g => {
+    const online = isGatewayOnline(g);
+    let statusBadge = '';
+    if (g.mac_address) {
+      statusBadge = online 
+        ? '<span class="badge" style="color:var(--success)">● Online</span>'
+        : '<span class="badge" style="color:var(--danger)">● Offline</span>';
+    } else {
+      statusBadge = `<span class="badge code-badge">Code: ${g.claim_code || '—'}</span>`;
+    }
+    return `
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="name">${g.gateway_name}</div>
+            <span class="badge">MAC: ${g.mac_address || 'Waiting...'}</span>
+            ${g.last_seen ? `<span class="badge">Seen: ${formatTime(g.last_seen)}</span>` : ''}
+          </div>
+          ${statusBadge}
+        </div>
+      </div>`;
+  }).join("");
+}
+
+// ---- Nodes ----
 function renderNodes() {
   const approved = allNodes.filter(n => n.is_approved);
   const pending = allNodes.filter(n => !n.is_approved);
@@ -316,7 +391,7 @@ function renderNodes() {
     `).join("");
   } else { pendingSection.style.display = "none"; }
 
-  if(approved.length === 0) return document.getElementById("nodeGrid").innerHTML = `<div class="empty-text">No sub nodes approved.</div>`;
+  if (approved.length === 0) return document.getElementById("nodeGrid").innerHTML = `<div class="empty-text">No sub nodes approved.</div>`;
   document.getElementById("nodeGrid").innerHTML = approved.map(n => {
     const gw = allGateways.find(g => g.id === n.gateway_id);
     return `
@@ -332,24 +407,37 @@ function renderNodes() {
     </div>`;
   }).join("");
 }
+
 async function approveNode(id) {
   const name = prompt("Enter a name for this node:", "Room Node");
   if (!name) return;
-  await sb.from("nodes").update({ node_name: name, is_approved: true }).eq("id", id);
-  showToast("Node approved!"); loadAllData();
-}
-async function deleteNode(id) {
-  if (!confirm("Delete this node?")) return;
-  await sb.from("nodes").delete().eq("id", id); loadAllData();
+  const { error } = await sb.from("nodes").update({ node_name: name, is_approved: true }).eq("id", id);
+  if (error) return showToast(error.message, true);
+  showToast("Node approved!");
+  loadAllData();
 }
 
-// --- Devices (Lights) ---
+async function deleteNode(id) {
+  const node = allNodes.find(n => n.id === id);
+  const dCount = allDevices.filter(d => d.node_id === id).length;
+  const sCount = allSensors.filter(s => s.node_id === id).length;
+  const msg = `Delete "${node.node_name}"?\n\nWill also delete:\n• ${dCount} device(s)\n• ${sCount} sensor(s)\n\nThis cannot be undone.`;
+  if (!confirm(msg)) return;
+  const { error } = await sb.from("nodes").delete().eq("id", id);
+  if (error) return showToast(error.message, true);
+  showToast("Node deleted");
+  loadAllData();
+}
+
+// ---- Devices (Lights) ----
 function openLightModal() {
   if (allGateways.length === 0) return showToast("Please add a gateway first!", true);
+  document.getElementById("lightName").value = "";
   document.getElementById("lightGateway").innerHTML = allGateways.map(g => `<option value="${g.id}">${g.gateway_name}</option>`).join('');
   updateLightNodeDropdown();
   document.getElementById("lightModal").classList.add("active");
 }
+
 function updateLightNodeDropdown() {
   const gwId = parseInt(document.getElementById("lightGateway").value);
   const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
@@ -357,12 +445,16 @@ function updateLightNodeDropdown() {
   gwNodes.forEach(n => opts += `<option value="${n.id}">${n.node_name}</option>`);
   document.getElementById("lightNode").innerHTML = opts;
 }
+
 function renderDevices() {
-  if(allDevices.length === 0) return document.getElementById("lightGrid").innerHTML = `<div class="empty-text">No lights added.</div>`;
+  if (allDevices.length === 0) return document.getElementById("lightGrid").innerHTML = `<div class="empty-text">No lights added.</div>`;
   document.getElementById("lightGrid").innerHTML = allDevices.map(l => {
     const gw = allGateways.find(g => g.id === l.gateway_id);
     let nodeName = "Main Board";
-    if (l.node_id > 0) { const nd = allNodes.find(n => n.id === l.node_id); if (nd) nodeName = nd.node_name; }
+    if (l.node_id > 0) { 
+      const nd = allNodes.find(n => n.id === l.node_id); 
+      nodeName = nd ? nd.node_name : "Unknown Node"; 
+    }
     return `
     <div class="card">
       <div class="card-header">
@@ -381,70 +473,199 @@ function renderDevices() {
     </div>`;
   }).join("");
 }
+
 async function toggleLight(id) {
   const l = allDevices.find(x => x.id === id);
-  const newState = !l.isOn; l.isOn = newState; renderDevices();
-  await sb.from("device_states").update({ is_on: newState }).eq("device_id", id);
+  const oldState = l.isOn;
+  const newState = !oldState;
+  l.isOn = newState; renderDevices();
+  
+  const { error } = await sb.from("device_states")
+    .update({ is_on: newState, updated_at: new Date().toISOString() })
+    .eq("device_id", id);
+  
+  if (error) {
+    l.isOn = oldState; renderDevices();
+    showToast("Failed: " + error.message, true);
+  }
 }
+
 async function saveLight() {
   const name = document.getElementById("lightName").value.trim();
   const gwId = parseInt(document.getElementById("lightGateway").value);
   const nodeId = parseInt(document.getElementById("lightNode").value);
   const pin = parseInt(document.getElementById("lightPin").value);
   if (!name) return showToast("Enter light name", true);
-  await sb.from("devices").insert({ gateway_id: gwId, node_id: nodeId, device_name: name, pin: pin });
-  showToast("Light added"); closeModal("lightModal"); loadAllData();
-}
-async function deleteLight(id) {
-  if (!confirm("Delete this light?")) return;
-  await sb.from("devices").delete().eq("id", id); loadAllData();
+  
+  const { error } = await sb.from("devices").insert({ gateway_id: gwId, node_id: nodeId, device_name: name, pin: pin });
+  if (error) return showToast(error.message, true);
+  showToast("Light added");
+  closeModal("lightModal");
+  loadAllData();
 }
 
-// --- Sensors ---
+async function deleteLight(id) {
+  if (!confirm("Delete this light?")) return;
+  const { error } = await sb.from("devices").delete().eq("id", id);
+  if (error) return showToast(error.message, true);
+  showToast("Deleted");
+  loadAllData();
+}
+
+// ---- Sensors (with PIR) ----
 function openSensorModal() {
   if (allGateways.length === 0) return showToast("Please add a gateway first!", true);
+  document.getElementById("sensorName").value = "";
+  document.getElementById("sensorType").value = "DHT11";
+  document.getElementById("pirTriggerState").value = "HIGH";
   document.getElementById("sensorGateway").innerHTML = allGateways.map(g => `<option value="${g.id}">${g.gateway_name}</option>`).join('');
   updateSensorNodeDropdown();
+  onSensorTypeChange();
   document.getElementById("sensorModal").classList.add("active");
 }
+
 function updateSensorNodeDropdown() {
   const gwId = parseInt(document.getElementById("sensorGateway").value);
   const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
-  let opts = `<option value="0">Main ESP32 (Gateway)</option>`;
+  const isPIR = document.getElementById("sensorType").value === 'PIR';
+  
+  let opts = `<option value="0" ${isPIR ? 'disabled' : ''}>Main ESP32 (Gateway)</option>`;
   gwNodes.forEach(n => opts += `<option value="${n.id}">${n.node_name}</option>`);
   document.getElementById("sensorNode").innerHTML = opts;
-}
-async function loadSensorReadings() {
-  for (let s of allSensors) {
-    const { data } = await sb.from("sensor_readings").select("temperature, humidity, gas_value").eq("sensor_id", s.id).order("created_at", { ascending: false }).limit(1);
-    if (data && data.length > 0) allReadings[s.id] = data[0];
+  
+  // PIR + Main ESP এড়াতে auto-switch
+  if (isPIR) {
+    const nodeSelect = document.getElementById("sensorNode");
+    if (parseInt(nodeSelect.value) === 0 && gwNodes.length > 0) {
+      nodeSelect.value = gwNodes[0].id;
+    }
   }
 }
+
+function onSensorTypeChange() {
+  const type = document.getElementById("sensorType").value;
+  const pirGroup = document.getElementById("pirTriggerGroup");
+  const warningDiv = document.getElementById("pirWarning");
+  const saveBtn = document.getElementById("sensorSaveBtn");
+  const gwId = parseInt(document.getElementById("sensorGateway").value);
+  const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
+  
+  if (type === 'PIR') {
+    pirGroup.style.display = 'block';
+    // re-render node dropdown with Main disabled
+    updateSensorNodeDropdown();
+    
+    if (gwNodes.length === 0) {
+      warningDiv.textContent = "⚠️ PIR needs an approved Sub Node. Approve one first.";
+      warningDiv.style.display = 'block';
+      saveBtn.disabled = true;
+    } else {
+      warningDiv.style.display = 'none';
+      saveBtn.disabled = false;
+    }
+  } else {
+    pirGroup.style.display = 'none';
+    warningDiv.style.display = 'none';
+    saveBtn.disabled = false;
+    // re-enable Main ESP option
+    updateSensorNodeDropdown();
+  }
+}
+
+function onSensorNodeChange() {
+  const type = document.getElementById("sensorType").value;
+  const nodeId = parseInt(document.getElementById("sensorNode").value);
+  if (type === 'PIR' && nodeId === 0) {
+    document.getElementById("pirWarning").textContent = "⚠️ PIR sensor must be on a Sub Node.";
+    document.getElementById("pirWarning").style.display = 'block';
+    document.getElementById("sensorSaveBtn").disabled = true;
+  } else {
+    document.getElementById("pirWarning").style.display = 'none';
+    document.getElementById("sensorSaveBtn").disabled = false;
+  }
+}
+
+async function loadSensorReadings() {
+  if (allSensors.length === 0) { allReadings = {}; return; }
+  // FIX: parallel + clear stale
+  const results = await Promise.all(allSensors.map(s =>
+    sb.from("sensor_readings")
+      .select("temperature, humidity, gas_value, motion, created_at")
+      .eq("sensor_id", s.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .then(r => ({ id: s.id, row: r.data?.[0] }))
+  ));
+  allReadings = {};
+  results.forEach(({id, row}) => { if (row) allReadings[id] = row; });
+}
+
+function getLatest(arr) {
+  if (arr === null || arr === undefined) return null;
+  if (Array.isArray(arr)) return arr.length > 0 ? arr[arr.length - 1] : null;
+  return arr;
+}
+
 function renderSensors() {
-  if(allSensors.length === 0) return document.getElementById("sensorGrid").innerHTML = `<div class="empty-text">No sensors added.</div>`;
+  if (allSensors.length === 0) return document.getElementById("sensorGrid").innerHTML = `<div class="empty-text">No sensors added.</div>`;
+  
   document.getElementById("sensorGrid").innerHTML = allSensors.map(s => {
     const gw = allGateways.find(g => g.id === s.gateway_id);
     let nodeName = "Main Board";
-    if (s.node_id > 0) { const nd = allNodes.find(n => n.id === s.node_id); if (nd) nodeName = nd.node_name; }
-    
-    // লেটেস্ট ভ্যালু বের করা (JSONB array থেকে)
-    let latestTemp = '--', latestHum = '--', latestGas = '--';
-    if (allReadings[s.id]) {
-      const r = allReadings[s.id];
-      const getLatest = (arr) => Array.isArray(arr) ? (arr.length > 0 ? arr[arr.length-1] : null) : arr;
-      if (r.temperature) { const t = getLatest(r.temperature); if (t !== null) latestTemp = Number(t).toFixed(1); }
-      if (r.humidity) { const h = getLatest(r.humidity); if (h !== null) latestHum = Number(h).toFixed(1); }
-      if (r.gas_value) { const g = getLatest(r.gas_value); if (g !== null) latestGas = Number(g).toFixed(0); }
+    if (s.node_id > 0) {
+      const nd = allNodes.find(n => n.id === s.node_id);
+      nodeName = nd ? nd.node_name : "Unknown Node";
     }
-
-    const isMQ = s.sensor_type.startsWith("MQ");
-    let dataHtml = isMQ 
-      ? `<div class="sensor-data"><div><div class="sensor-val">${latestGas}</div><div class="sensor-lbl">Gas Value</div></div></div>`
-      : `<div class="sensor-data">
-           <div><div class="sensor-val">${latestTemp}°C</div><div class="sensor-lbl">Temp</div></div>
-           <div><div class="sensor-val">${latestHum}%</div><div class="sensor-lbl">Humidity</div></div>
-         </div>`;
-
+    
+    const r = allReadings[s.id];
+    let dataHtml = '';
+    let extraBadge = '';
+    
+    if (s.sensor_type === 'PIR') {
+      const motionVal = r ? (getLatest(r.motion) !== null ? Number(getLatest(r.motion)) : null) : null;
+      const isMotion = motionVal === 1;
+      const statusColor = motionVal === null ? 'var(--text-muted)' : (isMotion ? 'var(--danger)' : 'var(--success)');
+      const statusIcon = motionVal === null ? '⚪' : (isMotion ? '🔴' : '🟢');
+      const statusText = motionVal === null ? 'NO DATA' : (isMotion ? 'MOTION' : 'CLEAR');
+      const pulseClass = isMotion ? 'motion-active' : '';
+      extraBadge = `<span class="badge">Trigger: ${s.pir_trigger_state || 'HIGH'}</span>`;
+      
+      dataHtml = `
+        <div class="sensor-data">
+          <div style="flex: 1;">
+            <div class="sensor-val ${pulseClass}" style="color: ${statusColor}">${statusIcon} ${statusText}</div>
+            <div class="sensor-lbl">Motion Status</div>
+          </div>
+          ${r ? `<div><div class="sensor-val" style="font-size:12px; color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Last Update</div></div>` : ''}
+        </div>`;
+    } 
+    else if (s.sensor_type.startsWith('MQ')) {
+      let gasVal = '--';
+      if (r && r.gas_value) {
+        const g = getLatest(r.gas_value);
+        if (g !== null) gasVal = Number(g).toFixed(0);
+      }
+      dataHtml = `
+        <div class="sensor-data">
+          <div>
+            <div class="sensor-val">${gasVal}</div>
+            <div class="sensor-lbl">Gas Value</div>
+          </div>
+        </div>`;
+    } 
+    else {
+      let temp = '--', hum = '--';
+      if (r) {
+        if (r.temperature) { const t = getLatest(r.temperature); if (t !== null) temp = Number(t).toFixed(1); }
+        if (r.humidity) { const h = getLatest(r.humidity); if (h !== null) hum = Number(h).toFixed(1); }
+      }
+      dataHtml = `
+        <div class="sensor-data">
+          <div><div class="sensor-val">${temp}°C</div><div class="sensor-lbl">Temp</div></div>
+          <div><div class="sensor-val">${hum}%</div><div class="sensor-lbl">Humidity</div></div>
+        </div>`;
+    }
+    
     return `
     <div class="card">
       <div class="card-header">
@@ -454,6 +675,7 @@ function renderSensors() {
           <span class="badge">${nodeName}</span>
           <span class="badge">GPIO ${s.pin}</span>
           <span class="badge">${s.sensor_type}</span>
+          ${extraBadge}
         </div>
         <button class="icon-btn" onclick="deleteSensor(${s.id})">Delete</button>
       </div>
@@ -461,40 +683,71 @@ function renderSensors() {
     </div>`;
   }).join("");
 }
+
 async function saveSensor() {
   const name = document.getElementById("sensorName").value.trim();
   const type = document.getElementById("sensorType").value;
   const gwId = parseInt(document.getElementById("sensorGateway").value);
   const nodeId = parseInt(document.getElementById("sensorNode").value);
   const pin = parseInt(document.getElementById("sensorPin").value);
+  const pirTrigger = document.getElementById("pirTriggerState").value;
+  
   if (!name) return showToast("Enter sensor name", true);
-  await sb.from("sensors").insert({ gateway_id: gwId, node_id: nodeId, sensor_name: name, pin: pin, sensor_type: type });
-  showToast("Sensor added"); closeModal("sensorModal"); loadAllData();
-}
-async function deleteSensor(id) {
-  if (!confirm("Delete this sensor?")) return;
-  await sb.from("sensors").delete().eq("id", id); loadAllData();
+  if (type === 'PIR' && nodeId === 0) return showToast("PIR must be on Sub Node", true);
+  
+  const payload = {
+    gateway_id: gwId,
+    node_id: nodeId,
+    sensor_name: name,
+    pin: pin,
+    sensor_type: type,
+    pir_trigger_state: type === 'PIR' ? pirTrigger : 'HIGH'
+  };
+  
+  const { error } = await sb.from("sensors").insert(payload);
+  if (error) return showToast(error.message, true);
+  showToast("Sensor added");
+  closeModal("sensorModal");
+  loadAllData();
 }
 
-// ================= 3. REALTIME & UTILS =================
+async function deleteSensor(id) {
+  if (!confirm("Delete this sensor?")) return;
+  const { error } = await sb.from("sensors").delete().eq("id", id);
+  if (error) return showToast(error.message, true);
+  showToast("Deleted");
+  loadAllData();
+}
+
+// ================= REALTIME & UTILS =================
+function scheduleReload() {
+  clearTimeout(reloadTimer);
+  reloadTimer = setTimeout(loadAllData, 800);
+}
+
 function subscribeRealtime() {
-  sb.channel("dashboard-realtime")
-    .on("postgres_changes", { event: "*", schema: "public", table: "gateways" }, loadAllData)
-    .on("postgres_changes", { event: "*", schema: "public", table: "nodes" }, loadAllData)
-    .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, loadAllData)
-    .on("postgres_changes", { event: "*", schema: "public", table: "device_states" }, loadAllData)
-    .on("postgres_changes", { event: "*", schema: "public", table: "sensors" }, loadAllData)
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "sensor_readings" }, loadAllData)
-    .subscribe();
+  if (rtChannel) sb.removeChannel(rtChannel);
+  rtChannel = sb.channel("dashboard-realtime")
+    .on("postgres_changes", { event: "*", schema: "public", table: "gateways" }, scheduleReload)
+    .on("postgres_changes", { event: "*", schema: "public", table: "nodes" }, scheduleReload)
+    .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, scheduleReload)
+    .on("postgres_changes", { event: "*", schema: "public", table: "device_states" }, scheduleReload)
+    .on("postgres_changes", { event: "*", schema: "public", table: "sensors" }, scheduleReload)
+    // FIX: sensor_readings realtime নেই — ২০s polling-এ
+    .subscribe((status) => {
+      if (status === 'CHANNEL_ERROR') console.warn("Realtime error");
+    });
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+
 function showToast(msg, isError = false) {
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.style.backgroundColor = isError ? "#ef4444" : "#0f172a";
   t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 3000);
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 3000);
 }
 </script>
 </body>
