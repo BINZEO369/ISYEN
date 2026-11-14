@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api } from "../services/api";
-import { DEVICE_PINS, SENSOR_PINS } from "../services/config";
+import { DEVICE_PINS, SENSOR_PINS, getRuntime } from "../services/config";
 import { Loading, Modal } from "./Feedback";
 import {
   DeviceCards,
@@ -10,6 +9,51 @@ import {
 } from "./ResourceCards";
 
 const TYPES = ["DHT11", "DHT22", "MQ2", "MQ135", "PIR", "REED"];
+
+// Dashboard actions call the matching backend endpoint from this page component.
+async function requestBackendEndpoint(supabase, path, options = {}) {
+  const [{ apiBaseUrl, supabaseAnonKey }, { data, error }] = await Promise.all([
+    getRuntime(),
+    supabase.auth.getSession(),
+  ]);
+  if (error) throw error;
+  if (!apiBaseUrl) {
+    throw new Error("NEXT_PUBLIC_API_BASE_URL সেট করা নেই।");
+  }
+  const token = data.session?.access_token;
+  if (!token) throw new Error("আপনার সেশন শেষ হয়েছে। আবার লগ ইন করুন।");
+
+  const headers = new Headers(options.headers || {});
+  headers.set("apikey", supabaseAnonKey);
+  headers.set("Authorization", `Bearer ${token}`);
+  headers.set("Accept", "application/json");
+  if (options.body !== undefined) headers.set("Content-Type", "application/json");
+
+  let response;
+  try {
+    response = await fetch(`${apiBaseUrl}${path}`, { ...options, headers });
+  } catch (error) {
+    throw new Error(error.message || "সার্ভারের সঙ্গে সংযোগ করা যাচ্ছে না।");
+  }
+  const raw = await response.text();
+  let payload = null;
+  if (raw) {
+    try {
+      payload = JSON.parse(raw);
+    } catch {
+      throw new Error("সার্ভার থেকে সঠিক JSON উত্তর আসেনি।");
+    }
+  }
+  if (!response.ok) {
+    const message = payload?.error || payload?.message || payload?.details ||
+      `অনুরোধ ব্যর্থ হয়েছে (${response.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return payload;
+}
+
+const jsonRequest = (method, body) => ({ method, body: JSON.stringify(body) });
+const endpointId = (value) => encodeURIComponent(value);
 export default function DashboardShell({ user, supabase, onLogout, notify }) {
   const [data, setData] = useState({
     gateways: [],
@@ -31,7 +75,7 @@ export default function DashboardShell({ user, supabase, onLogout, notify }) {
     if (showLoading) setLoading(true);
     setError("");
     try {
-      const d = await api.dashboard();
+      const d = await requestBackendEndpoint(supabase, "/api/dashboard");
       const readings = {};
       (d.readings || []).forEach((r) => {
         if (r.sensor_id != null) readings[r.sensor_id] = r;
@@ -102,7 +146,7 @@ export default function DashboardShell({ user, supabase, onLogout, notify }) {
     let active = true;
     const poll = async (type) => {
       try {
-        const out = await api.readings(type);
+        const out = await requestBackendEndpoint(supabase, `/api/readings?type=${encodeURIComponent(type)}`);
         if (!active) return;
         setData((d) => {
           const readings = { ...d.readings };
@@ -163,9 +207,11 @@ export default function DashboardShell({ user, supabase, onLogout, notify }) {
     const f = new FormData(e.currentTarget);
     try {
       if (modal === "gateway") {
-        const result = await api.createGateway({
-          gateway_name: String(f.get("name")).trim(),
-        });
+        const result = await requestBackendEndpoint(
+          supabase,
+          "/api/gateways",
+          jsonRequest("POST", { gateway_name: String(f.get("name")).trim() }),
+        );
         setModal("");
         notify(
           `Gateway তৈরি হয়েছে${result?.claim_code ? ` · Claim Code ${result.claim_code}` : ""}`,
@@ -175,12 +221,12 @@ export default function DashboardShell({ user, supabase, onLogout, notify }) {
         const pin = Number(f.get("pin"));
         if (!DEVICE_PINS.includes(pin))
           throw new Error("নিরাপদ GPIO Pin নির্বাচন করুন।");
-        await api.createDevice({
+        await requestBackendEndpoint(supabase, "/api/devices", jsonRequest("POST", {
           gateway_id: Number(f.get("gateway")),
           node_id: Number(f.get("node")),
           device_name: String(f.get("name")).trim(),
           pin,
-        });
+        }));
         setModal("");
         notify("ডিভাইস যোগ হয়েছে।");
         await refresh();
@@ -196,14 +242,14 @@ export default function DashboardShell({ user, supabase, onLogout, notify }) {
           throw new Error(
             `${sensorType} শুধু অনুমোদিত Sub Node-এ যোগ করা যাবে।`,
           );
-        await api.createSensor({
+        await requestBackendEndpoint(supabase, "/api/sensors", jsonRequest("POST", {
           gateway_id: Number(f.get("gateway")),
           node_id: node,
           sensor_name: String(f.get("name")).trim(),
           pin,
           sensor_type: sensorType,
           pir_trigger_state: trigger,
-        });
+        }));
         setModal("");
         notify("সেন্সর যোগ হয়েছে।");
         await refresh();
@@ -218,7 +264,11 @@ export default function DashboardShell({ user, supabase, onLogout, notify }) {
     const name = window.prompt("এই Node-এর নাম লিখুন:", "Room Node");
     if (!name?.trim()) return;
     await run(
-      () => api.updateNode(n.id, { node_name: name.trim(), is_approved: true }),
+      () => requestBackendEndpoint(
+        supabase,
+        `/api/nodes/${endpointId(n.id)}`,
+        jsonRequest("PATCH", { node_name: name.trim(), is_approved: true }),
+      ),
       "Node অনুমোদিত হয়েছে।",
     );
   }
@@ -235,7 +285,7 @@ export default function DashboardShell({ user, supabase, onLogout, notify }) {
       )
     )
       await run(
-        () => api.deleteNode(n.id),
+        () => requestBackendEndpoint(supabase, `/api/nodes/${endpointId(n.id)}`, { method: "DELETE" }),
         "Node ও সংশ্লিষ্ট resources মুছে ফেলা হয়েছে।",
       );
   }
@@ -252,7 +302,11 @@ export default function DashboardShell({ user, supabase, onLogout, notify }) {
       ),
     }));
     try {
-      await api.setDeviceState(d.id, !on);
+      await requestBackendEndpoint(
+        supabase,
+        `/api/devices/${endpointId(d.id)}/state`,
+        jsonRequest("PATCH", { is_on: !on }),
+      );
       await refresh();
     } catch (e) {
       notify(e.message, true);
@@ -269,8 +323,8 @@ export default function DashboardShell({ user, supabase, onLogout, notify }) {
     await run(
       () =>
         type === "device"
-          ? api.deleteDevice(item.id)
-          : api.deleteSensor(item.id),
+          ? requestBackendEndpoint(supabase, `/api/devices/${endpointId(item.id)}`, { method: "DELETE" })
+          : requestBackendEndpoint(supabase, `/api/sensors/${endpointId(item.id)}`, { method: "DELETE" }),
       `${type === "device" ? "ডিভাইস" : "সেন্সর"} মুছে ফেলা হয়েছে।`,
     );
   }

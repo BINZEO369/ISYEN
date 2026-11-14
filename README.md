@@ -8,7 +8,7 @@
 web/                         # Vercel website project root
   app/                       # Next.js App Router
   components/                # auth, dashboard, cards, feedback
-  services/                  # Supabase client and API client
+  services/                  # Supabase Auth client and runtime configuration
   styles/                    # responsive dashboard styles
   package.json               # web-only dependencies and scripts
   .env.example
@@ -97,7 +97,7 @@ API-র জন্য আলাদা Node host/service তৈরি করুন
 | PATCH          | `/api/devices/:id/state`           | Device on/off                                          |
 | POST / DELETE  | `/api/sensors`, `/api/sensors/:id` | Sensor তৈরি/মুছুন                                      |
 
-API validation-এ অনুমোদিত GPIO, sensor type, approved Sub Node ownership এবং request size পরীক্ষা হয়। Fast/slow reading polling, Gateway status, realtime dashboard refresh, email/password login ও registration frontend-এ আছে।
+API validation-এ অনুমোদিত GPIO, sensor type, approved Sub Node ownership এবং request size পরীক্ষা হয়। Fast/slow reading polling, Gateway status এবং realtime dashboard refresh frontend-এ আছে। Login ও registration page Supabase Auth-এ সরাসরি sign-in/sign-up request পাঠায়; Dashboard component নিজ নিজ backend endpoint-এ সরাসরি request পাঠায়। Frontend-এ আলাদা কেন্দ্রীয় API client file নেই; API server Supabase-এর সঙ্গে যোগাযোগ করে।
 
 ## Checks
 
