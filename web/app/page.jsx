@@ -73,29 +73,6 @@ function FeatureIcon({ kind }) {
 export default function HomePage() {
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.container + " " + styles.headerInner}>
-          <Link className={styles.brand} href="/" aria-label="ISYEN Home">
-            <span className={styles.brandMark}>ই</span>
-            <span className={styles.brandName}>
-              ISYEN <small>SMART HOME</small>
-            </span>
-          </Link>
-          <nav className={styles.headerNav} aria-label="প্রধান নেভিগেশন">
-            <a href="#features">ফিচার</a>
-            <a href="#how-it-works">কীভাবে কাজ করে</a>
-          </nav>
-          <div className={styles.headerActions}>
-            <Link className={styles.signInLink} href="/signin">
-              সাইন ইন
-            </Link>
-            <Link className={styles.headerButton} href="/signup">
-              অ্যাকাউন্ট তৈরি করুন
-            </Link>
-          </div>
-        </div>
-      </header>
-
       <section className={styles.hero}>
         <div className={styles.container + " " + styles.heroGrid}>
           <div className={styles.heroCopy}>
@@ -231,17 +208,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      <footer className={styles.footer}>
-        <div className={styles.container + " " + styles.footerInner}>
-          <span>© {new Date().getFullYear()} ISYEN Smart Home</span>
-          <div>
-            <Link href="/signin">সাইন ইন</Link>
-            <Link href="/signup">সাইন আপ</Link>
-            <Link href="/dashboard">ড্যাশবোর্ড</Link>
-          </div>
-        </div>
-      </footer>
     </main>
   );
 }

@@ -1,0 +1,234 @@
+.header {
+  position: sticky;
+  z-index: 1000;
+  top: 0;
+  height: 72px;
+  border-bottom: 1px solid rgba(16, 32, 57, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(14px);
+}
+
+.headerInner,
+.footerInner {
+  width: min(1160px, calc(100% - 48px));
+  height: 100%;
+  margin-inline: auto;
+}
+
+.headerInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 10px;
+  color: #102039;
+  text-decoration: none;
+}
+
+.brandMark {
+  display: grid;
+  width: 41px;
+  height: 41px;
+  place-items: center;
+  border-radius: 13px;
+  color: #fff;
+  background: linear-gradient(145deg, #19c7b0, #078b80);
+  box-shadow: 0 7px 16px rgba(7, 139, 128, 0.18);
+  font-size: 23px;
+  font-weight: 700;
+}
+
+.brandWord {
+  display: grid;
+  font-family: Inter, "Hind Siliguri", sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+
+.brandWord small {
+  margin-top: 2px;
+  color: #8190a1;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+}
+
+.nav,
+.actions,
+.footerInner nav {
+  display: flex;
+  align-items: center;
+}
+
+.nav {
+  gap: 25px;
+}
+
+.nav a,
+.signIn,
+.signUp,
+.footerInner a {
+  color: #536277;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.nav a:hover,
+.signIn:hover,
+.signUp:hover,
+.footerInner a:hover {
+  color: #078b80;
+}
+
+.actions {
+  gap: 15px;
+}
+
+.dashboard {
+  display: inline-flex;
+  min-height: 39px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 15px;
+  border-radius: 9px;
+  color: #fff;
+  background: #102039;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 150ms ease, background 150ms ease;
+}
+
+.dashboard:hover {
+  transform: translateY(-1px);
+  background: #078b80;
+}
+
+.footer {
+  min-height: 70px;
+  border-top: 1px solid #e6ebef;
+  background: #fff;
+}
+
+.footerInner {
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  color: #8794a2;
+  font-size: 10px;
+}
+
+.footerInner nav {
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.footerInner a {
+  font-size: 10px;
+}
+
+@media (max-width: 900px) {
+  .headerInner,
+  .footerInner {
+    width: min(100% - 36px, 760px);
+  }
+
+  .nav {
+    gap: 15px;
+  }
+
+  .actions {
+    gap: 11px;
+  }
+}
+
+@media (max-width: 680px) {
+  .header {
+    height: 68px;
+  }
+
+  .headerInner,
+  .footerInner {
+    width: calc(100% - 30px);
+  }
+
+  .headerInner {
+    gap: 10px;
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brandMark {
+    width: 37px;
+    height: 37px;
+    border-radius: 11px;
+    font-size: 21px;
+  }
+
+  .brandWord {
+    font-size: 12px;
+  }
+
+  .brandWord small {
+    font-size: 7px;
+  }
+
+  .nav,
+  .signUp {
+    display: none;
+  }
+
+  .actions {
+    gap: 10px;
+  }
+
+  .signIn {
+    font-size: 11px;
+  }
+
+  .dashboard {
+    min-height: 36px;
+    padding-inline: 10px;
+    font-size: 10px;
+  }
+
+  .footerInner {
+    min-height: 76px;
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    gap: 9px;
+    padding-block: 12px;
+  }
+
+  .footerInner nav {
+    gap: 13px;
+  }
+}
+
+@media (max-width: 360px) {
+  .headerInner,
+  .footerInner {
+    width: calc(100% - 22px);
+  }
+
+  .brandWord {
+    font-size: 11px;
+  }
+
+  .actions {
+    gap: 7px;
+  }
+}

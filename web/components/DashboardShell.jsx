@@ -325,7 +325,7 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
         </div>
       </aside>
       <main className="workspace">
-        <header className="topbar">
+        <div className="topbar">
           <div>
             <p className="eyebrow">আপনার স্মার্ট হোম</p>
             <h1>ড্যাশবোর্ড</h1>
@@ -340,7 +340,7 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
               লগ আউট
             </button>
           </div>
-        </header>
+        </div>
         {loading ? (
           <Loading />
         ) : error ? (

@@ -125,7 +125,7 @@ a {
   flex: 0 0 auto;
 }
 .auth-screen {
-  min-height: 100vh;
+  min-height: calc(100vh - 142px);
   display: grid;
   grid-template-columns: 1fr 1fr;
   background: #fff;
@@ -267,7 +267,7 @@ a {
   background: var(--navy);
   color: #fff;
   position: fixed;
-  inset: 0 auto 0 0;
+  inset: 72px auto 0 0;
   padding: 27px 17px;
   display: flex;
   flex-direction: column;
@@ -823,7 +823,7 @@ a {
   }
   .sidebar {
     position: sticky;
-    inset: 0 0 auto;
+    inset: 68px 0 auto;
     width: 100%;
     height: auto;
     padding: 11px 15px;

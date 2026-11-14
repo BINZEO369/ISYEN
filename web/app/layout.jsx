@@ -1,4 +1,5 @@
 import "../styles/globals.css";
+import SiteChrome from "../components/SiteChrome";
 
 export const metadata = {
   title: "নিবাস · ISYEN Smart Home",
@@ -14,7 +15,9 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="bn">
-      <body>{children}</body>
+      <body>
+        <SiteChrome>{children}</SiteChrome>
+      </body>
     </html>
   );
 }
