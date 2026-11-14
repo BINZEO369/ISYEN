@@ -1,74 +1,109 @@
 # ISYEN Home Automation
 
-ISYEN Home হলো Supabase Auth-ভিত্তিক home automation dashboard। Frontend `web/`-এ, Node.js API `api/`-তে এবং local HTTP/static server `server.js`-এ রাখা হয়েছে। `admin/` ফোল্ডারটি এই পরিবর্তনের বাইরে রাখা হয়েছে।
+ISYEN হলো Supabase Auth/RLS-ভিত্তিক smart-home control dashboard। Frontend **Next.js App Router + React + JavaScript**; API হলো আলাদা **Node.js** service। UI Bengali-first, responsive, এবং single-file HTML নয়। `admin/` এই scope-এর বাইরে এবং অপরিবর্তিত।
 
-## বৈশিষ্ট্য
+## Professional project structure
 
-- ইমেইল/পাসওয়ার্ডে account registration, login ও logout
-- Gateway তৈরি এবং ESP32 setup portal-এর জন্য unique claim code
-- নতুন sub-node অনুমোদন, নাম পরিবর্তন ও মুছে ফেলা
-- Light/device যোগ, চালু/বন্ধ ও মুছে ফেলা
-- DHT11/DHT22, MQ2/MQ135, PIR এবং REED sensor ও readings
-- PIR/REED কেবল অনুমোদিত Sub Node-এ; HIGH/LOW trigger নির্বাচন
-- Live refresh, দ্রুত motion/door polling, responsive mobile layout
+```text
+src/
+  app/
+    layout.jsx              # metadata, Bengali document root, global stylesheet
+    page.jsx                # Next.js route
+  components/
+    App.jsx                 # auth/session bootstrap
+    AuthScreen.jsx          # login + registration
+    DashboardShell.jsx      # dashboard composition, forms and live data
+    ResourceCards.jsx       # gateway/node/device/sensor views
+    Feedback.jsx            # reusable loading, modal, toast
+  services/
+    api.js                  # authenticated REST API client
+    config.js               # Supabase client + public runtime config
+  styles/
+    globals.css             # responsive visual system
+api/index.js                # JWT/RLS-secured Node API handler
+server.js                   # standalone Node API host entrypoint
+test/api.test.js             # API security/behavior tests
+```
 
-## স্থানীয়ভাবে চালানো
+## Dashboard features
 
-Node.js 18+ লাগবে।
+- Supabase email/password registration, login and logout
+- Gateway creation and server-generated ESP32 claim code
+- Pending Sub Node approval/rename; confirmed deletion removes child devices/sensors first
+- Device/light create, toggle and delete
+- DHT11/DHT22, MQ2/MQ135, PIR and REED sensor create/delete and latest readings
+- PIR/REED allowed only on approved Sub Nodes; configurable HIGH/LOW trigger
+- Gateway online/offline status, realtime updates and fast/slow reading polling
+- Responsive mobile sidebar, clear loading/error/empty states, accessible controls and confirmation dialogs
+
+## Local development
+
+Use Node.js **20.9+**. Node 22 is recommended for the Next.js version in this project.
 
 ```sh
 cp .env.example .env
-# .env-এ SUPABASE_ANON_KEY-এ Supabase publishable/anon key দিন
-npm start
+# Set Supabase public URL/key and local API URL in .env
+npm install
 ```
 
-`http://localhost:3000` খুলুন। `.env` commit করবেন না। `SUPABASE_SERVICE_ROLE_KEY` এই অ্যাপের প্রয়োজন নেই: server কখনও service-role privileges ব্যবহার করে না। API user-এর Supabase access token সামনে দিয়ে দেয়, ফলে database-এর RLS policies ownership enforce করে।
+Run the app and API in separate terminals:
 
-## API
+```sh
+# Terminal 1: the standalone Node.js API, default port 3001
+npm run start:api
 
-Authenticated endpoint-এ `Authorization: Bearer <Supabase access token>` এবং `apikey: <publishable/anon key>` পাঠাতে হয়। API token Supabase Auth দিয়ে যাচাই করে, এবং database query-তেও একই user JWT ব্যবহার করে। কোনো service-role key ব্যবহার হয় না।
+# Terminal 2: Next.js + React development app, default port 3000
+npm run dev
+```
 
-| Method         | Endpoint                            | কাজ                                                         |
-| -------------- | ----------------------------------- | ----------------------------------------------------------- |
-| GET            | `/api/health`                       | health check                                                |
-| GET            | `/api/config`                       | browser-safe config: Supabase URL/key ও public API base URL |
-| GET            | `/api/dashboard`                    | gateways, nodes, devices, sensors ও সর্বশেষ readings        |
-| GET            | `/api/readings?type=fast\|slow`     | সর্বশেষ sensor readings                                     |
-| POST           | `/api/gateways`                     | gateway তৈরি ও server-generated claim code                  |
-| PATCH / DELETE | `/api/nodes/:id`                    | node approve/rename বা delete                               |
-| POST / DELETE  | `/api/devices` · `/api/devices/:id` | device যোগ বা delete                                        |
-| PATCH          | `/api/devices/:id/state`            | device on/off                                               |
-| POST / DELETE  | `/api/sensors` · `/api/sensors/:id` | sensor যোগ বা delete                                        |
+Open `http://localhost:3000`. `.env` values are read by Next.js and by the standalone API server. `NEXT_PUBLIC_*` values are deliberately public and are bundled into browser code; never put a service-role/secret key in them.
 
-API-তে input validation, অনুমোদিত GPIO/sensor type checks, request-size limit এবং CORS allowlist আছে। `SUPABASE_ANON_KEY` বা publishable key public/client key; কোনো secret key browser-এ পাঠানো হয় না।
+```sh
+npm run build       # production Next.js build
+npm start            # Next.js production server (after build)
+npm run check        # Node source syntax checks
+npm test             # API auth, RLS mapping, validation and deletion behavior
+```
 
-## আলাদা API host-এ deploy
+## Supabase and API security
 
-### 1. Frontend (Vercel)
+Authenticated API calls send the Supabase access token as `Authorization: Bearer <token>` and the publishable/anon key in `apikey`. The Node API validates the token with Supabase Auth and issues database requests under the same user JWT, so existing Row Level Security enforces ownership. The API validates GPIO pins, sensor type, ownership of the approved Sub Node and request size. It does not use a service-role key and does not require a schema migration.
 
-Repository-টি Vercel-এ import করুন; `vercel.json` root `/`-কে `web/index.html`-এ এবং `/assets/*`-কে frontend assets-এ route করে। Vercel Project Settings → Environment Variables-এ দিন:
+| Method         | Endpoint                            | Purpose                                               |
+| -------------- | ----------------------------------- | ----------------------------------------------------- |
+| GET            | `/api/health`                       | API health check                                      |
+| GET            | `/api/config`                       | Browser-safe API-host runtime information             |
+| GET            | `/api/dashboard`                    | Gateways, nodes, devices, sensors and latest readings |
+| GET            | `/api/readings?type=fast\|slow`     | Latest sensor readings by polling group               |
+| POST           | `/api/gateways`                     | Create gateway and claim code for the logged-in owner |
+| PATCH / DELETE | `/api/nodes/:id`                    | Approve/rename or delete Sub Node                     |
+| POST / DELETE  | `/api/devices` · `/api/devices/:id` | Create/delete device                                  |
+| PATCH          | `/api/devices/:id/state`            | Toggle device state                                   |
+| POST / DELETE  | `/api/sensors` · `/api/sensors/:id` | Create/delete sensor                                  |
 
-- `SUPABASE_URL` = Supabase project URL
-- `SUPABASE_ANON_KEY` = Supabase publishable/anon key (এটি public browser key; service-role key নয়)
-- `PUBLIC_API_BASE_URL` = আলাদা Node API host-এর origin, যেমন `https://api.example.com` (শেষে slash ছাড়া)
+## Vercel website + separate Node API host
 
-`/api/config` কেবল browser-এ প্রকাশযোগ্য runtime config ফেরত দেয়; কোনো server secret নয়। Vercel project-এ environment variable update করলে redeploy/rebuild করুন.
+### Next.js website on Vercel
 
-### 2. Node.js API host
+Import the repository as a **Next.js** project; Vercel auto-detects `next build`. Set these Project Environment Variables for the deployment environment:
 
-`server.js` এবং `api/`-সহ একই repository-টি Render/Railway বা Node.js host-এ deploy করে `npm start` চালান। API host-এ দিন:
+- `NEXT_PUBLIC_SUPABASE_URL` = Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` = Supabase publishable/anon key (public by design)
+- `NEXT_PUBLIC_API_BASE_URL` = the separate Node API HTTPS origin, e.g. `https://api.example.com`
 
-- `SUPABASE_URL` = Supabase project URL
-- `SUPABASE_ANON_KEY` = একই publishable/anon key
-- `ALLOWED_ORIGINS` = Vercel ও custom frontend domain-গুলো comma-separated exact origin হিসেবে, যেমন `https://your-app.vercel.app,https://home.example.com`
-- host-provided `PORT` (সাধারণত নিজে থেকেই সেট হয়)
+Redeploy after changing values. `NEXT_PUBLIC_API_BASE_URL` is the API origin only; frontend calls append `/api/...`.
 
-CORS wildcard নয়—প্রতিটি frontend origin স্পষ্ট করে allowlist করুন। `/api/*` route Node server-এ পাঠান। HTTPS বাধ্যতামূলক রাখুন।
+### Separate Node.js API host
 
-### একই host-এ Vercel API Functions
+Deploy the same repository to a Node host and use start command `npm run start:api`. Configure:
 
-আলাদা API host না চাইলে Vercel একই repository-র `api/index.js` function deploy করতে পারে। `PUBLIC_API_BASE_URL` ফাঁকা রাখুন; frontend একই origin-এ `/api/*` ডাকবে।
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY` (publishable/anon key; **not** service-role)
+- `ALLOWED_ORIGINS` = exact frontend origin(s), comma-separated
+- Host-provided `PORT`
 
-## Database
+Allow the Vercel/custom website origin in `ALLOWED_ORIGINS`. Use HTTPS and do not set `SUPABASE_SERVICE_ROLE_KEY`.
 
-Supabase `public` schema-র `gateways`, `nodes`, `devices`, `device_states`, `sensors` এবং `sensor_readings` টেবিল এবং বিদ্যমান RLS ব্যবহার হয়। Device insert-এ state তৈরি এবং gateway claim-code timestamp-এর DB trigger ইতিমধ্যে আছে। এই implementation Supabase schema বা production data পরিবর্তন করে না। `admin/index.js` ও admin UI স্পর্শ করা হয়নি।
+## Database / Admin
+
+Uses existing Supabase `gateways`, `nodes`, `devices`, `device_states`, `sensors`, and `sensor_readings` tables, RLS policies and triggers. No production schema/data change was made. `admin/index.js` and the admin UI remain untouched.

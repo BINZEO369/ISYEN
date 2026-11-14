@@ -1,4 +1,9 @@
 node_modules/
+dist/
+web/dist/
+.next/
+out/
+coverage/
 .env
 .env.*
 !.env.example

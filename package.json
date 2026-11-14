@@ -1,15 +1,23 @@
 {
   "name": "isyen-home",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "private": true,
-  "description": "ISYEN Home Automation dashboard and JWT-secured API",
+  "description": "ISYEN Home Automation — Next.js dashboard and Node.js API",
   "engines": {
-    "node": ">=18"
+    "node": ">=20.9.0"
   },
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
-    "check": "node --check server.js && node --check api/index.js && node --check web/assets/js/config.js && node --check web/assets/js/api-client.js && node --check web/assets/js/app.js",
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0",
+    "start:api": "node server.js",
+    "check": "node --check server.js && node --check api/index.js && node --check next.config.js",
     "test": "node --test"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "next": "^16.4.6",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   }
 }
