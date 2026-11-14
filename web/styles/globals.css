@@ -722,6 +722,17 @@ a {
 .modal-content label {
   margin-top: 6px;
 }
+.app-shell .modal-content input,
+.app-shell .modal-content select {
+  border-color: #ded4ca;
+  border-radius: 10px;
+  background: #fffdfa;
+}
+.app-shell .modal-content input:focus,
+.app-shell .modal-content select:focus {
+  border-color: var(--teal);
+  outline: 3px solid rgba(193, 125, 71, 0.16);
+}
 .modal-close {
   position: absolute;
   right: 17px;
@@ -905,5 +916,271 @@ a {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+
+/* Warm, compact smart-home dashboard theme inspired by the supplied reference. */
+.app-shell {
+  --navy: #43372f;
+  --navy2: #675544;
+  --teal: #c17d47;
+  --teal-dark: #a86637;
+  --muted: #84786d;
+  --line: #e6dfd7;
+  --white: #fffdfa;
+  --red: #b65d4f;
+  --shadow: 0 14px 34px rgba(67, 49, 32, 0.09);
+  color: var(--navy);
+  background: #eee9e3;
+}
+.app-shell .workspace {
+  max-width: 1360px;
+  padding: 36px 46px 68px;
+}
+.app-shell .dashboard-heading {
+  margin-bottom: 16px;
+  padding: 18px 23px;
+  border-radius: 20px;
+  color: #fffaf4;
+  background: linear-gradient(125deg, #b49a81 0%, #a1876e 58%, #92765e 100%);
+  box-shadow: 0 12px 26px rgba(86, 64, 44, 0.16);
+}
+.app-shell .dashboard-heading .eyebrow {
+  color: #f5e7d8;
+}
+.app-shell .dashboard-heading h1 {
+  color: #fffaf4;
+  font-size: 24px;
+  letter-spacing: -0.3px;
+}
+.app-shell .dashboard-heading .profile-meta b,
+.app-shell .dashboard-heading .profile-meta small {
+  color: #fffaf4;
+}
+.app-shell .dashboard-heading .avatar {
+  background: #f1dfcb;
+  color: #805a3d;
+}
+.app-shell .dashboard-heading .btn-quiet {
+  background: #f9f4ee;
+  color: #5b4737;
+}
+.app-shell .dashboard-section-nav {
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 23px;
+  padding: 7px;
+  border: 1px solid #e7dfd6;
+  border-radius: 15px;
+  background: #f9f7f3;
+  box-shadow: 0 5px 14px rgba(72, 54, 37, 0.04);
+}
+.app-shell .dashboard-section-nav a {
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+.app-shell .dashboard-section-nav a:hover {
+  border-color: #e4d7c9;
+  background: #fffdfa;
+  color: var(--teal-dark);
+}
+.app-shell .dashboard-section-nav a.active {
+  border-color: #b46e3e;
+  background: #bd7946;
+  color: #fffaf4;
+  box-shadow: 0 4px 10px rgba(139, 83, 43, 0.18);
+}
+.app-shell .dashboard-welcome-card {
+  padding: 20px 22px;
+  border: 1px solid #e4ddd5;
+  border-radius: 18px;
+  background: #fbfaf7;
+  box-shadow: 0 7px 20px rgba(67, 49, 32, 0.045);
+}
+.app-shell .sync-label {
+  color: #885d3d;
+  background: #f2e6d9;
+}
+.app-shell .live-dot {
+  background: #789475;
+  box-shadow: 0 0 0 4px rgba(120, 148, 117, 0.14);
+}
+.app-shell .stats-grid {
+  margin-bottom: 22px;
+}
+.app-shell .stat-card {
+  border-color: #e4ddd5;
+  border-radius: 16px;
+  background: #fbfaf7;
+  box-shadow: 0 7px 20px rgba(67, 49, 32, 0.045);
+}
+.app-shell .stat-icon.teal {
+  background: #f3e3d2;
+  color: #a46132;
+}
+.app-shell .stat-icon.violet {
+  background: #ece6df;
+  color: #77675a;
+}
+.app-shell .stat-icon.amber {
+  background: #f8edda;
+  color: #b5823c;
+}
+.app-shell .stat-icon.blue {
+  background: #e4ebe8;
+  color: #64847a;
+}
+.app-shell .dashboard-overview-grid {
+  margin-top: 16px;
+}
+.app-shell .dashboard-overview-card {
+  gap: 9px;
+  border-top: 3px solid #c48655;
+  border-radius: 16px;
+}
+.app-shell .dashboard-overview-card:hover {
+  border-color: #c48655;
+  box-shadow: var(--shadow);
+}
+.app-shell .dashboard-overview-card strong {
+  color: var(--navy);
+}
+.app-shell .dashboard-overview-count {
+  color: var(--teal-dark);
+}
+.app-shell .workspace section:not(.welcome-row) {
+  margin-top: 22px;
+}
+.app-shell .dashboard-block {
+  padding: 20px;
+  border: 1px solid #e4ddd5;
+  border-radius: 20px;
+  background: #f9f7f3;
+  box-shadow: 0 8px 24px rgba(67, 49, 32, 0.045);
+}
+.app-shell .card {
+  border-color: #e7dfd6;
+  border-radius: 16px;
+  background: #fffdfa;
+  box-shadow: 0 7px 19px rgba(67, 49, 32, 0.055);
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+.app-shell .gateway-card,
+.app-shell .node-card,
+.app-shell .device-card,
+.app-shell .sensor-card {
+  border-top: 3px solid #d0b59c;
+}
+.app-shell .device-card {
+  border-top-color: #c48655;
+}
+.app-shell .sensor-card {
+  border-top-color: #9eaaa0;
+}
+.app-shell .card.pending {
+  border-color: #e8ca9c;
+  border-top-color: #c99554;
+  background: #fffaf1;
+}
+.app-shell .badge {
+  border-radius: 7px;
+  background: #f2eee9;
+  color: #75695e;
+}
+.app-shell .badge.code {
+  background: #f4e6d9;
+  color: #965c35;
+}
+.app-shell .status {
+  background: #e8f0e8;
+  color: #4e795d;
+}
+.app-shell .status.offline {
+  background: #f5e9e4;
+  color: #a65f52;
+}
+.app-shell .card-actions {
+  border-top-color: #eee7df;
+}
+.app-shell .icon-button {
+  border-color: #e6ddd3;
+  background: #fffdfa;
+  color: #827569;
+}
+.app-shell .icon-button:hover {
+  color: var(--red);
+  background: #fbefeb;
+}
+.app-shell .toggle {
+  background: #d8cec4;
+}
+.app-shell .sensor-reading {
+  border-color: #ece4dc;
+  border-radius: 11px;
+  background: #f7f3ee;
+}
+.app-shell .empty-state {
+  border-color: #d8cbbd;
+  border-radius: 14px;
+  background: #fffdfa;
+}
+.app-shell .spinner {
+  border-color: #e4d9cd;
+  border-top-color: var(--teal);
+}
+.app-shell .error-panel {
+  border-color: #ead7cf;
+  border-radius: 18px;
+  background: #fffdfa;
+}
+.app-shell .modal {
+  background: rgba(54, 42, 32, 0.48);
+}
+.app-shell .modal-content {
+  border-radius: 20px;
+  background: #fffdfa;
+  box-shadow: 0 20px 60px rgba(54, 42, 32, 0.26);
+}
+.app-shell .conditional {
+  background: #f5f0ea;
+}
+.app-shell .warning {
+  background: #fbf0df;
+  color: #8d5c35;
+}
+.app-shell :focus-visible {
+  outline-color: #c17d47;
+}
+@media (max-width: 1100px) {
+  .app-shell .workspace {
+    padding: 30px 27px 54px;
+  }
+  .app-shell .dashboard-block {
+    padding: 18px;
+  }
+}
+@media (max-width: 700px) {
+  .app-shell .workspace {
+    padding: 24px 17px 44px;
+  }
+  .app-shell .dashboard-heading {
+    padding: 16px 18px;
+    border-radius: 17px;
+  }
+  .app-shell .dashboard-welcome-card {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+    padding: 17px;
+  }
+  .app-shell .dashboard-block {
+    padding: 15px;
+    border-radius: 17px;
+  }
+  .app-shell .dashboard-overview-card {
+    min-height: 150px;
   }
 }

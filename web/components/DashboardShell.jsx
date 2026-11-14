@@ -353,7 +353,7 @@ export default function DashboardShell({
           <>
             {section === "overview" && (
               <>
-                <section className="welcome-row">
+                <section className="welcome-row dashboard-welcome-card">
                   <div>
                     <p className="eyebrow">Overview</p>
                     <h2>Your home at a glance</h2>
@@ -406,7 +406,7 @@ export default function DashboardShell({
               </>
             )}
             {section === "overview" && (
-              <section>
+              <section className="dashboard-block">
                 <Heading eyebrow="Connection Management" title="Your Gateways">
                   <button
                     className="btn btn-primary"
@@ -420,7 +420,7 @@ export default function DashboardShell({
             )}
             {section === "overview" && (
               <>
-                <section>
+                <section className="dashboard-block">
                   <Heading eyebrow="Awaiting Approval" title="Pending Sub Nodes" />
                   <NodeCards
                     items={data.nodes}
@@ -429,7 +429,7 @@ export default function DashboardShell({
                     onApprove={approve}
                   />
                 </section>
-                <section>
+                <section className="dashboard-block">
                   <Heading eyebrow="Approved Connections" title="Sub Nodes" />
                   <NodeCards
                     items={data.nodes}
@@ -440,7 +440,7 @@ export default function DashboardShell({
               </>
             )}
             {section === "device" && (
-              <section>
+              <section className="dashboard-block">
                 <Heading eyebrow="GPIO Controls" title="Devices">
                   <button
                     className="btn btn-primary"
@@ -462,7 +462,7 @@ export default function DashboardShell({
               </section>
             )}
             {section === "sensor" && (
-              <section>
+              <section className="dashboard-block">
                 <Heading eyebrow="Environmental Monitoring" title="Sensors">
                   <button
                     className="btn btn-primary"

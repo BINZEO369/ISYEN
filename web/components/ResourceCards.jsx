@@ -25,7 +25,7 @@ export function GatewayCards({ items }) {
             !!g.last_seen &&
             Date.now() - new Date(g.last_seen).getTime() < 90000;
           return (
-            <article className="card" key={g.id}>
+            <article className="card gateway-card" key={g.id}>
               <div className="card-top">
                 <div>
                   <div className="card-title">{g.gateway_name}</div>
@@ -73,7 +73,7 @@ export function NodeCards({
         list.map((n) => {
           const gw = gateways.find((g) => same(g.id, n.gateway_id));
           return (
-            <article className={`card ${pending ? "pending" : ""}`} key={n.id}>
+            <article className={`card node-card ${pending ? "pending" : ""}`} key={n.id}>
               <div className="card-top">
                 <div>
                   <div className="card-title">
@@ -141,7 +141,7 @@ export function DeviceCards({ items, gateways, nodes, onToggle, onDelete }) {
                 "Unknown Node"
               : "Main Board";
           return (
-            <article className="card" key={d.id}>
+            <article className="card device-card" key={d.id}>
               <div className="card-top">
                 <div>
                   <div className="card-title">{d.device_name}</div>
@@ -265,7 +265,7 @@ export function SensorCards({ items, gateways, nodes, readings, onDelete }) {
               : "Main Board";
           const trigger = ["PIR", "REED"].includes(s.sensor_type);
           return (
-            <article className="card" key={s.id}>
+            <article className="card sensor-card" key={s.id}>
               <div className="card-top">
                 <div>
                   <div className="card-title">{s.sensor_name}</div>
