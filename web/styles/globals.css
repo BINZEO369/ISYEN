@@ -301,6 +301,12 @@ a {
   border-color: var(--teal);
   color: var(--teal-dark);
 }
+.dashboard-section-nav a.active {
+  border-color: var(--teal);
+  background: #e9f7f4;
+  color: var(--teal-dark);
+  font-weight: 700;
+}
 .profile {
   display: flex;
   align-items: center;
@@ -367,6 +373,45 @@ a {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 15px;
   margin-bottom: 37px;
+}
+.dashboard-overview-grid {
+  margin-top: 32px;
+}
+.dashboard-overview-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-decoration: none;
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.dashboard-overview-card:hover {
+  border-color: var(--teal);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+.dashboard-overview-card .eyebrow {
+  margin: 0;
+}
+.dashboard-overview-card strong {
+  color: var(--navy);
+  font-size: 16px;
+}
+.dashboard-overview-count {
+  color: var(--teal-dark);
+  font: 700 24px Inter, sans-serif;
+}
+.dashboard-overview-card .muted {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.page-description {
+  margin: -5px 0 15px;
+  font-size: 13px;
+  line-height: 1.6;
 }
 .stat-card {
   background: #fff;

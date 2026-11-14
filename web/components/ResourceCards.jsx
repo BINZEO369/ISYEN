@@ -176,7 +176,7 @@ export function DeviceCards({ items, gateways, nodes, onToggle, onDelete }) {
           );
         })
       ) : (
-        <Empty>No lights or devices added yet.</Empty>
+        <Empty>No devices added yet.</Empty>
       )}
     </div>
   );

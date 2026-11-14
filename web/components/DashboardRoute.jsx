@@ -52,7 +52,7 @@ function saveSession(session) {
   else sessionStorage.removeItem(SESSION_KEY);
 }
 
-export default function DashboardRoute() {
+export default function DashboardRoute({ section = "overview" }) {
   const router = useRouter();
   const [session, setSession] = useState(null);
   const [starting, setStarting] = useState(true);
@@ -189,6 +189,7 @@ export default function DashboardRoute() {
           session={session}
           onLogout={logout}
           notify={notify}
+          section={section}
         />
       )}
       <Toast toast={toast} onDismiss={() => setToast(null)} />

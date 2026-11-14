@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { API_BASE_URL, DEVICE_PINS, SENSOR_PINS } from "../services/config";
 import { Loading, Modal } from "./Feedback";
 import {
@@ -9,6 +10,16 @@ import {
 } from "./ResourceCards";
 
 const TYPES = ["DHT11", "DHT22", "MQ2", "MQ135", "PIR", "REED"];
+const DASHBOARD_SECTIONS = [
+  { id: "overview", label: "Dashboard", href: "/dashboard" },
+  { id: "device", label: "Devices", href: "/dashboard/device" },
+  { id: "sensor", label: "Sensors", href: "/dashboard/sensor" },
+];
+const SECTION_TITLES = {
+  overview: "Dashboard",
+  device: "Devices",
+  sensor: "Sensors",
+};
 
 // Dashboard actions call their backend endpoints; Supabase credentials stay on the server.
 async function requestBackendEndpoint(accessToken, path, options = {}) {
@@ -47,7 +58,13 @@ async function requestBackendEndpoint(accessToken, path, options = {}) {
 
 const jsonRequest = (method, body) => ({ method, body: JSON.stringify(body) });
 const endpointId = (value) => encodeURIComponent(value);
-export default function DashboardShell({ user, session, onLogout, notify }) {
+export default function DashboardShell({
+  user,
+  session,
+  onLogout,
+  notify,
+  section = "overview",
+}) {
   const [data, setData] = useState({
     gateways: [],
     nodes: [],
@@ -291,7 +308,7 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
         <section className="dashboard-heading" aria-labelledby="dashboard-title">
           <div>
             <p className="eyebrow">Your Smart Home</p>
-            <h1 id="dashboard-title">Dashboard</h1>
+            <h1 id="dashboard-title">{SECTION_TITLES[section] || "Dashboard"}</h1>
           </div>
           <div className="profile">
             <div className="avatar">IS</div>
@@ -305,10 +322,16 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
           </div>
         </section>
         <nav className="dashboard-section-nav" aria-label="Dashboard sections">
-          <a href="#overview">Dashboard</a>
-          <a href="#gateways">Gateways</a>
-          <a href="#devices">Devices</a>
-          <a href="#sensors">Sensors</a>
+          {DASHBOARD_SECTIONS.map((item) => (
+            <Link
+              key={item.id}
+              href={item.href}
+              className={section === item.id ? "active" : undefined}
+              aria-current={section === item.id ? "page" : undefined}
+            >
+              {item.label}
+            </Link>
+          ))}
         </nav>
         {loading ? (
           <Loading />
@@ -328,104 +351,135 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
           </div>
         ) : (
           <>
-            <section id="overview" className="welcome-row">
-              <div>
-                <p className="eyebrow">Overview</p>
-                <h2>Your home at a glance</h2>
-                <p className="muted">A quick summary of everything connected.</p>
-              </div>
-              <span className="sync-label">
-                <i className="live-dot" /> Live updates
-              </span>
-            </section>
-            <section className="stats-grid" aria-label="Summary">
-              <Stat
-                icon="⌘"
-                tint="teal"
-                label="Gateways"
-                value={data.gateways.length}
-              />
-              <Stat
-                icon="⌂"
-                tint="violet"
-                label="Approved Sub Nodes"
-                value={data.nodes.filter((n) => n.is_approved).length}
-              />
-              <Stat
-                icon="☼"
-                tint="amber"
-                label="Devices"
-                value={data.devices.length}
-              />
-              <Stat
-                icon="⌁"
-                tint="blue"
-                label="Sensors"
-                value={data.sensors.length}
-              />
-            </section>
-            <section id="gateways">
-              <Heading eyebrow="Connection Management" title="Your Gateways">
-                <button
-                  className="btn btn-primary"
-                  onClick={() => startModal("gateway")}
-                >
-                  ＋ Add Gateway
-                </button>
-              </Heading>
-              <GatewayCards items={data.gateways} />
-            </section>
-            <section>
-              <Heading eyebrow="Awaiting Approval" title="New Sub Nodes" />
-              <NodeCards
-                items={data.nodes}
-                gateways={data.gateways}
-                pending
-                onApprove={approve}
-              />
-            </section>
-            <section>
-              <Heading eyebrow="Approved Connections" title="Sub Nodes" />
-              <NodeCards
-                items={data.nodes}
-                gateways={data.gateways}
-                onDelete={removeNode}
-              />
-            </section>
-            <section id="devices">
-              <Heading eyebrow="Controls" title="Lights and Devices">
-                <button
-                  className="btn btn-primary"
-                  onClick={() => startModal("device")}
-                >
-                  ＋ Add Device
-                </button>
-              </Heading>
-              <DeviceCards
-                items={data.devices}
-                gateways={data.gateways}
-                nodes={data.nodes}
-                onToggle={toggle}
-                onDelete={(d) => remove("device", d)}
-              />
-            </section>
-            <section id="sensors">
-              <Heading eyebrow="Environmental Monitoring" title="Sensors">
-                <button
-                  className="btn btn-primary"
-                  onClick={() => startModal("sensor")}
-                >
-                  ＋ Add Sensor
-                </button>
-              </Heading>
-              <SensorCards
-                items={data.sensors}
-                gateways={data.gateways}
-                nodes={data.nodes}
-                readings={data.readings}
-                onDelete={(s) => remove("sensor", s)}
-              />
-            </section>
+            {section === "overview" && (
+              <>
+                <section className="welcome-row">
+                  <div>
+                    <p className="eyebrow">Overview</p>
+                    <h2>Your home at a glance</h2>
+                    <p className="muted">A quick summary of everything connected.</p>
+                  </div>
+                  <span className="sync-label">
+                    <i className="live-dot" /> Live updates
+                  </span>
+                </section>
+                <section className="stats-grid" aria-label="Summary">
+                  <Stat
+                    icon="⌘"
+                    tint="teal"
+                    label="Gateways"
+                    value={data.gateways.length}
+                  />
+                  <Stat
+                    icon="⌂"
+                    tint="violet"
+                    label="Approved Sub Nodes"
+                    value={data.nodes.filter((n) => n.is_approved).length}
+                  />
+                  <Stat
+                    icon="☼"
+                    tint="amber"
+                    label="Devices"
+                    value={data.devices.length}
+                  />
+                  <Stat
+                    icon="⌁"
+                    tint="blue"
+                    label="Sensors"
+                    value={data.sensors.length}
+                  />
+                </section>
+                <section className="card-grid dashboard-overview-grid" aria-label="Open a dashboard section">
+                  <Link className="card dashboard-overview-card" href="/dashboard/device">
+                    <span className="eyebrow">GPIO Controls</span>
+                    <strong>Devices</strong>
+                    <span className="dashboard-overview-count">{data.devices.length}</span>
+                    <span className="muted">Control devices and configure their pins.</span>
+                  </Link>
+                  <Link className="card dashboard-overview-card" href="/dashboard/sensor">
+                    <span className="eyebrow">Monitoring</span>
+                    <strong>Sensors</strong>
+                    <span className="dashboard-overview-count">{data.sensors.length}</span>
+                    <span className="muted">View readings and manage sensors.</span>
+                  </Link>
+                </section>
+              </>
+            )}
+            {section === "overview" && (
+              <section>
+                <Heading eyebrow="Connection Management" title="Your Gateways">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => startModal("gateway")}
+                  >
+                    ＋ Add Gateway
+                  </button>
+                </Heading>
+                <GatewayCards items={data.gateways} />
+              </section>
+            )}
+            {section === "overview" && (
+              <>
+                <section>
+                  <Heading eyebrow="Awaiting Approval" title="Pending Sub Nodes" />
+                  <NodeCards
+                    items={data.nodes}
+                    gateways={data.gateways}
+                    pending
+                    onApprove={approve}
+                  />
+                </section>
+                <section>
+                  <Heading eyebrow="Approved Connections" title="Sub Nodes" />
+                  <NodeCards
+                    items={data.nodes}
+                    gateways={data.gateways}
+                    onDelete={removeNode}
+                  />
+                </section>
+              </>
+            )}
+            {section === "device" && (
+              <section>
+                <Heading eyebrow="GPIO Controls" title="Devices">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => startModal("device")}
+                  >
+                    ＋ Add Device
+                  </button>
+                </Heading>
+                <p className="muted page-description">
+                  Add any GPIO-connected device and choose its pin number.
+                </p>
+                <DeviceCards
+                  items={data.devices}
+                  gateways={data.gateways}
+                  nodes={data.nodes}
+                  onToggle={toggle}
+                  onDelete={(d) => remove("device", d)}
+                />
+              </section>
+            )}
+            {section === "sensor" && (
+              <section>
+                <Heading eyebrow="Environmental Monitoring" title="Sensors">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => startModal("sensor")}
+                  >
+                    ＋ Add Sensor
+                  </button>
+                </Heading>
+                <SensorCards
+                  items={data.sensors}
+                  gateways={data.gateways}
+                  nodes={data.nodes}
+                  readings={data.readings}
+                  onDelete={(s) => remove("sensor", s)}
+                />
+              </section>
+            )}
           </>
         )}
       </main>
@@ -435,7 +489,7 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
             modal === "gateway"
               ? "Add Gateway"
               : modal === "device"
-                ? "Add Light / Device"
+                ? "Add Device"
                 : "Add Sensor"
           }
           eyebrow={
@@ -465,7 +519,7 @@ export default function DashboardShell({ user, session, onLogout, notify }) {
               name="name"
               required
               maxLength={80}
-              placeholder="e.g., Living room light"
+              placeholder="e.g., Living room fan"
               autoFocus
             />
             {modal !== "gateway" && (

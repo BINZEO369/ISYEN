@@ -1,1 +1,1 @@
-{"routes":[{"path":"/","title":"ISYEN Smart Home"},{"path":"/signin","title":"Sign In"},{"path":"/signup","title":"Sign Up"},{"path":"/dashboard","title":"Dashboard"}]}
+{"routes":[{"path":"/","title":"ISYEN Smart Home"},{"path":"/signin","title":"Sign In"},{"path":"/signup","title":"Sign Up"},{"path":"/dashboard","title":"Dashboard"},{"path":"/dashboard/device","title":"Devices"},{"path":"/dashboard/sensor","title":"Sensors"}]}
