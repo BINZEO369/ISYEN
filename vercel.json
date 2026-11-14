@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/api", "destination": "/api/index" },
+    { "source": "/api/:path*", "destination": "/api/index?path=:path*" },
+    { "source": "/", "destination": "/web/index.html" },
+    { "source": "/assets/:path*", "destination": "/web/assets/:path*" }
+  ]
+}
