@@ -198,7 +198,7 @@ const SUPABASE_URL = "https://fabasazefdnkpygglajz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhYmFzYXplZmRua3B5Z2dsYWp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQzNjUyMjksImV4cCI6MjEwOTk0MTIyOX0.MgUDDJ79RekwPDhc6LB0pIyM2jxyncSnnmiKwaqxo6U";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// FIX: safe pins — no flash/UART/strapping/USB
+// Safe pins — no flash/UART/strapping/USB
 const DEVICE_PINS = [4, 5, 13, 14, 16, 17, 18, 21, 22, 23, 25, 33];
 const SENSOR_PINS = [4, 5, 13, 14, 15, 16, 17, 18, 21, 22, 23, 25, 33, 34, 35, 36, 39];
 
@@ -213,6 +213,8 @@ let rtChannel = null;
 let dashboardInitialized = false;
 let toastTimer = null;
 let reloadTimer = null;
+let pirPollTimer = null;
+let sensorPollTimer = null;
 
 // ================= AUTH =================
 document.addEventListener("DOMContentLoaded", async () => {
@@ -262,6 +264,8 @@ async function handleAuth() {
 
 async function handleLogout() {
   if (rtChannel) { await sb.removeChannel(rtChannel); rtChannel = null; }
+  if (pirPollTimer) { clearInterval(pirPollTimer); pirPollTimer = null; }
+  if (sensorPollTimer) { clearInterval(sensorPollTimer); sensorPollTimer = null; }
   dashboardInitialized = false;
   await sb.auth.signOut();
 }
@@ -272,17 +276,48 @@ function showAuth() {
 }
 
 function showDashboard() {
-  if (dashboardInitialized && currentUser) return;   // FIX: idempotent
+  if (dashboardInitialized && currentUser) return;
   dashboardInitialized = true;
   document.getElementById("auth-screen").style.display = "none";
   document.getElementById("main-app").style.display = "block";
   document.getElementById("user-email").textContent = currentUser.email;
+  
   loadAllData();
   subscribeRealtime();
-  // FIX: poll sensor readings every 20s (no realtime spam)
-  setInterval(async () => {
-    if (currentUser) { await loadSensorReadings(); renderSensors(); }
+  
+  // DHT/MQ sensor readings — 20s polling
+  sensorPollTimer = setInterval(async () => {
+    if (!currentUser) return;
+    const nonPir = allSensors.filter(s => s.sensor_type !== 'PIR');
+    if (nonPir.length === 0) return;
+    const results = await Promise.all(nonPir.map(s =>
+      sb.from("sensor_readings")
+        .select("temperature, humidity, gas_value, motion, created_at")
+        .eq("sensor_id", s.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .then(r => ({ id: s.id, row: r.data?.[0] }))
+    ));
+    results.forEach(({id, row}) => { if (row) allReadings[id] = row; });
+    renderSensors();
   }, 20000);
+
+  // PIR sensor readings — 3s polling (fast)
+  pirPollTimer = setInterval(async () => {
+    if (!currentUser) return;
+    const pir = allSensors.filter(s => s.sensor_type === 'PIR');
+    if (pir.length === 0) return;
+    const results = await Promise.all(pir.map(s =>
+      sb.from("sensor_readings")
+        .select("temperature, humidity, gas_value, motion, created_at")
+        .eq("sensor_id", s.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .then(r => ({ id: s.id, row: r.data?.[0] }))
+    ));
+    results.forEach(({id, row}) => { if (row) allReadings[id] = row; });
+    renderSensors();
+  }, 3000);
 }
 
 // ================= LOAD & RENDER =================
@@ -313,7 +348,8 @@ async function loadAllData() {
 
 function formatTime(iso) {
   if (!iso) return "—";
-  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  let diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 0) diff = 0;   // clock skew fix
   if (diff < 60) return `${diff}s ago`;
   if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
@@ -335,7 +371,6 @@ async function saveGateway() {
   const name = document.getElementById("gatewayName").value.trim();
   if (!name) return showToast("Enter gateway name", true);
   
-  // FIX: crypto-secure claim code
   const buf = new Uint8Array(4);
   crypto.getRandomValues(buf);
   const claimCode = Array.from(buf).map(b => (b % 36).toString(36)).join('').toUpperCase();
@@ -533,7 +568,6 @@ function updateSensorNodeDropdown() {
   gwNodes.forEach(n => opts += `<option value="${n.id}">${n.node_name}</option>`);
   document.getElementById("sensorNode").innerHTML = opts;
   
-  // PIR + Main ESP এড়াতে auto-switch
   if (isPIR) {
     const nodeSelect = document.getElementById("sensorNode");
     if (parseInt(nodeSelect.value) === 0 && gwNodes.length > 0) {
@@ -552,7 +586,6 @@ function onSensorTypeChange() {
   
   if (type === 'PIR') {
     pirGroup.style.display = 'block';
-    // re-render node dropdown with Main disabled
     updateSensorNodeDropdown();
     
     if (gwNodes.length === 0) {
@@ -567,7 +600,6 @@ function onSensorTypeChange() {
     pirGroup.style.display = 'none';
     warningDiv.style.display = 'none';
     saveBtn.disabled = false;
-    // re-enable Main ESP option
     updateSensorNodeDropdown();
   }
 }
@@ -587,7 +619,6 @@ function onSensorNodeChange() {
 
 async function loadSensorReadings() {
   if (allSensors.length === 0) { allReadings = {}; return; }
-  // FIX: parallel + clear stale
   const results = await Promise.all(allSensors.map(s =>
     sb.from("sensor_readings")
       .select("temperature, humidity, gas_value, motion, created_at")
@@ -733,7 +764,6 @@ function subscribeRealtime() {
     .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, scheduleReload)
     .on("postgres_changes", { event: "*", schema: "public", table: "device_states" }, scheduleReload)
     .on("postgres_changes", { event: "*", schema: "public", table: "sensors" }, scheduleReload)
-    // FIX: sensor_readings realtime নেই — ২০s polling-এ
     .subscribe((status) => {
       if (status === 'CHANNEL_ERROR') console.warn("Realtime error");
     });
