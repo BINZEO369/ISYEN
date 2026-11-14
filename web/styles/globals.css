@@ -1184,3 +1184,218 @@ a {
     min-height: 150px;
   }
 }
+
+
+/* Site-wide warm neutral design system shared by home, auth and dashboard. */
+:root {
+  color: #43372f;
+  background: #eee9e3;
+  --navy: #43372f;
+  --navy2: #675544;
+  --teal: #c17d47;
+  --teal-dark: #a86637;
+  --muted: #84786d;
+  --line: #e6dfd7;
+  --white: #fffdfa;
+  --red: #b65d4f;
+  --shadow: 0 14px 34px rgba(67, 49, 32, 0.09);
+}
+body {
+  color: #43372f;
+  background: #eee9e3;
+}
+.brand-mark {
+  background: linear-gradient(145deg, #c98e5d, #a8673d);
+  box-shadow: 0 8px 20px rgba(139, 83, 43, 0.19);
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(193, 125, 71, 0.35);
+  outline-offset: 3px;
+}
+.btn {
+  min-height: 40px;
+  padding: 10px 16px;
+  border-radius: 11px;
+  letter-spacing: 0.01em;
+  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+.btn-primary {
+  background: #c17d47;
+  color: #fffaf4;
+  box-shadow: 0 6px 15px rgba(139, 83, 43, 0.15);
+}
+.btn-primary:hover:not(:disabled) {
+  background: #a86637;
+  box-shadow: 0 8px 18px rgba(139, 83, 43, 0.2);
+}
+.btn-quiet {
+  border: 1px solid #e7dacf;
+  background: #f4eee7;
+  color: #5e4d3e;
+}
+.btn-quiet:hover:not(:disabled) {
+  background: #eee3d8;
+}
+.btn.full {
+  min-height: 49px;
+  border-radius: 12px;
+}
+.text-button {
+  border-radius: 7px;
+  color: #a86637;
+}
+.text-button:hover {
+  color: #84532f;
+  background: #f5ece3;
+}
+.live-dot {
+  background: #789475;
+  box-shadow: 0 0 0 4px rgba(120, 148, 117, 0.14);
+}
+.auth-screen {
+  gap: 18px;
+  padding: 24px;
+  background: #eee9e3;
+}
+.auth-panel {
+  width: min(460px, calc(100% - 40px));
+  padding: 38px 40px;
+  border: 1px solid #e4ddd5;
+  border-radius: 22px;
+  background: #fbfaf7;
+  box-shadow: 0 12px 30px rgba(67, 49, 32, 0.07);
+}
+.auth-panel h1 span {
+  color: #a86637;
+}
+.auth-intro {
+  margin-bottom: 28px;
+}
+.auth-panel label,
+.modal-content label {
+  color: #5d5147;
+}
+.auth-panel input,
+.modal-content input,
+.modal-content select {
+  border-color: #ded4ca;
+  border-radius: 11px;
+  background: #fffdfa;
+}
+.auth-panel input:focus,
+.modal-content input:focus,
+.modal-content select:focus {
+  border-color: #c17d47;
+  outline: 3px solid rgba(193, 125, 71, 0.16);
+}
+.auth-switch {
+  margin-top: 19px;
+}
+.form-error {
+  border: 1px solid #ecd6ce;
+  background: #f9eeea;
+  color: #9e5144;
+}
+.form-success {
+  border: 1px solid #dce8d9;
+  background: #edf3eb;
+  color: #527453;
+}
+.auth-art {
+  min-height: 0;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #b49a81 0%, #a1876e 58%, #92765e 100%);
+}
+.art-orbit {
+  border-color: rgba(255, 244, 230, 0.2);
+}
+.orbit-two {
+  border-color: rgba(255, 244, 230, 0.15);
+}
+.art-copy p {
+  color: #f0e5d9;
+}
+.art-foot {
+  color: #f0e5d9;
+}
+.art-foot span {
+  color: #f6d7b8;
+}
+.sensor-reading {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #ece4dc;
+  border-radius: 13px;
+  background: #f7f3ee;
+}
+.sensor-reading > div {
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid #eee6de;
+  border-radius: 10px;
+  background: #fffdfa;
+}
+.reading-value {
+  font-size: 21px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+.reading-value.compact {
+  font-size: 12px;
+  letter-spacing: 0;
+}
+.reading-label {
+  margin-top: 5px;
+  color: #897d71;
+  font-size: 9px;
+  letter-spacing: 0.055em;
+  line-height: 1.45;
+}
+.modal {
+  background: rgba(54, 42, 32, 0.48);
+}
+.modal-content {
+  border: 1px solid #e6ddd4;
+  border-radius: 20px;
+  background: #fffdfa;
+  box-shadow: 0 20px 60px rgba(54, 42, 32, 0.26);
+}
+.conditional {
+  background: #f5f0ea;
+}
+.warning {
+  background: #fbf0df;
+  color: #8d5c35;
+}
+.toast {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  background: #4d4035;
+}
+@media (max-width: 700px) {
+  .auth-screen {
+    gap: 0;
+    padding: 16px;
+  }
+  .auth-panel {
+    width: 100%;
+    padding: 30px 24px;
+    border-radius: 19px;
+  }
+  .auth-panel h1 {
+    font-size: 34px;
+  }
+  .sensor-reading {
+    gap: 9px;
+    padding: 10px;
+  }
+  .sensor-reading > div {
+    padding: 9px;
+  }
+}

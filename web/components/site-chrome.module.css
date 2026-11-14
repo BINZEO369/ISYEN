@@ -232,3 +232,107 @@
     gap: 7px;
   }
 }
+
+
+/* Shared chrome theme: warm neutral surfaces and a single copper action color. */
+.header {
+  border-bottom-color: #e4ddd5;
+  background: rgba(249, 247, 243, 0.97);
+  box-shadow: 0 4px 16px rgba(67, 49, 32, 0.035);
+}
+.brand {
+  color: #43372f;
+}
+.brandMark {
+  background: linear-gradient(145deg, #c98e5d, #a8673d);
+  box-shadow: 0 7px 16px rgba(139, 83, 43, 0.17);
+}
+.brandWord small {
+  color: #84786d;
+}
+.nav a,
+.signIn,
+.signUp,
+.footerInner a {
+  color: #75695e;
+}
+.nav a:hover,
+.signIn:hover,
+.signUp:hover,
+.footerInner a:hover {
+  color: #a86637;
+}
+.signUp {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border: 1px solid #e4d6c8;
+  border-radius: 10px;
+  color: #8e603e;
+  background: #fffdfa;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+.signUp:hover {
+  border-color: #d8bda4;
+  background: #f6eee6;
+  transform: translateY(-1px);
+}
+.dashboard {
+  min-height: 40px;
+  padding-inline: 16px;
+  border-radius: 11px;
+  color: #fffaf4;
+  background: #b97543;
+  box-shadow: 0 5px 13px rgba(139, 83, 43, 0.16);
+}
+.dashboard:hover {
+  background: #a86637;
+  box-shadow: 0 7px 17px rgba(139, 83, 43, 0.21);
+}
+.footer {
+  border-top-color: #e6dfd7;
+  background: #f9f7f3;
+}
+.footerInner {
+  color: #84786d;
+}
+.footerInner a {
+  transition: color 150ms ease;
+}
+@media (max-width: 680px) {
+  .dashboard {
+    min-height: 36px;
+    padding-inline: 10px;
+    border-radius: 10px;
+  }
+}
+
+
+.signIn {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 13px;
+  border: 1px solid #e8dfd5;
+  border-radius: 10px;
+  color: #685748;
+  background: #f4eee7;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+.signIn:hover {
+  border-color: #d9c4af;
+  background: #eee3d8;
+  transform: translateY(-1px);
+}
+@media (max-width: 680px) {
+  .signIn {
+    min-height: 35px;
+    padding-inline: 10px;
+  }
+  .signUp {
+    display: none;
+  }
+}

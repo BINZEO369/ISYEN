@@ -875,3 +875,177 @@
     transition: none;
   }
 }
+
+
+/* Homepage shares the same taupe canvas, copper actions and soft white cards. */
+.page {
+  --home-navy: #43372f;
+  --home-teal: #a86637;
+  --home-teal-bright: #c17d47;
+  --home-muted: #84786d;
+  --home-line: #e6dfd7;
+  color: var(--home-navy);
+  background: #eee9e3;
+}
+.hero {
+  background:
+    radial-gradient(ellipse at 91% 15%, rgba(193, 125, 71, 0.12), transparent 34%),
+    linear-gradient(180deg, #fbfaf7 0%, #eee9e3 100%);
+}
+.eyebrow {
+  color: #a86637;
+}
+.eyebrowDot {
+  background: #c17d47;
+  box-shadow: 0 0 0 4px rgba(193, 125, 71, 0.14);
+}
+.heroCopy h1 span {
+  color: #a86637;
+}
+.primaryButton,
+.secondaryButton,
+.finalPrimary,
+.finalSecondary {
+  min-height: 47px;
+  border-radius: 12px;
+  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+.primaryButton {
+  color: #fffaf4;
+  background: #bd7946;
+  box-shadow: 0 8px 18px rgba(139, 83, 43, 0.18);
+}
+.primaryButton:hover {
+  background: #a86637;
+  box-shadow: 0 11px 22px rgba(139, 83, 43, 0.22);
+}
+.secondaryButton {
+  border: 1px solid #e1d5c9;
+  color: #5c4d40;
+  background: #fffdfa;
+}
+.secondaryButton:hover {
+  border-color: #d4b99f;
+  background: #f6eee6;
+}
+.heroNote {
+  color: #84786d;
+}
+.heroNote a,
+.inlineLink {
+  color: #a86637;
+}
+.quickTags span {
+  border-color: #e6ddd3;
+  color: #75695e;
+  background: #fbfaf7;
+}
+.heroImageFrame {
+  border-color: #fbfaf7;
+  background: #e4d8c9;
+  box-shadow: 0 24px 60px rgba(67, 49, 32, 0.16);
+}
+.imageCaption {
+  border-color: rgba(255, 250, 244, 0.46);
+  background: rgba(67, 55, 47, 0.62);
+}
+.captionIcon {
+  background: rgba(193, 125, 71, 0.94);
+}
+.imageLabel {
+  background: rgba(67, 55, 47, 0.46);
+}
+.visualAccent {
+  background: #e7d7c7;
+}
+.featuresSection {
+  background: #f9f7f3;
+}
+.featureCard {
+  border-color: #e5ddd4;
+  border-radius: 18px;
+  background: #fffdfa;
+}
+.featureCard:hover {
+  border-color: #d9bda3;
+  box-shadow: 0 17px 32px rgba(67, 49, 32, 0.08);
+}
+.featureIcon {
+  color: #a86637;
+  background: #f4e8dc;
+}
+.featureNumber {
+  color: #b7a899;
+}
+.detailSection {
+  background: #eee9e3;
+}
+.detailImageFrame {
+  background: #e4d8c9;
+  box-shadow: 0 20px 48px rgba(67, 49, 32, 0.12);
+}
+.detailImageTag {
+  background: rgba(67, 55, 47, 0.7);
+}
+.detailList li {
+  color: #5c5046;
+}
+.detailList li span {
+  color: #a86637;
+  background: #f1e2d4;
+}
+.finalCta {
+  background: #f9f7f3;
+}
+.finalCtaInner {
+  border: 1px solid rgba(255, 250, 244, 0.12);
+  background: linear-gradient(120deg, #b49a81 0%, #a1876e 58%, #92765e 100%);
+  box-shadow: 0 16px 38px rgba(86, 64, 44, 0.15);
+}
+.finalCta .eyebrow {
+  color: #f4e4d4;
+}
+.finalCtaInner > div:first-child > p:last-child {
+  color: #f0e5d9;
+}
+.finalPrimary {
+  color: #684a32;
+  background: #fff7ee;
+  box-shadow: 0 5px 13px rgba(67, 49, 32, 0.12);
+}
+.finalPrimary:hover {
+  background: #f3e4d4;
+}
+.finalSecondary {
+  border-color: rgba(255, 250, 244, 0.46);
+  color: #fffaf4;
+  background: rgba(255, 250, 244, 0.1);
+}
+.finalSecondary:hover {
+  background: rgba(255, 250, 244, 0.19);
+}
+.footer {
+  background: #f9f7f3;
+}
+.footerInner {
+  border-top-color: #e6dfd7;
+  color: #84786d;
+}
+.footerInner a {
+  color: #75695e;
+}
+.footerInner a:hover {
+  color: #a86637;
+}
+@media (max-width: 680px) {
+  .primaryButton,
+  .secondaryButton,
+  .finalPrimary,
+  .finalSecondary {
+    min-height: 45px;
+    border-radius: 11px;
+  }
+  .featureCard {
+    border-radius: 15px;
+  }
+}
