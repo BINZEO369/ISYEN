@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { apiUrl } from "../services/config";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { apiUrl, SESSION_KEY } from "../services/config";
 
 async function authRequest(path, body) {
   const response = await fetch(apiUrl(path), {
@@ -22,11 +25,17 @@ async function authRequest(path, body) {
   return payload;
 }
 
-export default function AuthScreen({ onAuthenticated }) {
-  const [signup, setSignup] = useState(false);
+export default function AuthScreen({ mode = "signin" }) {
+  const router = useRouter();
+  const signup = mode === "signup";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (sessionStorage.getItem(SESSION_KEY)) router.replace("/dashboard");
+  }, [router]);
+
   async function submit(e) {
     e.preventDefault();
     const form = e.currentTarget;
@@ -42,13 +51,13 @@ export default function AuthScreen({ onAuthenticated }) {
       );
       if (signup && !result.session?.access_token) {
         setNotice("অ্যাকাউন্ট তৈরি হয়েছে—ইমেইল যাচাই করে লগ ইন করুন।");
-        setSignup(false);
         form.reset();
         return;
       }
       if (!result.session?.access_token)
         throw new Error("সার্ভার থেকে লগইন session পাওয়া যায়নি।");
-      onAuthenticated(result.session);
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(result.session));
+      router.replace("/dashboard");
     } catch (e) {
       setError(e.message || "লগ ইন করা যায়নি।");
     } finally {
@@ -116,9 +125,9 @@ export default function AuthScreen({ onAuthenticated }) {
             type="button"
             className="text-button"
             onClick={() => {
-              setSignup(!signup);
               setError("");
               setNotice("");
+              router.push(signup ? "/signin" : "/signup");
             }}
           >
             {signup ? "লগ ইন" : "সাইন আপ"}

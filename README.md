@@ -6,8 +6,8 @@
 
 ```text
 web/                         # Vercel website project root
-  app/                       # Next.js App Router
-  components/                # auth, dashboard, cards, feedback
+  app/                       # Next.js URL routes: /signin, /signup, /dashboard
+  components/                # auth, protected dashboard route, cards, feedback
   services/                  # API origin/configuration only; no Supabase browser key
   styles/                    # responsive dashboard styles
   package.json               # web-only dependencies and scripts
@@ -30,6 +30,17 @@ admin/                        # deferred; existing placeholder left alone
 ```
 
 `web/` আর root-level `src/` নেই। `api/server.js`-ই API process entry point; endpoint logic আলাদা controllers/modules-এ। কোনো Supabase schema migration বা service-role key যোগ করা হয়নি।
+
+## Website URL structure
+
+| URL | কাজ |
+| --- | --- |
+| `/` | `/dashboard`-এ পাঠায়; login session না থাকলে dashboard route `/signin`-এ পাঠায় |
+| `/signin` | Login page; সরাসরি open/refresh করা যায় |
+| `/signup` | Registration page; সরাসরি open/refresh করা যায় |
+| `/dashboard` | Protected dashboard; বৈধ session না থাকলে `/signin`-এ ফেরত পাঠায় |
+
+Login/register screen-এর switch link-ও URL বদলায়; dashboard logout করলে `/signin`-এ যায়।
 
 ## কীভাবে local-এ চালাবেন
 

@@ -1,12 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import AuthScreen from "./AuthScreen";
+import { useRouter } from "next/navigation";
 import DashboardShell from "./DashboardShell";
 import { Loading, Toast } from "./Feedback";
-import { apiUrl } from "../services/config";
-
-const SESSION_KEY = "isyen.auth.session";
+import { apiUrl, SESSION_KEY } from "../services/config";
 
 async function apiRequest(path, options = {}) {
   const response = await fetch(apiUrl(path), {
@@ -48,7 +46,8 @@ function saveSession(session) {
   else sessionStorage.removeItem(SESSION_KEY);
 }
 
-function App() {
+export default function DashboardRoute() {
+  const router = useRouter();
   const [session, setSession] = useState(null);
   const [starting, setStarting] = useState(true);
   const [toast, setToast] = useState(null);
@@ -153,15 +152,9 @@ function App() {
     };
   }, [session?.refresh_token, session?.expires_at, notify]);
 
-  function authenticate(authSession) {
-    const next = normalizeSession(authSession);
-    if (!next) {
-      notify("সার্ভার থেকে বৈধ session পাওয়া যায়নি।", true);
-      return;
-    }
-    saveSession(next);
-    setSession(next);
-  }
+  useEffect(() => {
+    if (!starting && !session) router.replace("/signin");
+  }, [session, starting, router]);
 
   async function logout() {
     try {
@@ -181,9 +174,9 @@ function App() {
 
   return (
     <>
-      {starting ? (
+      {starting || !session ? (
         <Loading text="নিরাপদ সংযোগ প্রস্তুত হচ্ছে…" />
-      ) : session ? (
+      ) : (
         <DashboardShell
           key={session.user.id}
           user={session.user}
@@ -191,12 +184,8 @@ function App() {
           onLogout={logout}
           notify={notify}
         />
-      ) : (
-        <AuthScreen onAuthenticated={authenticate} />
       )}
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </>
   );
 }
-
-export default App;
