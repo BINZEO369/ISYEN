@@ -2,7 +2,7 @@
 const { supabaseRequest, query, loadLatestReadings } = require("../supabase");
 const LIMIT = 1000;
 async function dashboard(config, token) {
-  const [gateways, nodes, devices, sensors] = await Promise.all([
+  const [gateways, nodes, devices, sensors, automations] = await Promise.all([
     supabaseRequest(
       config,
       token,
@@ -42,12 +42,23 @@ async function dashboard(config, token) {
         limit: String(LIMIT),
       }),
     ),
+    supabaseRequest(
+      config,
+      token,
+      query("automations", {
+        select:
+          "id,gateway_id,automation_name,enabled,logic_type,cooldown_seconds,trigger_count,last_triggered_at,created_at,automation_conditions(id,sensor_id,operator,value,order_index),automation_actions(id,device_id,action_type,delay_seconds,order_index)",
+        order: "id.asc",
+        limit: String(LIMIT),
+      }),
+    ),
   ]);
   return {
     gateways,
     nodes,
     devices,
     sensors,
+    automations,
     readings: await loadLatestReadings(
       config,
       token,
@@ -69,10 +80,11 @@ async function readings(config, token, type) {
       limit: String(LIMIT),
     }),
   );
+  const fastTypes = ["PIR", "REED", "WATER_LEAK", "TOUCH"];
   if (type === "fast")
-    sensors = sensors.filter((x) => ["PIR", "REED"].includes(x.sensor_type));
+    sensors = sensors.filter((x) => fastTypes.includes(x.sensor_type));
   if (type === "slow")
-    sensors = sensors.filter((x) => !["PIR", "REED"].includes(x.sensor_type));
+    sensors = sensors.filter((x) => !fastTypes.includes(x.sensor_type));
   return { readings: await loadLatestReadings(config, token, sensors) };
 }
 module.exports = { dashboard, readings };

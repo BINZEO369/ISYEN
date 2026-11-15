@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { API_BASE_URL, DEVICE_PINS, SENSOR_PINS } from "../services/config";
 import { Loading, Modal } from "./Feedback";
+import AutomationSection from "./AutomationSection";
 import {
   DeviceCards,
   GatewayCards,
@@ -9,16 +10,20 @@ import {
   SensorCards,
 } from "./ResourceCards";
 
-const TYPES = ["DHT11", "DHT22", "MQ2", "MQ135", "PIR", "REED"];
+const TYPES = ["DHT11", "DHT22", "MQ2", "MQ135", "PIR", "REED", "LDR", "RAIN", "WATER_LEAK", "TOUCH"];
+const SUB_NODE_TYPES = new Set(["PIR", "REED", "LDR", "RAIN", "WATER_LEAK", "TOUCH"]);
+const DIGITAL_TRIGGER_TYPES = new Set(["PIR", "REED", "WATER_LEAK", "TOUCH"]);
 const DASHBOARD_SECTIONS = [
   { id: "overview", label: "Control Panel", href: "/dashboard" },
   { id: "device", label: "Devices", href: "/dashboard/device" },
   { id: "sensor", label: "Sensors", href: "/dashboard/sensor" },
+  { id: "automation", label: "Automations", href: "/dashboard/automation" },
 ];
 const SECTION_TITLES = {
   overview: "Control Panel",
   device: "Devices",
   sensor: "Sensors",
+  automation: "Automations",
 };
 
 // Dashboard actions call their backend endpoints; Supabase credentials stay on the server.
@@ -70,6 +75,7 @@ export default function DashboardShell({
     nodes: [],
     devices: [],
     sensors: [],
+    automations: [],
     readings: {},
   });
   const [loading, setLoading] = useState(true);
@@ -80,6 +86,11 @@ export default function DashboardShell({
   const [gatewayId, setGatewayId] = useState("");
   const [nodeId, setNodeId] = useState("0");
   const [trigger, setTrigger] = useState("HIGH");
+  const requestApi = useCallback(
+    (path, options = {}) =>
+      requestBackendEndpoint(session.access_token, path, options),
+    [session.access_token],
+  );
   const refresh = useCallback(async ({ showLoading = false } = {}) => {
     if (showLoading) setLoading(true);
     setError("");
@@ -94,6 +105,7 @@ export default function DashboardShell({
         nodes: d.nodes || [],
         devices: d.devices || [],
         sensors: d.sensors || [],
+        automations: d.automations || [],
         readings,
       });
     } catch (e) {
@@ -111,10 +123,10 @@ export default function DashboardShell({
   }, [refresh]);
   useEffect(() => {
     const hasFast = data.sensors.some((s) =>
-        ["PIR", "REED"].includes(s.sensor_type),
+        ["PIR", "REED", "WATER_LEAK", "TOUCH"].includes(s.sensor_type),
       ),
       hasSlow = data.sensors.some(
-        (s) => !["PIR", "REED"].includes(s.sensor_type),
+        (s) => !["PIR", "REED", "WATER_LEAK", "TOUCH"].includes(s.sensor_type),
       );
     if (!hasFast && !hasSlow) return;
     let active = true;
@@ -148,7 +160,8 @@ export default function DashboardShell({
       ),
     [data.nodes, gatewayId],
   );
-  const subOnly = ["PIR", "REED"].includes(sensorType);
+  const subOnly = SUB_NODE_TYPES.has(sensorType);
+  const hasDigitalTrigger = DIGITAL_TRIGGER_TYPES.has(sensorType);
   const allowedNodes = subOnly
     ? approved
     : [{ id: "0", node_name: "Main ESP32 (Gateway)" }, ...approved];
@@ -402,6 +415,12 @@ export default function DashboardShell({
                     <span className="dashboard-overview-count">{data.sensors.length}</span>
                     <span className="muted">View readings and manage sensors.</span>
                   </Link>
+                  <Link className="card dashboard-overview-card" href="/dashboard/automation">
+                    <span className="eyebrow">Rules &amp; Actions</span>
+                    <strong>Automations</strong>
+                    <span className="dashboard-overview-count">{data.automations.length}</span>
+                    <span className="muted">Connect sensor conditions to device actions.</span>
+                  </Link>
                 </section>
               </>
             )}
@@ -472,7 +491,7 @@ export default function DashboardShell({
                   </button>
                 </Heading>
                 <p className="muted page-description">
-                  View the latest temperature, humidity, gas, motion and contact readings from your connected sensors.
+                  View the latest temperature, humidity, gas, light, rain, leak, touch and contact readings from your connected sensors.
                 </p>
                 <SensorCards
                   items={data.sensors}
@@ -482,6 +501,17 @@ export default function DashboardShell({
                   onDelete={(s) => remove("sensor", s)}
                 />
               </section>
+            )}
+            {section === "automation" && (
+              <AutomationSection
+                gateways={data.gateways}
+                sensors={data.sensors}
+                devices={data.devices}
+                automations={data.automations}
+                request={requestApi}
+                onRefresh={refresh}
+                notify={notify}
+              />
             )}
           </>
         )}
@@ -534,8 +564,12 @@ export default function DashboardShell({
                   required
                   value={gatewayId}
                   onChange={(e) => {
-                    setGatewayId(e.target.value);
-                    setNodeId("0");
+                    const nextGateway = e.target.value;
+                    const firstApproved = data.nodes.find(
+                      (n) => n.is_approved && String(n.gateway_id) === String(nextGateway),
+                    );
+                    setGatewayId(nextGateway);
+                    setNodeId(subOnly ? String(firstApproved?.id || "") : "0");
                   }}
                 >
                   {data.gateways.map((g) => (
@@ -552,6 +586,9 @@ export default function DashboardShell({
                   value={nodeId}
                   onChange={(e) => setNodeId(e.target.value)}
                 >
+                  {subOnly && !approved.length && (
+                    <option value="">Select an approved Sub Node</option>
+                  )}
                   {allowedNodes.map((n) => (
                     <option key={n.id} value={n.id}>
                       {n.node_name || "Sub Node"}
@@ -579,8 +616,13 @@ export default function DashboardShell({
                   id="sensor-type"
                   value={sensorType}
                   onChange={(e) => {
-                    setSensorType(e.target.value);
-                    setNodeId("0");
+                    const nextType = e.target.value;
+                    setSensorType(nextType);
+                    setNodeId(
+                      SUB_NODE_TYPES.has(nextType)
+                        ? String(approved[0]?.id || "")
+                        : "0",
+                    );
                   }}
                 >
                   {TYPES.map((t) => (
@@ -590,6 +632,14 @@ export default function DashboardShell({
                         ? " · motion (Sub Node only)"
                         : t === "REED"
                           ? " · door/window (Sub Node only)"
+                          : t === "LDR"
+                            ? " · light level (Sub Node only)"
+                            : t === "RAIN"
+                              ? " · rain level (Sub Node only)"
+                              : t === "WATER_LEAK"
+                                ? " · water leak (Sub Node only)"
+                                : t === "TOUCH"
+                                  ? " · touch input (Sub Node only)"
                           : t.startsWith("DHT")
                             ? " · temperature and humidity"
                             : t === "MQ2"
@@ -598,12 +648,16 @@ export default function DashboardShell({
                     </option>
                   ))}
                 </select>
-                {subOnly && (
+                {hasDigitalTrigger && (
                   <div className="conditional">
                     <label htmlFor="trigger-state">
                       {sensorType === "PIR"
                         ? "Motion Trigger"
-                        : "Open Detection"}
+                        : sensorType === "REED"
+                          ? "Open Detection"
+                          : sensorType === "WATER_LEAK"
+                            ? "Leak Detection"
+                            : "Touch Detection"}
                     </label>
                     <select
                       id="trigger-state"
@@ -616,7 +670,11 @@ export default function DashboardShell({
                     <p className="hint">
                       {sensorType === "PIR"
                         ? "Use HIGH for the HC-SR501."
-                        : "Use HIGH for a standard NO reed switch with internal pull-up."}
+                        : sensorType === "REED"
+                          ? "Use HIGH for a standard NO reed switch with internal pull-up."
+                          : sensorType === "WATER_LEAK"
+                            ? "Choose the signal level that indicates an active leak."
+                            : "Choose the signal level that indicates a touch."}
                     </p>
                   </div>
                 )}

@@ -8,10 +8,23 @@ const VALID_SENSOR_TYPES = new Set([
   "MQ135",
   "PIR",
   "REED",
+  "LDR",
+  "RAIN",
+  "WATER_LEAK",
+  "TOUCH",
 ]);
+const SUB_NODE_SENSOR_TYPES = new Set([
+  "PIR",
+  "REED",
+  "LDR",
+  "RAIN",
+  "WATER_LEAK",
+  "TOUCH",
+]);
+const DIGITAL_SENSOR_TYPES = new Set(["PIR", "REED", "WATER_LEAK", "TOUCH"]);
 const DEVICE_PINS = new Set([4, 5, 13, 14, 16, 17, 18, 21, 22, 23, 25, 33]);
 const SENSOR_PINS = new Set([
-  4, 5, 13, 14, 15, 16, 17, 18, 21, 22, 23, 25, 33, 34, 35, 36, 39,
+  4, 5, 13, 14, 15, 16, 17, 18, 21, 22, 23, 25, 32, 33, 34, 35, 36, 39,
 ]);
 function requireText(value, field, max = 80) {
   if (typeof value !== "string" || !value.trim() || value.trim().length > max)
@@ -36,6 +49,8 @@ function requireKeys(body, keys) {
 }
 module.exports = {
   VALID_SENSOR_TYPES,
+  SUB_NODE_SENSOR_TYPES,
+  DIGITAL_SENSOR_TYPES,
   DEVICE_PINS,
   SENSOR_PINS,
   requireText,

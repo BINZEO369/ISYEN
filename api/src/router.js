@@ -6,6 +6,7 @@ const {
 } = require("./supabase");
 const authController = require("./controllers/auth");
 const dashboard = require("./controllers/dashboard"),
+  automation = require("./controllers/automation"),
   gateway = require("./controllers/gateway"),
   node = require("./controllers/node"),
   device = require("./controllers/device"),
@@ -48,12 +49,21 @@ async function route(req, path, searchParams) {
     return dashboard.dashboard(config, token);
   if (method === "GET" && path === "/readings")
     return dashboard.readings(config, token, searchParams.get("type"));
+  if (method === "POST" && path === "/automations")
+    return { status: 201, body: await automation.save(req, config, token) };
+  let m = path.match(/^\/automations\/(\d+)\/logs$/);
+  if (m && method === "GET") return automation.logs(config, token, m[1]);
+  m = path.match(/^\/automations\/(\d+)$/);
+  if (m && method === "PATCH")
+    return automation.save(req, config, token, m[1]);
+  if (m && method === "DELETE")
+    return automation.remove(config, token, m[1]);
   if (method === "POST" && path === "/gateways")
     return {
       status: 201,
       body: await gateway.create(req, config, token, user),
     };
-  let m = path.match(/^\/nodes\/(\d+)$/);
+  m = path.match(/^\/nodes\/(\d+)$/);
   if (m && method === "PATCH") return node.update(req, config, token, m[1]);
   if (m && method === "DELETE") return node.remove(config, token, m[1]);
   if (method === "POST" && path === "/devices")

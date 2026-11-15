@@ -9,6 +9,7 @@ const {
   validatePin,
   SENSOR_PINS,
   VALID_SENSOR_TYPES,
+  SUB_NODE_SENSOR_TYPES,
 } = require("../validators");
 async function create(req, config, token) {
   const b = await readBody(req);
@@ -25,10 +26,10 @@ async function create(req, config, token) {
   const node_id = Number(b.node_id);
   if (!Number.isSafeInteger(node_id) || node_id < 0)
     throw new HttpError(400, "Please provide a valid node ID.");
-  if (["PIR", "REED"].includes(b.sensor_type) && node_id === 0)
+  if (SUB_NODE_SENSOR_TYPES.has(b.sensor_type) && node_id === 0)
     throw new HttpError(
       400,
-      "PIR and REED sensors must be connected to an approved Sub Node.",
+      `${b.sensor_type} sensors must be connected to an approved Sub Node.`,
     );
   const gateway_id = requireId(b.gateway_id, "gateway ID");
   if (node_id > 0) await assertApprovedNode(config, token, node_id, gateway_id);

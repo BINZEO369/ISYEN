@@ -18,7 +18,7 @@ export function Toast({ toast, onDismiss }) {
   );
 }
 
-export function Modal({ title, eyebrow, description, onClose, children }) {
+export function Modal({ title, eyebrow, description, onClose, children, className = "" }) {
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -31,7 +31,7 @@ export function Modal({ title, eyebrow, description, onClose, children }) {
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <section
-        className="modal-content"
+        className={["modal-content", className].filter(Boolean).join(" ")}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"

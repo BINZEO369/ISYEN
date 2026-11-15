@@ -107,7 +107,7 @@ async function loadLatestReadings(config, token, sensors) {
           token,
           query("sensor_readings", {
             select:
-              "sensor_id,temperature,humidity,gas_value,motion,door_state,created_at",
+              "sensor_id,temperature,humidity,gas_value,motion,door_state,light_value,rain_value,leak_state,touch_state,timestamps,reading_count,created_at",
             sensor_id: `eq.${sensor.id}`,
             order: "created_at.desc",
             limit: "1",
