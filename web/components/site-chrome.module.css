@@ -395,3 +395,55 @@
 @media (max-width: 680px) {
   .header { background: rgba(248,251,255,0.84); }
 }
+
+
+/* Monochrome shared chrome: black actions, white glass and neutral gray hover states. */
+.header {
+  border-bottom-color: rgba(255,255,255,0.98);
+  background: rgba(250,250,250,0.82);
+  box-shadow: 0 7px 24px rgba(0,0,0,0.055);
+}
+.brand { color: #171717; }
+.brandMark {
+  background: linear-gradient(145deg, #555, #171717 74%);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.17);
+}
+.brandWord small { color: #777; }
+.nav a,
+.signIn,
+.signUp,
+.footerInner a { color: #555; }
+.nav a:hover,
+.signIn:hover,
+.signUp:hover,
+.footerInner a:hover { color: #111; }
+.signIn,
+.signUp {
+  border-color: rgba(55,55,55,0.15);
+  color: #292929;
+  background: rgba(255,255,255,0.7);
+  box-shadow: 0 4px 13px rgba(0,0,0,0.045);
+}
+.signIn:hover,
+.signUp:hover {
+  border-color: rgba(35,35,35,0.25);
+  background: rgba(238,238,238,0.92);
+}
+.dashboard {
+  border-color: rgba(255,255,255,0.42);
+  color: #fff;
+  background: linear-gradient(125deg, #454545, #151515);
+  box-shadow: 0 7px 17px rgba(0,0,0,0.18);
+}
+.dashboard:hover {
+  background: linear-gradient(125deg, #292929, #000);
+  box-shadow: 0 10px 21px rgba(0,0,0,0.22);
+}
+.footer {
+  border-top-color: rgba(255,255,255,0.96);
+  background: rgba(250,250,250,0.78);
+}
+.footerInner { color: #777; }
+@media (max-width: 680px) {
+  .header { background: rgba(250,250,250,0.89); }
+}
