@@ -8,11 +8,11 @@
 <style>
   :root {
     --bg: #f8fafc; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
-    --border: #e2e8f0; --primary: #000000; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --info: #3b82f6;
+    --border: #e2e8f0; --primary: #000000; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --info: #3b82f6; --purple: #8b5cf6;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; padding: 40px 20px; }
-  .container { max-width: 1100px; margin: 0 auto; }
+  .container { max-width: 1200px; margin: 0 auto; }
   
   #auth-screen { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
   .auth-box { background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 400px; }
@@ -30,14 +30,18 @@
   .section-title { font-size: 16px; font-weight: 600; margin: 32px 0 16px; display: flex; justify-content: space-between; align-items: center; }
   .add-btn { padding: 8px 16px; background: var(--primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
   .card { background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
   .card.pending { border: 1px solid var(--warning); background-color: #fffbeb; }
+  .card.disabled { opacity: 0.6; }
 
   .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
   .name { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
   .badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--border); display: inline-block; margin-right: 4px; margin-top: 4px;}
   .code-badge { background: #dbeafe; color: #1e40af; font-weight: bold; font-size: 14px; letter-spacing: 1px; }
+  .badge-purple { background: #ede9fe; color: #6d28d9; border-color: #ddd6fe; }
+  .badge-green { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+  .badge-red { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
   
   .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
   .toggle { width: 44px; height: 24px; border-radius: 12px; background: #e2e8f0; cursor: pointer; border: none; position: relative; transition: 0.2s; }
@@ -48,6 +52,8 @@
   .btn-approve { background: var(--success); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
   .icon-btn { background: #fff; border: 1px solid var(--border); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
   .icon-btn:hover { background: #fee2e2; color: var(--danger); }
+  .icon-btn-blue { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .icon-btn-blue:hover { background: #dbeafe; }
 
   .sensor-data { display: flex; gap: 15px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-top: 5px;}
   .sensor-val { font-size: 20px; font-weight: 700; color: var(--text-main); }
@@ -57,12 +63,21 @@
   .alert-active { animation: pulse 1.5s infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 
+  /* Automation Card */
+  .auto-rule { background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 12px; margin-top: 8px; }
+  .auto-rule-title { font-size: 12px; font-weight: 600; color: #6d28d9; margin-bottom: 8px; }
+  .auto-line { font-size: 12px; color: #334155; margin: 4px 0; padding-left: 8px; }
+  .auto-line::before { content: "• "; color: #8b5cf6; font-weight: bold; }
+  .auto-stats { display: flex; gap: 12px; font-size: 11px; color: var(--text-muted); margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e9d5ff; }
+  .auto-stats b { color: #6d28d9; }
+
   .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
   .modal.active { display: flex; }
-  .modal-content { background: var(--card-bg); border-radius: 12px; padding: 24px; max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 16px; max-height: 90vh; overflow-y: auto;}
+  .modal-content { background: var(--card-bg); border-radius: 12px; padding: 24px; max-width: 500px; width: 100%; display: flex; flex-direction: column; gap: 16px; max-height: 90vh; overflow-y: auto;}
+  .modal-wide { max-width: 600px; }
   .modal-content h2 { font-size: 18px; font-weight: 600; }
   .modal-content label { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: -8px; }
-  .modal-content input, .modal-content select { padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); width: 100%; font-size: 14px; }
+  .modal-content input, .modal-content select, .modal-content textarea { padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); width: 100%; font-size: 14px; }
   .modal-content select option:disabled { color: #cbd5e1; }
   .modal-actions { display: flex; gap: 12px; margin-top: 8px; }
   .btn-primary { background: var(--primary); color: #fff; border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; }
@@ -70,6 +85,19 @@
   .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; }
   .warning-text { font-size: 12px; color: var(--danger); padding: 8px 10px; background: #fef2f2; border-radius: 6px; border: 1px solid #fecaca; display: none; }
   .info-text { font-size: 12px; color: var(--text-muted); padding: 8px 10px; background: #eff6ff; border-radius: 6px; border: 1px solid #bfdbfe; margin-top: 4px; }
+  
+  .auto-section { background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 12px; }
+  .auto-section-title { font-size: 13px; font-weight: 600; color: #6d28d9; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .auto-add-btn { background: #8b5cf6; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; }
+  .auto-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; margin-bottom: 8px; padding: 8px; background: #fff; border-radius: 6px; border: 1px solid #e9d5ff; }
+  .auto-row > div { display: flex; flex-direction: column; gap: 4px; }
+  .auto-row select, .auto-row input { padding: 6px 8px; font-size: 12px; }
+  .auto-row-remove { background: #fee2e2; color: #991b1b; border: none; border-radius: 4px; width: 28px; height: 28px; cursor: pointer; font-size: 14px; align-self: center; }
+
+  .log-item { padding: 10px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .log-item:last-child { border-bottom: none; }
+  .log-time { color: var(--text-muted); font-size: 11px; }
+  .log-snapshot { color: #6d28d9; font-family: monospace; font-size: 11px; margin-top: 4px; }
 
   .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-main); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transition: 0.3s; z-index: 200; pointer-events: none; max-width: 320px; }
   .toast.show { opacity: 1; transform: translateY(0); }
@@ -81,7 +109,7 @@
 <div id="auth-screen">
   <div class="auth-box">
     <h2 id="auth-title">Login</h2>
-    <input type="email" id="auth-email" placeholder="Email Address" required />
+    <input type="email" id="auth-email" placeholder="Email" required />
     <input type="password" id="auth-password" placeholder="Password" required />
     <button onclick="handleAuth()" id="auth-btn">Login</button>
     <div class="toggle-auth" onclick="toggleAuthMode()">Don't have an account? Sign Up</div>
@@ -104,7 +132,7 @@
   <div id="gatewayGrid" class="grid"></div>
 
   <div class="section-title" id="pendingSection" style="display: none;">
-    <span>New Devices Found (Pending)</span>
+    <span>Pending Nodes</span>
   </div>
   <div id="pendingGrid" class="grid"></div>
 
@@ -124,14 +152,21 @@
     <button class="add-btn" onclick="openSensorModal()">+ Add Sensor</button>
   </div>
   <div id="sensorGrid" class="grid"></div>
+
+  <div class="section-title">
+    <span>🤖 Automations</span>
+    <button class="add-btn" onclick="openAutomationModal()">+ Add Automation</button>
+  </div>
+  <div id="automationGrid" class="grid"></div>
 </div>
 
+<!-- Gateway Modal -->
 <div id="gatewayModal" class="modal">
   <div class="modal-content">
     <h2>Add New Gateway</h2>
     <label>Gateway Name</label>
     <input type="text" id="gatewayName" placeholder="e.g. Home Main Board" />
-    <p style="font-size:12px; color:var(--text-muted);">Clicking Save will generate a Claim Code. Enter this code in your ESP32 setup portal.</p>
+    <p style="font-size:12px; color:var(--text-muted);">A Claim Code will be generated. Enter in ESP32 portal.</p>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('gatewayModal')">Cancel</button>
       <button class="btn-primary" onclick="saveGateway()">Generate Code</button>
@@ -139,6 +174,7 @@
   </div>
 </div>
 
+<!-- Light Modal -->
 <div id="lightModal" class="modal">
   <div class="modal-content">
     <h2>Add Light</h2>
@@ -157,6 +193,7 @@
   </div>
 </div>
 
+<!-- Sensor Modal -->
 <div id="sensorModal" class="modal">
   <div class="modal-content">
     <h2>Add Sensor</h2>
@@ -168,52 +205,30 @@
       <option value="DHT22">DHT22 (Temp + Humidity)</option>
       <option value="MQ2">MQ2 (Gas)</option>
       <option value="MQ135">MQ135 (Air Quality)</option>
-      <option value="PIR">PIR (Motion) — Sub Node only</option>
-      <option value="REED">REED (Door/Window) — Sub Node only</option>
-      <option value="LDR">LDR (Light Level) — Sub Node only</option>
-      <option value="RAIN">RAIN (Rain Drop) — Sub Node only</option>
-      <option value="WATER_LEAK">WATER_LEAK (Leak Detection) — Sub Node only</option>
-      <option value="TOUCH">TOUCH (Capacitive Touch) — Sub Node only</option>
+      <option value="PIR">PIR (Motion) — Sub only</option>
+      <option value="REED">REED (Door) — Sub only</option>
+      <option value="LDR">LDR (Light) — Sub only</option>
+      <option value="RAIN">RAIN — Sub only</option>
+      <option value="WATER_LEAK">WATER_LEAK — Sub only</option>
+      <option value="TOUCH">TOUCH — Sub only</option>
     </select>
-    
     <div id="pirTriggerGroup" style="display: none; margin-top: 4px;">
-      <label>Motion Trigger (HIGH/LOW)</label>
-      <select id="pirTriggerState">
-        <option value="HIGH">HIGH — motion হলে pin HIGH (default)</option>
-        <option value="LOW">LOW — motion হলে pin LOW</option>
-      </select>
-      <div class="info-text">HC-SR501 মডিউলের জন্য HIGH রাখুন</div>
+      <label>Motion Trigger</label>
+      <select id="pirTriggerState"><option value="HIGH">HIGH</option><option value="LOW">LOW</option></select>
     </div>
-    
     <div id="reedTriggerGroup" style="display: none; margin-top: 4px;">
-      <label>Open Detection (HIGH/LOW)</label>
-      <select id="reedTriggerState">
-        <option value="HIGH">HIGH — দরজা খোলা হলে pin HIGH (default, NO reed)</option>
-        <option value="LOW">LOW — দরজা খোলা হলে pin LOW (NC reed)</option>
-      </select>
-      <div class="info-text">সাধারণ NO reed + internal pull-up-এ HIGH রাখুন</div>
+      <label>Open Detection</label>
+      <select id="reedTriggerState"><option value="HIGH">HIGH (NO reed)</option><option value="LOW">LOW (NC reed)</option></select>
     </div>
-    
     <div id="leakTriggerGroup" style="display: none; margin-top: 4px;">
-      <label>Leak Detection (HIGH/LOW)</label>
-      <select id="leakTriggerState">
-        <option value="HIGH">HIGH — পানি পড়লে pin HIGH (default)</option>
-        <option value="LOW">LOW — পানি পড়লে pin LOW</option>
-      </select>
-      <div class="info-text">সাধারণ water leak sensor-এ HIGH রাখুন</div>
+      <label>Leak Detection</label>
+      <select id="leakTriggerState"><option value="HIGH">HIGH</option><option value="LOW">LOW</option></select>
     </div>
-    
     <div id="touchTriggerGroup" style="display: none; margin-top: 4px;">
-      <label>Touch Detection (HIGH/LOW)</label>
-      <select id="touchTriggerState">
-        <option value="HIGH">HIGH — touch হলে pin HIGH (default)</option>
-        <option value="LOW">LOW — touch হলে pin LOW</option>
-      </select>
-      <div class="info-text">TTP223 capacitive module-এ HIGH রাখুন</div>
+      <label>Touch Detection</label>
+      <select id="touchTriggerState"><option value="HIGH">HIGH</option><option value="LOW">LOW</option></select>
     </div>
-    
-    <div id="pirWarning" class="warning-text">⚠️ This sensor must be on a Sub Node, not the Main Gateway.</div>
-    
+    <div id="pirWarning" class="warning-text">⚠️ Sub Node only</div>
     <label>Select Gateway</label>
     <select id="sensorGateway" onchange="updateSensorNodeDropdown()"></select>
     <label>Select Node</label>
@@ -227,6 +242,56 @@
   </div>
 </div>
 
+<!-- Automation Modal -->
+<div id="automationModal" class="modal">
+  <div class="modal-content modal-wide">
+    <h2 id="autoModalTitle">Add Automation</h2>
+    <label>Automation Name</label>
+    <input type="text" id="autoName" placeholder="e.g. Motion Light" />
+    <label>Select Gateway</label>
+    <select id="autoGateway" onchange="updateAutoDropdowns()"></select>
+    <label>Logic Type</label>
+    <select id="autoLogic">
+      <option value="AND">AND (all conditions true)</option>
+      <option value="OR">OR (any condition true)</option>
+    </select>
+    <label>Cooldown (seconds)</label>
+    <input type="number" id="autoCooldown" value="30" min="0" max="3600" />
+    
+    <div class="auto-section">
+      <div class="auto-section-title">
+        <span>Conditions (IF)</span>
+        <button class="auto-add-btn" onclick="addCondition()">+ Condition</button>
+      </div>
+      <div id="conditionsList"></div>
+    </div>
+    
+    <div class="auto-section">
+      <div class="auto-section-title">
+        <span>Actions (THEN)</span>
+        <button class="auto-add-btn" onclick="addAction()">+ Action</button>
+      </div>
+      <div id="actionsList"></div>
+    </div>
+    
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('automationModal')">Cancel</button>
+      <button class="btn-primary" id="autoSaveBtn" onclick="saveAutomation()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Logs Modal -->
+<div id="logsModal" class="modal">
+  <div class="modal-content modal-wide">
+    <h2 id="logsTitle">Execution Logs</h2>
+    <div id="logsList" style="max-height: 400px; overflow-y: auto;"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('logsModal')">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -236,12 +301,14 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const DEVICE_PINS = [4, 5, 13, 14, 16, 17, 18, 21, 22, 23, 25, 33];
 const SENSOR_PINS = [4, 5, 13, 14, 15, 16, 17, 18, 21, 22, 23, 25, 32, 33, 34, 35, 36, 39];
-
-// Sub-only sensors (Main ESP-এ কাজ করে না)
 const SUB_ONLY_SENSORS = ['PIR', 'REED', 'LDR', 'RAIN', 'WATER_LEAK', 'TOUCH'];
-
-// Digital sensors (5s fast poll)
 const DIGITAL_SENSORS = ['PIR', 'REED', 'WATER_LEAK', 'TOUCH'];
+const OPERATOR_LABELS = {
+  'eq': '= equals', 'ne': '≠ not equal', 'gt': '> greater than',
+  'gte': '≥ greater or equal', 'lt': '< less than', 'lte': '≤ less or equal',
+  'changed': '🔄 changed'
+};
+const ACTION_LABELS = { 'on': 'ON', 'off': 'OFF', 'toggle': 'TOGGLE' };
 
 let currentUser = null;
 let isSignUp = false;
@@ -249,6 +316,7 @@ let allGateways = [];
 let allNodes = [];
 let allDevices = [];
 let allSensors = [];
+let allAutomations = [];
 let allReadings = {};
 let rtChannel = null;
 let dashboardInitialized = false;
@@ -257,14 +325,14 @@ let reloadTimer = null;
 let pirPollTimer = null;
 let sensorPollTimer = null;
 
+let editingAutomationId = null;
+let tempConditions = [];
+let tempActions = [];
+
 // ================= AUTH =================
 document.addEventListener("DOMContentLoaded", async () => {
-  DEVICE_PINS.forEach(p => {
-    document.getElementById("lightPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`;
-  });
-  SENSOR_PINS.forEach(p => {
-    document.getElementById("sensorPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`;
-  });
+  DEVICE_PINS.forEach(p => document.getElementById("lightPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`);
+  SENSOR_PINS.forEach(p => document.getElementById("sensorPin").innerHTML += `<option value="${p}">GPIO ${p}</option>`);
 
   const { data: { session } } = await sb.auth.getSession();
   if (session) { currentUser = session.user; showDashboard(); } else { showAuth(); }
@@ -291,7 +359,7 @@ async function handleAuth() {
     const res = await sb.auth.signUp({ email, password });
     if (res.error) return showToast(res.error.message, true);
     if (!res.data.session) {
-      showToast("Account created! Check email to confirm.");
+      showToast("Check email to confirm.");
       document.getElementById("auth-email").value = "";
       document.getElementById("auth-password").value = "";
       toggleAuthMode();
@@ -305,8 +373,8 @@ async function handleAuth() {
 
 async function handleLogout() {
   if (rtChannel) { await sb.removeChannel(rtChannel); rtChannel = null; }
-  if (pirPollTimer) { clearInterval(pirPollTimer); pirPollTimer = null; }
-  if (sensorPollTimer) { clearInterval(sensorPollTimer); sensorPollTimer = null; }
+  if (pirPollTimer) clearInterval(pirPollTimer);
+  if (sensorPollTimer) clearInterval(sensorPollTimer);
   dashboardInitialized = false;
   await sb.auth.signOut();
 }
@@ -326,7 +394,7 @@ function showDashboard() {
   loadAllData();
   subscribeRealtime();
   
-  // Analog sensors (DHT, MQ, LDR, RAIN) — 20s polling
+  // Sensor polling
   sensorPollTimer = setInterval(async () => {
     if (!currentUser) return;
     const analogSensors = allSensors.filter(s => !DIGITAL_SENSORS.includes(s.sensor_type));
@@ -334,16 +402,13 @@ function showDashboard() {
     const results = await Promise.all(analogSensors.map(s =>
       sb.from("sensor_readings")
         .select("temperature, humidity, gas_value, motion, door_state, light_value, rain_value, leak_state, touch_state, created_at")
-        .eq("sensor_id", s.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
+        .eq("sensor_id", s.id).order("created_at", { ascending: false }).limit(1)
         .then(r => ({ id: s.id, row: r.data?.[0] }))
     ));
     results.forEach(({id, row}) => { if (row) allReadings[id] = row; });
     renderSensors();
   }, 20000);
 
-  // Digital sensors (PIR, REED, WATER_LEAK, TOUCH) — 3s fast polling
   pirPollTimer = setInterval(async () => {
     if (!currentUser) return;
     const digitalSensors = allSensors.filter(s => DIGITAL_SENSORS.includes(s.sensor_type));
@@ -351,9 +416,7 @@ function showDashboard() {
     const results = await Promise.all(digitalSensors.map(s =>
       sb.from("sensor_readings")
         .select("temperature, humidity, gas_value, motion, door_state, light_value, rain_value, leak_state, touch_state, created_at")
-        .eq("sensor_id", s.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
+        .eq("sensor_id", s.id).order("created_at", { ascending: false }).limit(1)
         .then(r => ({ id: s.id, row: r.data?.[0] }))
     ));
     results.forEach(({id, row}) => { if (row) allReadings[id] = row; });
@@ -361,15 +424,16 @@ function showDashboard() {
   }, 3000);
 }
 
-// ================= LOAD & RENDER =================
+// ================= LOAD =================
 async function loadAllData() {
   if (!currentUser) return;
 
-  const [gwRes, ndsRes, devsRes, sensRes] = await Promise.all([
+  const [gwRes, ndsRes, devsRes, sensRes, autoRes] = await Promise.all([
     sb.from("gateways").select("*").order("created_at"),
     sb.from("nodes").select("*").order("id"),
     sb.from("devices").select("*, device_states(is_on)").order("id"),
-    sb.from("sensors").select("*").order("id")
+    sb.from("sensors").select("*").order("id"),
+    sb.from("automations").select("*, automation_conditions(*), automation_actions(*)").order("id")
   ]);
 
   allGateways = gwRes.data || [];
@@ -379,12 +443,14 @@ async function loadAllData() {
     isOn: Array.isArray(d.device_states) ? (d.device_states[0]?.is_on || false) : (d.device_states?.is_on || false)
   }));
   allSensors = sensRes.data || [];
+  allAutomations = autoRes.data || [];
 
   renderGateways();
   renderNodes();
   renderDevices();
   await loadSensorReadings();
   renderSensors();
+  renderAutomations();
 }
 
 function formatTime(iso) {
@@ -402,7 +468,7 @@ function isGatewayOnline(g) {
   return (Date.now() - new Date(g.last_seen).getTime()) < 90000;
 }
 
-// ---- Gateways ----
+// ================= GATEWAYS =================
 function openGatewayModal() {
   document.getElementById("gatewayName").value = "";
   document.getElementById("gatewayModal").classList.add("active");
@@ -411,11 +477,9 @@ function openGatewayModal() {
 async function saveGateway() {
   const name = document.getElementById("gatewayName").value.trim();
   if (!name) return showToast("Enter gateway name", true);
-  
   const buf = new Uint8Array(4);
   crypto.getRandomValues(buf);
   const claimCode = Array.from(buf).map(b => (b % 36).toString(36)).join('').toUpperCase();
-  
   const { error } = await sb.from("gateways").insert({ user_id: currentUser.id, gateway_name: name, claim_code: claimCode });
   if (error) return showToast(error.message, true);
   showToast("Gateway created!");
@@ -427,14 +491,9 @@ function renderGateways() {
   if (allGateways.length === 0) return document.getElementById("gatewayGrid").innerHTML = `<div class="empty-text">No gateways added.</div>`;
   document.getElementById("gatewayGrid").innerHTML = allGateways.map(g => {
     const online = isGatewayOnline(g);
-    let statusBadge = '';
-    if (g.mac_address) {
-      statusBadge = online 
-        ? '<span class="badge" style="color:var(--success)">● Online</span>'
-        : '<span class="badge" style="color:var(--danger)">● Offline</span>';
-    } else {
-      statusBadge = `<span class="badge code-badge">Code: ${g.claim_code || '—'}</span>`;
-    }
+    let statusBadge = g.mac_address
+      ? (online ? '<span class="badge" style="color:var(--success)">● Online</span>' : '<span class="badge" style="color:var(--danger)">● Offline</span>')
+      : `<span class="badge code-badge">Code: ${g.claim_code || '—'}</span>`;
     return `
       <div class="card">
         <div class="card-header">
@@ -449,23 +508,20 @@ function renderGateways() {
   }).join("");
 }
 
-// ---- Nodes ----
+// ================= NODES =================
 function renderNodes() {
   const approved = allNodes.filter(n => n.is_approved);
   const pending = allNodes.filter(n => !n.is_approved);
-  const pendingSection = document.getElementById("pendingSection");
-
-  if (pending.length > 0) {
-    pendingSection.style.display = "flex";
-    document.getElementById("pendingGrid").innerHTML = pending.map(n => `
-      <div class="card pending">
-        <div class="card-header">
-          <div><div class="name">New Node Found!</div><span class="badge">MAC: ${n.mac_address}</span></div>
-        </div>
-        <div class="actions"><button class="btn-approve" onclick="approveNode(${n.id})">Approve</button></div>
+  
+  document.getElementById("pendingSection").style.display = pending.length > 0 ? "flex" : "none";
+  document.getElementById("pendingGrid").innerHTML = pending.map(n => `
+    <div class="card pending">
+      <div class="card-header">
+        <div><div class="name">New Node</div><span class="badge">MAC: ${n.mac_address}</span></div>
       </div>
-    `).join("");
-  } else { pendingSection.style.display = "none"; }
+      <div class="actions"><button class="btn-approve" onclick="approveNode(${n.id})">Approve</button></div>
+    </div>
+  `).join("");
 
   if (approved.length === 0) return document.getElementById("nodeGrid").innerHTML = `<div class="empty-text">No sub nodes approved.</div>`;
   document.getElementById("nodeGrid").innerHTML = approved.map(n => {
@@ -485,7 +541,7 @@ function renderNodes() {
 }
 
 async function approveNode(id) {
-  const name = prompt("Enter a name for this node:", "Room Node");
+  const name = prompt("Node name:", "Room Node");
   if (!name) return;
   const { error } = await sb.from("nodes").update({ node_name: name, is_approved: true }).eq("id", id);
   if (error) return showToast(error.message, true);
@@ -497,17 +553,15 @@ async function deleteNode(id) {
   const node = allNodes.find(n => n.id === id);
   const dCount = allDevices.filter(d => d.node_id === id).length;
   const sCount = allSensors.filter(s => s.node_id === id).length;
-  const msg = `Delete "${node.node_name}"?\n\nWill also delete:\n• ${dCount} device(s)\n• ${sCount} sensor(s)\n\nThis cannot be undone.`;
-  if (!confirm(msg)) return;
+  if (!confirm(`Delete "${node.node_name}"?\n\nAlso deletes: ${dCount} devices, ${sCount} sensors`)) return;
   const { error } = await sb.from("nodes").delete().eq("id", id);
   if (error) return showToast(error.message, true);
-  showToast("Node deleted");
   loadAllData();
 }
 
-// ---- Devices (Lights) ----
+// ================= DEVICES =================
 function openLightModal() {
-  if (allGateways.length === 0) return showToast("Please add a gateway first!", true);
+  if (allGateways.length === 0) return showToast("Add a gateway first", true);
   document.getElementById("lightName").value = "";
   document.getElementById("lightGateway").innerHTML = allGateways.map(g => `<option value="${g.id}">${g.gateway_name}</option>`).join('');
   updateLightNodeDropdown();
@@ -517,7 +571,7 @@ function openLightModal() {
 function updateLightNodeDropdown() {
   const gwId = parseInt(document.getElementById("lightGateway").value);
   const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
-  let opts = `<option value="0">Main ESP32 (Gateway)</option>`;
+  let opts = `<option value="0">Main ESP32</option>`;
   gwNodes.forEach(n => opts += `<option value="${n.id}">${n.node_name}</option>`);
   document.getElementById("lightNode").innerHTML = opts;
 }
@@ -527,10 +581,7 @@ function renderDevices() {
   document.getElementById("lightGrid").innerHTML = allDevices.map(l => {
     const gw = allGateways.find(g => g.id === l.gateway_id);
     let nodeName = "Main Board";
-    if (l.node_id > 0) { 
-      const nd = allNodes.find(n => n.id === l.node_id); 
-      nodeName = nd ? nd.node_name : "Unknown Node"; 
-    }
+    if (l.node_id > 0) { const nd = allNodes.find(n => n.id === l.node_id); nodeName = nd ? nd.node_name : "Unknown"; }
     return `
     <div class="card">
       <div class="card-header">
@@ -553,17 +604,11 @@ function renderDevices() {
 async function toggleLight(id) {
   const l = allDevices.find(x => x.id === id);
   const oldState = l.isOn;
-  const newState = !oldState;
-  l.isOn = newState; renderDevices();
-  
+  l.isOn = !oldState; renderDevices();
   const { error } = await sb.from("device_states")
-    .update({ is_on: newState, updated_at: new Date().toISOString() })
+    .update({ is_on: l.isOn, updated_at: new Date().toISOString() })
     .eq("device_id", id);
-  
-  if (error) {
-    l.isOn = oldState; renderDevices();
-    showToast("Failed: " + error.message, true);
-  }
+  if (error) { l.isOn = oldState; renderDevices(); showToast(error.message, true); }
 }
 
 async function saveLight() {
@@ -571,8 +616,7 @@ async function saveLight() {
   const gwId = parseInt(document.getElementById("lightGateway").value);
   const nodeId = parseInt(document.getElementById("lightNode").value);
   const pin = parseInt(document.getElementById("lightPin").value);
-  if (!name) return showToast("Enter light name", true);
-  
+  if (!name) return showToast("Enter name", true);
   const { error } = await sb.from("devices").insert({ gateway_id: gwId, node_id: nodeId, device_name: name, pin: pin });
   if (error) return showToast(error.message, true);
   showToast("Light added");
@@ -581,16 +625,15 @@ async function saveLight() {
 }
 
 async function deleteLight(id) {
-  if (!confirm("Delete this light?")) return;
+  if (!confirm("Delete?")) return;
   const { error } = await sb.from("devices").delete().eq("id", id);
   if (error) return showToast(error.message, true);
-  showToast("Deleted");
   loadAllData();
 }
 
-// ---- Sensors (9 types) ----
+// ================= SENSORS =================
 function openSensorModal() {
-  if (allGateways.length === 0) return showToast("Please add a gateway first!", true);
+  if (allGateways.length === 0) return showToast("Add gateway first", true);
   document.getElementById("sensorName").value = "";
   document.getElementById("sensorType").value = "DHT11";
   document.getElementById("pirTriggerState").value = "HIGH";
@@ -608,71 +651,36 @@ function updateSensorNodeDropdown() {
   const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
   const type = document.getElementById("sensorType").value;
   const isSubOnly = SUB_ONLY_SENSORS.includes(type);
-  
-  let opts = `<option value="0" ${isSubOnly ? 'disabled' : ''}>Main ESP32 (Gateway)</option>`;
+  let opts = `<option value="0" ${isSubOnly ? 'disabled' : ''}>Main ESP32</option>`;
   gwNodes.forEach(n => opts += `<option value="${n.id}">${n.node_name}</option>`);
   document.getElementById("sensorNode").innerHTML = opts;
-  
   if (isSubOnly) {
     const nodeSelect = document.getElementById("sensorNode");
-    if (parseInt(nodeSelect.value) === 0 && gwNodes.length > 0) {
-      nodeSelect.value = gwNodes[0].id;
-    }
+    if (parseInt(nodeSelect.value) === 0 && gwNodes.length > 0) nodeSelect.value = gwNodes[0].id;
   }
 }
 
 function onSensorTypeChange() {
   const type = document.getElementById("sensorType").value;
-  const pirGroup = document.getElementById("pirTriggerGroup");
-  const reedGroup = document.getElementById("reedTriggerGroup");
-  const leakGroup = document.getElementById("leakTriggerGroup");
-  const touchGroup = document.getElementById("touchTriggerGroup");
-  const warningDiv = document.getElementById("pirWarning");
-  const saveBtn = document.getElementById("sensorSaveBtn");
-  const gwId = parseInt(document.getElementById("sensorGateway").value);
-  const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
-  
-  // Reset all
-  pirGroup.style.display = 'none';
-  reedGroup.style.display = 'none';
-  leakGroup.style.display = 'none';
-  touchGroup.style.display = 'none';
-  warningDiv.style.display = 'none';
-  saveBtn.disabled = false;
-  
-  const isSubOnly = SUB_ONLY_SENSORS.includes(type);
-  
-  if (type === 'PIR') {
-    pirGroup.style.display = 'block';
-  } else if (type === 'REED') {
-    reedGroup.style.display = 'block';
-  } else if (type === 'WATER_LEAK') {
-    leakGroup.style.display = 'block';
-  } else if (type === 'TOUCH') {
-    touchGroup.style.display = 'block';
-  }
-  
+  document.getElementById("pirTriggerGroup").style.display = type === 'PIR' ? 'block' : 'none';
+  document.getElementById("reedTriggerGroup").style.display = type === 'REED' ? 'block' : 'none';
+  document.getElementById("leakTriggerGroup").style.display = type === 'WATER_LEAK' ? 'block' : 'none';
+  document.getElementById("touchTriggerGroup").style.display = type === 'TOUCH' ? 'block' : 'none';
   updateSensorNodeDropdown();
-  
-  if (isSubOnly && gwNodes.length === 0) {
-    warningDiv.textContent = "⚠️ " + type + " needs an approved Sub Node.";
-    warningDiv.style.display = 'block';
-    saveBtn.disabled = true;
-  }
+  onSensorNodeChange();
 }
 
 function onSensorNodeChange() {
   const type = document.getElementById("sensorType").value;
   const nodeId = parseInt(document.getElementById("sensorNode").value);
-  const warningDiv = document.getElementById("pirWarning");
+  const warning = document.getElementById("pirWarning");
   const saveBtn = document.getElementById("sensorSaveBtn");
-  
   if (SUB_ONLY_SENSORS.includes(type) && nodeId === 0) {
-    warningDiv.textContent = "⚠️ " + type + " sensor must be on a Sub Node.";
-    warningDiv.style.display = 'block';
+    warning.textContent = "⚠️ " + type + " must be on Sub Node";
+    warning.style.display = 'block';
     saveBtn.disabled = true;
   } else {
-    warningDiv.style.display = 'none';
+    warning.style.display = 'none';
     saveBtn.disabled = false;
   }
 }
@@ -682,9 +690,7 @@ async function loadSensorReadings() {
   const results = await Promise.all(allSensors.map(s =>
     sb.from("sensor_readings")
       .select("temperature, humidity, gas_value, motion, door_state, light_value, rain_value, leak_state, touch_state, created_at")
-      .eq("sensor_id", s.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
+      .eq("sensor_id", s.id).order("created_at", { ascending: false }).limit(1)
       .then(r => ({ id: s.id, row: r.data?.[0] }))
   ));
   allReadings = {};
@@ -698,176 +704,85 @@ function getLatest(arr) {
 }
 
 function renderSensors() {
-  if (allSensors.length === 0) return document.getElementById("sensorGrid").innerHTML = `<div class="empty-text">No sensors added.</div>`;
+  if (allSensors.length === 0) return document.getElementById("sensorGrid").innerHTML = `<div class="empty-text">No sensors.</div>`;
   
   document.getElementById("sensorGrid").innerHTML = allSensors.map(s => {
     const gw = allGateways.find(g => g.id === s.gateway_id);
     let nodeName = "Main Board";
-    if (s.node_id > 0) {
-      const nd = allNodes.find(n => n.id === s.node_id);
-      nodeName = nd ? nd.node_name : "Unknown Node";
-    }
+    if (s.node_id > 0) { const nd = allNodes.find(n => n.id === s.node_id); nodeName = nd ? nd.node_name : "Unknown"; }
     
     const r = allReadings[s.id];
     let dataHtml = '';
     let extraBadge = '';
     
-    // ---------- PIR ----------
     if (s.sensor_type === 'PIR') {
       const motionVal = r ? (getLatest(r.motion) !== null ? Number(getLatest(r.motion)) : null) : null;
       const isMotion = motionVal === 1;
-      const statusColor = motionVal === null ? 'var(--text-muted)' : (isMotion ? 'var(--danger)' : 'var(--success)');
-      const statusIcon = motionVal === null ? '⚪' : (isMotion ? '🔴' : '🟢');
-      const statusText = motionVal === null ? 'NO DATA' : (isMotion ? 'MOTION' : 'CLEAR');
-      const pulseClass = isMotion ? 'motion-active' : '';
+      const color = motionVal === null ? 'var(--text-muted)' : (isMotion ? 'var(--danger)' : 'var(--success)');
+      const icon = motionVal === null ? '⚪' : (isMotion ? '🔴' : '🟢');
+      const txt = motionVal === null ? 'NO DATA' : (isMotion ? 'MOTION' : 'CLEAR');
       extraBadge = `<span class="badge">Trigger: ${s.pir_trigger_state || 'HIGH'}</span>`;
-      
-      dataHtml = `
-        <div class="sensor-data">
-          <div style="flex: 1;">
-            <div class="sensor-val ${pulseClass}" style="color: ${statusColor}">${statusIcon} ${statusText}</div>
-            <div class="sensor-lbl">Motion Status</div>
-          </div>
-          ${r ? `<div><div class="sensor-val" style="font-size:12px; color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Last Update</div></div>` : ''}
-        </div>`;
-    }
-    // ---------- REED ----------
-    else if (s.sensor_type === 'REED') {
+      dataHtml = `<div class="sensor-data"><div style="flex:1;"><div class="sensor-val ${isMotion ? 'motion-active' : ''}" style="color:${color}">${icon} ${txt}</div><div class="sensor-lbl">Motion</div></div>${r ? `<div><div class="sensor-val" style="font-size:12px;color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Updated</div></div>` : ''}</div>`;
+    } else if (s.sensor_type === 'REED') {
       const doorVal = r ? (getLatest(r.door_state) !== null ? Number(getLatest(r.door_state)) : null) : null;
       const isOpen = doorVal === 1;
-      const statusColor = doorVal === null ? 'var(--text-muted)' : (isOpen ? 'var(--warning)' : 'var(--success)');
-      const statusIcon = doorVal === null ? '⚪' : (isOpen ? '🚪' : '🔒');
-      const statusText = doorVal === null ? 'NO DATA' : (isOpen ? 'OPEN' : 'CLOSED');
-      const pulseClass = isOpen ? 'door-open-active' : '';
+      const color = doorVal === null ? 'var(--text-muted)' : (isOpen ? 'var(--warning)' : 'var(--success)');
+      const icon = doorVal === null ? '⚪' : (isOpen ? '🚪' : '🔒');
+      const txt = doorVal === null ? 'NO DATA' : (isOpen ? 'OPEN' : 'CLOSED');
       extraBadge = `<span class="badge">Open: ${s.pir_trigger_state || 'HIGH'}</span>`;
-      
-      dataHtml = `
-        <div class="sensor-data">
-          <div style="flex: 1;">
-            <div class="sensor-val ${pulseClass}" style="color: ${statusColor}">${statusIcon} ${statusText}</div>
-            <div class="sensor-lbl">Door / Window Status</div>
-          </div>
-          ${r ? `<div><div class="sensor-val" style="font-size:12px; color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Last Update</div></div>` : ''}
-        </div>`;
-    }
-    // ---------- WATER_LEAK ----------
-    else if (s.sensor_type === 'WATER_LEAK') {
+      dataHtml = `<div class="sensor-data"><div style="flex:1;"><div class="sensor-val ${isOpen ? 'door-open-active' : ''}" style="color:${color}">${icon} ${txt}</div><div class="sensor-lbl">Door</div></div>${r ? `<div><div class="sensor-val" style="font-size:12px;color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Updated</div></div>` : ''}</div>`;
+    } else if (s.sensor_type === 'WATER_LEAK') {
       const leakVal = r ? (getLatest(r.leak_state) !== null ? Number(getLatest(r.leak_state)) : null) : null;
       const isWet = leakVal === 1;
-      const statusColor = leakVal === null ? 'var(--text-muted)' : (isWet ? 'var(--danger)' : 'var(--success)');
-      const statusIcon = leakVal === null ? '⚪' : (isWet ? '💧' : '✅');
-      const statusText = leakVal === null ? 'NO DATA' : (isWet ? 'LEAK!' : 'DRY');
-      const pulseClass = isWet ? 'alert-active' : '';
+      const color = leakVal === null ? 'var(--text-muted)' : (isWet ? 'var(--danger)' : 'var(--success)');
+      const icon = leakVal === null ? '⚪' : (isWet ? '💧' : '✅');
+      const txt = leakVal === null ? 'NO DATA' : (isWet ? 'LEAK!' : 'DRY');
       extraBadge = `<span class="badge">Trigger: ${s.pir_trigger_state || 'HIGH'}</span>`;
-      
-      dataHtml = `
-        <div class="sensor-data">
-          <div style="flex: 1;">
-            <div class="sensor-val ${pulseClass}" style="color: ${statusColor}">${statusIcon} ${statusText}</div>
-            <div class="sensor-lbl">Water Leak Status</div>
-          </div>
-          ${r ? `<div><div class="sensor-val" style="font-size:12px; color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Last Update</div></div>` : ''}
-        </div>`;
-    }
-    // ---------- TOUCH ----------
-    else if (s.sensor_type === 'TOUCH') {
+      dataHtml = `<div class="sensor-data"><div style="flex:1;"><div class="sensor-val ${isWet ? 'alert-active' : ''}" style="color:${color}">${icon} ${txt}</div><div class="sensor-lbl">Water Leak</div></div>${r ? `<div><div class="sensor-val" style="font-size:12px;color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Updated</div></div>` : ''}</div>`;
+    } else if (s.sensor_type === 'TOUCH') {
       const touchVal = r ? (getLatest(r.touch_state) !== null ? Number(getLatest(r.touch_state)) : null) : null;
       const isTouched = touchVal === 1;
-      const statusColor = touchVal === null ? 'var(--text-muted)' : (isTouched ? 'var(--info)' : 'var(--text-muted)');
-      const statusIcon = touchVal === null ? '⚪' : (isTouched ? '👆' : '⚫');
-      const statusText = touchVal === null ? 'NO DATA' : (isTouched ? 'TOUCHED' : 'IDLE');
-      const pulseClass = isTouched ? 'alert-active' : '';
+      const color = touchVal === null ? 'var(--text-muted)' : (isTouched ? 'var(--info)' : 'var(--text-muted)');
+      const icon = touchVal === null ? '⚪' : (isTouched ? '👆' : '⚫');
+      const txt = touchVal === null ? 'NO DATA' : (isTouched ? 'TOUCHED' : 'IDLE');
       extraBadge = `<span class="badge">Trigger: ${s.pir_trigger_state || 'HIGH'}</span>`;
-      
-      dataHtml = `
-        <div class="sensor-data">
-          <div style="flex: 1;">
-            <div class="sensor-val ${pulseClass}" style="color: ${statusColor}">${statusIcon} ${statusText}</div>
-            <div class="sensor-lbl">Touch Status</div>
-          </div>
-          ${r ? `<div><div class="sensor-val" style="font-size:12px; color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Last Update</div></div>` : ''}
-        </div>`;
-    }
-    // ---------- LDR ----------
-    else if (s.sensor_type === 'LDR') {
-      let lightVal = '--', lightStatus = 'Unknown', lightColor = 'var(--text-muted)', lightIcon = '⚪';
+      dataHtml = `<div class="sensor-data"><div style="flex:1;"><div class="sensor-val ${isTouched ? 'alert-active' : ''}" style="color:${color}">${icon} ${txt}</div><div class="sensor-lbl">Touch</div></div>${r ? `<div><div class="sensor-val" style="font-size:12px;color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Updated</div></div>` : ''}</div>`;
+    } else if (s.sensor_type === 'LDR') {
+      let lv = '--', status = 'Unknown', color = 'var(--text-muted)', icon = '⚪';
       if (r && r.light_value) {
-        const l = getLatest(r.light_value);
-        if (l !== null) {
-          const numVal = Number(l);
-          lightVal = numVal.toFixed(0);
-          if (numVal > 3000) { lightStatus = 'BRIGHT'; lightColor = 'var(--warning)'; lightIcon = '☀️'; }
-          else if (numVal > 1500) { lightStatus = 'DIM'; lightColor = 'var(--info)'; lightIcon = '🌤️'; }
-          else { lightStatus = 'DARK'; lightColor = 'var(--text-main)'; lightIcon = '🌙'; }
+        const v = getLatest(r.light_value);
+        if (v !== null) {
+          const n = Number(v); lv = n.toFixed(0);
+          if (n > 3000) { status = 'BRIGHT'; color = 'var(--warning)'; icon = '☀️'; }
+          else if (n > 1500) { status = 'DIM'; color = 'var(--info)'; icon = '🌤️'; }
+          else { status = 'DARK'; color = 'var(--text-main)'; icon = '🌙'; }
         }
       }
-      
-      dataHtml = `
-        <div class="sensor-data">
-          <div style="flex: 1;">
-            <div class="sensor-val" style="color: ${lightColor}">${lightIcon} ${lightStatus}</div>
-            <div class="sensor-lbl">Light Level</div>
-          </div>
-          <div>
-            <div class="sensor-val">${lightVal}</div>
-            <div class="sensor-lbl">Raw (0-4095)</div>
-          </div>
-        </div>`;
-    }
-    // ---------- RAIN ----------
-    else if (s.sensor_type === 'RAIN') {
-      let rainVal = '--', rainStatus = 'Unknown', rainColor = 'var(--text-muted)', rainIcon = '⚪';
+      dataHtml = `<div class="sensor-data"><div style="flex:1;"><div class="sensor-val" style="color:${color}">${icon} ${status}</div><div class="sensor-lbl">Light Level</div></div><div><div class="sensor-val">${lv}</div><div class="sensor-lbl">Raw</div></div></div>`;
+    } else if (s.sensor_type === 'RAIN') {
+      let rv = '--', status = 'Unknown', color = 'var(--text-muted)', icon = '⚪';
       if (r && r.rain_value) {
-        const rv = getLatest(r.rain_value);
-        if (rv !== null) {
-          const numVal = Number(rv);
-          rainVal = numVal.toFixed(0);
-          if (numVal > 3000) { rainStatus = 'HEAVY'; rainColor = 'var(--danger)'; rainIcon = '🌧️'; }
-          else if (numVal > 1500) { rainStatus = 'MODERATE'; rainColor = 'var(--info)'; rainIcon = '🌦️'; }
-          else if (numVal > 500) { rainStatus = 'LIGHT'; rainColor = 'var(--info)'; rainIcon = '🌦️'; }
-          else { rainStatus = 'DRY'; rainColor = 'var(--success)'; rainIcon = '☀️'; }
+        const v = getLatest(r.rain_value);
+        if (v !== null) {
+          const n = Number(v); rv = n.toFixed(0);
+          if (n > 3000) { status = 'HEAVY'; color = 'var(--danger)'; icon = '🌧️'; }
+          else if (n > 1500) { status = 'MODERATE'; color = 'var(--info)'; icon = '🌦️'; }
+          else if (n > 500) { status = 'LIGHT'; color = 'var(--info)'; icon = '🌦️'; }
+          else { status = 'DRY'; color = 'var(--success)'; icon = '☀️'; }
         }
       }
-      
-      dataHtml = `
-        <div class="sensor-data">
-          <div style="flex: 1;">
-            <div class="sensor-val" style="color: ${rainColor}">${rainIcon} ${rainStatus}</div>
-            <div class="sensor-lbl">Rain Level</div>
-          </div>
-          <div>
-            <div class="sensor-val">${rainVal}</div>
-            <div class="sensor-lbl">Raw (0-4095)</div>
-          </div>
-        </div>`;
-    }
-    // ---------- MQ ----------
-    else if (s.sensor_type.startsWith('MQ')) {
-      let gasVal = '--';
-      if (r && r.gas_value) {
-        const g = getLatest(r.gas_value);
-        if (g !== null) gasVal = Number(g).toFixed(0);
-      }
-      dataHtml = `
-        <div class="sensor-data">
-          <div>
-            <div class="sensor-val">${gasVal}</div>
-            <div class="sensor-lbl">Gas Value</div>
-          </div>
-        </div>`;
-    }
-    // ---------- DHT ----------
-    else {
-      let temp = '--', hum = '--';
+      dataHtml = `<div class="sensor-data"><div style="flex:1;"><div class="sensor-val" style="color:${color}">${icon} ${status}</div><div class="sensor-lbl">Rain</div></div><div><div class="sensor-val">${rv}</div><div class="sensor-lbl">Raw</div></div></div>`;
+    } else if (s.sensor_type.startsWith('MQ')) {
+      let gv = '--';
+      if (r && r.gas_value) { const v = getLatest(r.gas_value); if (v !== null) gv = Number(v).toFixed(0); }
+      dataHtml = `<div class="sensor-data"><div><div class="sensor-val">${gv}</div><div class="sensor-lbl">Gas</div></div></div>`;
+    } else {
+      let t = '--', h = '--';
       if (r) {
-        if (r.temperature) { const t = getLatest(r.temperature); if (t !== null) temp = Number(t).toFixed(1); }
-        if (r.humidity) { const h = getLatest(r.humidity); if (h !== null) hum = Number(h).toFixed(1); }
+        if (r.temperature) { const v = getLatest(r.temperature); if (v !== null) t = Number(v).toFixed(1); }
+        if (r.humidity) { const v = getLatest(r.humidity); if (v !== null) h = Number(v).toFixed(1); }
       }
-      dataHtml = `
-        <div class="sensor-data">
-          <div><div class="sensor-val">${temp}°C</div><div class="sensor-lbl">Temp</div></div>
-          <div><div class="sensor-val">${hum}%</div><div class="sensor-lbl">Humidity</div></div>
-        </div>`;
+      dataHtml = `<div class="sensor-data"><div><div class="sensor-val">${t}°C</div><div class="sensor-lbl">Temp</div></div><div><div class="sensor-val">${h}%</div><div class="sensor-lbl">Humidity</div></div></div>`;
     }
     
     return `
@@ -894,11 +809,8 @@ async function saveSensor() {
   const gwId = parseInt(document.getElementById("sensorGateway").value);
   const nodeId = parseInt(document.getElementById("sensorNode").value);
   const pin = parseInt(document.getElementById("sensorPin").value);
-  
-  if (!name) return showToast("Enter sensor name", true);
-  if (SUB_ONLY_SENSORS.includes(type) && nodeId === 0) {
-    return showToast(type + " must be on Sub Node", true);
-  }
+  if (!name) return showToast("Enter name", true);
+  if (SUB_ONLY_SENSORS.includes(type) && nodeId === 0) return showToast(type + " needs Sub Node", true);
   
   let triggerState = 'HIGH';
   if (type === 'PIR') triggerState = document.getElementById("pirTriggerState").value;
@@ -906,16 +818,10 @@ async function saveSensor() {
   else if (type === 'WATER_LEAK') triggerState = document.getElementById("leakTriggerState").value;
   else if (type === 'TOUCH') triggerState = document.getElementById("touchTriggerState").value;
   
-  const payload = {
-    gateway_id: gwId,
-    node_id: nodeId,
-    sensor_name: name,
-    pin: pin,
-    sensor_type: type,
-    pir_trigger_state: triggerState
-  };
-  
-  const { error } = await sb.from("sensors").insert(payload);
+  const { error } = await sb.from("sensors").insert({
+    gateway_id: gwId, node_id: nodeId, sensor_name: name,
+    pin: pin, sensor_type: type, pir_trigger_state: triggerState
+  });
   if (error) return showToast(error.message, true);
   showToast("Sensor added");
   closeModal("sensorModal");
@@ -923,14 +829,307 @@ async function saveSensor() {
 }
 
 async function deleteSensor(id) {
-  if (!confirm("Delete this sensor?")) return;
+  if (!confirm("Delete?")) return;
   const { error } = await sb.from("sensors").delete().eq("id", id);
   if (error) return showToast(error.message, true);
-  showToast("Deleted");
   loadAllData();
 }
 
-// ================= REALTIME & UTILS =================
+// ================= 🤖 AUTOMATIONS =================
+function renderAutomations() {
+  if (allAutomations.length === 0) return document.getElementById("automationGrid").innerHTML = `<div class="empty-text">No automations. Add one to make your home smart!</div>`;
+  
+  document.getElementById("automationGrid").innerHTML = allAutomations.map(a => {
+    const gw = allGateways.find(g => g.id === a.gateway_id);
+    const conds = a.automation_conditions || [];
+    const acts = a.automation_actions || [];
+    
+    // Conditions display
+    let condHtml = '';
+    conds.sort((x,y) => x.order_index - y.order_index).forEach((c, i) => {
+      const sensor = allSensors.find(s => s.id === c.sensor_id);
+      const sensorName = sensor ? sensor.sensor_name : `Sensor #${c.sensor_id}`;
+      const opLabel = OPERATOR_LABELS[c.operator] || c.operator;
+      const valText = c.value !== null ? ` ${c.value}` : '';
+      condHtml += `<div class="auto-line">${sensorName} ${opLabel}${valText}</div>`;
+    });
+    if (condHtml === '') condHtml = '<div class="auto-line" style="color:#ef4444;">No conditions</div>';
+    
+    // Actions display
+    let actHtml = '';
+    acts.sort((x,y) => x.order_index - y.order_index).forEach((ac, i) => {
+      const device = allDevices.find(d => d.id === ac.device_id);
+      const devName = device ? device.device_name : `Device #${ac.device_id}`;
+      const actLabel = ACTION_LABELS[ac.action_type] || ac.action_type;
+      const delayText = ac.delay_seconds > 0 ? ` (after ${ac.delay_seconds}s)` : '';
+      actHtml += `<div class="auto-line">${devName} → ${actLabel}${delayText}</div>`;
+    });
+    if (actHtml === '') actHtml = '<div class="auto-line" style="color:#ef4444;">No actions</div>';
+    
+    return `
+    <div class="card ${a.enabled ? '' : 'disabled'}">
+      <div class="card-header">
+        <div>
+          <div class="name">${a.automation_name}</div>
+          <span class="badge">${gw ? gw.gateway_name : 'Unknown'}</span>
+          <span class="badge badge-purple">${a.logic_type}</span>
+          <span class="badge">Cooldown: ${a.cooldown_seconds}s</span>
+        </div>
+        <span class="badge ${a.enabled ? 'badge-green' : 'badge-red'}">${a.enabled ? '● ACTIVE' : '● DISABLED'}</span>
+      </div>
+      
+      <div class="auto-rule">
+        <div class="auto-rule-title">IF (${a.logic_type})</div>
+        ${condHtml}
+        <div class="auto-rule-title" style="margin-top:12px;">THEN</div>
+        ${actHtml}
+      </div>
+      
+      <div class="auto-stats">
+        <span>Fired: <b>${a.trigger_count || 0}</b> times</span>
+        ${a.last_triggered_at ? `<span>Last: <b>${formatTime(a.last_triggered_at)}</b></span>` : '<span>Never triggered</span>'}
+      </div>
+      
+      <div class="actions">
+        <button class="toggle ${a.enabled ? 'on' : ''}" onclick="toggleAutomation(${a.id})"></button>
+        <div style="display:flex; gap:6px;">
+          <button class="icon-btn-blue" onclick="viewLogs(${a.id})">📋 Logs</button>
+          <button class="icon-btn" onclick="editAutomation(${a.id})">Edit</button>
+          <button class="icon-btn" onclick="deleteAutomation(${a.id})">Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function toggleAutomation(id) {
+  const a = allAutomations.find(x => x.id === id);
+  const { error } = await sb.from("automations").update({ enabled: !a.enabled }).eq("id", id);
+  if (error) return showToast(error.message, true);
+  showToast(a.enabled ? "Automation disabled" : "Automation enabled");
+  loadAllData();
+}
+
+async function deleteAutomation(id) {
+  if (!confirm("Delete this automation?")) return;
+  const { error } = await sb.from("automations").delete().eq("id", id);
+  if (error) return showToast(error.message, true);
+  loadAllData();
+}
+
+// --------- Add/Edit Modal ---------
+function openAutomationModal() {
+  if (allGateways.length === 0) return showToast("Add gateway first", true);
+  editingAutomationId = null;
+  document.getElementById("autoModalTitle").textContent = "Add Automation";
+  document.getElementById("autoName").value = "";
+  document.getElementById("autoLogic").value = "AND";
+  document.getElementById("autoCooldown").value = 30;
+  document.getElementById("autoGateway").innerHTML = allGateways.map(g => `<option value="${g.id}">${g.gateway_name}</option>`).join('');
+  tempConditions = [{ sensor_id: null, operator: 'eq', value: 1 }];
+  tempActions = [{ device_id: null, action_type: 'on', delay_seconds: 0 }];
+  updateAutoDropdowns();
+  document.getElementById("automationModal").classList.add("active");
+}
+
+function editAutomation(id) {
+  const a = allAutomations.find(x => x.id === id);
+  if (!a) return;
+  editingAutomationId = id;
+  document.getElementById("autoModalTitle").textContent = "Edit Automation";
+  document.getElementById("autoName").value = a.automation_name;
+  document.getElementById("autoLogic").value = a.logic_type;
+  document.getElementById("autoCooldown").value = a.cooldown_seconds;
+  document.getElementById("autoGateway").innerHTML = allGateways.map(g => `<option value="${g.id}" ${g.id === a.gateway_id ? 'selected' : ''}>${g.gateway_name}</option>`).join('');
+  
+  tempConditions = (a.automation_conditions || []).map(c => ({
+    sensor_id: c.sensor_id, operator: c.operator, value: c.value
+  }));
+  tempActions = (a.automation_actions || []).map(ac => ({
+    device_id: ac.device_id, action_type: ac.action_type, delay_seconds: ac.delay_seconds
+  }));
+  
+  if (tempConditions.length === 0) tempConditions = [{ sensor_id: null, operator: 'eq', value: 1 }];
+  if (tempActions.length === 0) tempActions = [{ device_id: null, action_type: 'on', delay_seconds: 0 }];
+  
+  updateAutoDropdowns();
+  document.getElementById("automationModal").classList.add("active");
+}
+
+function updateAutoDropdowns() {
+  const gwId = parseInt(document.getElementById("autoGateway").value);
+  const gwSensors = allSensors.filter(s => s.gateway_id === gwId);
+  const gwDevices = allDevices.filter(d => d.gateway_id === gwId);
+  
+  // Render conditions
+  document.getElementById("conditionsList").innerHTML = tempConditions.map((c, i) => {
+    const sensorOpts = gwSensors.map(s => `<option value="${s.id}" ${c.sensor_id === s.id ? 'selected' : ''}>${s.sensor_name} (${s.sensor_type})</option>`).join('');
+    const sensor = gwSensors.find(s => s.id === c.sensor_id);
+    const isDigital = sensor && DIGITAL_SENSORS.includes(sensor.sensor_type);
+    
+    const ops = ['eq', 'ne'];
+    if (!isDigital) ops.push('gt', 'gte', 'lt', 'lte');
+    ops.push('changed');
+    const opOpts = ops.map(o => `<option value="${o}" ${c.operator === o ? 'selected' : ''}>${OPERATOR_LABELS[o]}</option>`).join('');
+    
+    return `
+      <div class="auto-row">
+        <div>
+          <select onchange="updateCondition(${i}, 'sensor_id', this.value)">
+            <option value="">-- Select Sensor --</option>
+            ${sensorOpts}
+          </select>
+          <select onchange="updateCondition(${i}, 'operator', this.value)">${opOpts}</select>
+          <input type="number" placeholder="Value" value="${c.value ?? ''}" onchange="updateCondition(${i}, 'value', this.value)" />
+        </div>
+        <button class="auto-row-remove" onclick="removeCondition(${i})">×</button>
+      </div>`;
+  }).join('');
+  
+  // Render actions
+  document.getElementById("actionsList").innerHTML = tempActions.map((ac, i) => {
+    const deviceOpts = gwDevices.map(d => `<option value="${d.id}" ${ac.device_id === d.id ? 'selected' : ''}>${d.device_name} (GPIO ${d.pin})</option>`).join('');
+    const actOpts = Object.entries(ACTION_LABELS).map(([k, v]) => `<option value="${k}" ${ac.action_type === k ? 'selected' : ''}>${v}</option>`).join('');
+    
+    return `
+      <div class="auto-row">
+        <div>
+          <select onchange="updateAction(${i}, 'device_id', this.value)">
+            <option value="">-- Select Device --</option>
+            ${deviceOpts}
+          </select>
+          <select onchange="updateAction(${i}, 'action_type', this.value)">${actOpts}</select>
+          <input type="number" placeholder="Delay (s)" value="${ac.delay_seconds || 0}" min="0" max="60" onchange="updateAction(${i}, 'delay_seconds', this.value)" />
+        </div>
+        <button class="auto-row-remove" onclick="removeAction(${i})">×</button>
+      </div>`;
+  }).join('');
+}
+
+function addCondition() {
+  if (tempConditions.length >= 3) return showToast("Max 3 conditions", true);
+  tempConditions.push({ sensor_id: null, operator: 'eq', value: 1 });
+  updateAutoDropdowns();
+}
+
+function removeCondition(i) {
+  tempConditions.splice(i, 1);
+  if (tempConditions.length === 0) tempConditions.push({ sensor_id: null, operator: 'eq', value: 1 });
+  updateAutoDropdowns();
+}
+
+function updateCondition(i, key, val) {
+  if (key === 'sensor_id') tempConditions[i][key] = val ? parseInt(val) : null;
+  else if (key === 'value') tempConditions[i][key] = val === '' ? null : parseFloat(val);
+  else tempConditions[i][key] = val;
+  updateAutoDropdowns();
+}
+
+function addAction() {
+  if (tempActions.length >= 3) return showToast("Max 3 actions", true);
+  tempActions.push({ device_id: null, action_type: 'on', delay_seconds: 0 });
+  updateAutoDropdowns();
+}
+
+function removeAction(i) {
+  tempActions.splice(i, 1);
+  if (tempActions.length === 0) tempActions.push({ device_id: null, action_type: 'on', delay_seconds: 0 });
+  updateAutoDropdowns();
+}
+
+function updateAction(i, key, val) {
+  if (key === 'device_id') tempActions[i][key] = val ? parseInt(val) : null;
+  else if (key === 'delay_seconds') tempActions[i][key] = val === '' ? 0 : parseInt(val);
+  else tempActions[i][key] = val;
+  updateAutoDropdowns();
+}
+
+async function saveAutomation() {
+  const name = document.getElementById("autoName").value.trim();
+  const gwId = parseInt(document.getElementById("autoGateway").value);
+  const logic = document.getElementById("autoLogic").value;
+  const cooldown = parseInt(document.getElementById("autoCooldown").value) || 30;
+  
+  if (!name) return showToast("Enter automation name", true);
+  
+  // Validate
+  const validConds = tempConditions.filter(c => c.sensor_id);
+  const validActs = tempActions.filter(ac => ac.device_id);
+  
+  if (validConds.length === 0) return showToast("Add at least 1 condition", true);
+  if (validActs.length === 0) return showToast("Add at least 1 action", true);
+  
+  let automationId = editingAutomationId;
+  
+  if (editingAutomationId) {
+    // Update
+    const { error } = await sb.from("automations").update({
+      automation_name: name, logic_type: logic, cooldown_seconds: cooldown
+    }).eq("id", editingAutomationId);
+    if (error) return showToast(error.message, true);
+    
+    // Delete old conditions/actions
+    await sb.from("automation_conditions").delete().eq("automation_id", editingAutomationId);
+    await sb.from("automation_actions").delete().eq("automation_id", editingAutomationId);
+  } else {
+    // Insert
+    const { data, error } = await sb.from("automations").insert({
+      gateway_id: gwId, automation_name: name,
+      logic_type: logic, cooldown_seconds: cooldown, enabled: true
+    }).select().single();
+    if (error) return showToast(error.message, true);
+    automationId = data.id;
+  }
+  
+  // Insert conditions
+  const condInserts = validConds.map((c, i) => ({
+    automation_id: automationId, sensor_id: c.sensor_id,
+    operator: c.operator, value: c.value, order_index: i
+  }));
+  const { error: ce } = await sb.from("automation_conditions").insert(condInserts);
+  if (ce) return showToast("Conditions: " + ce.message, true);
+  
+  // Insert actions
+  const actInserts = validActs.map((ac, i) => ({
+    automation_id: automationId, device_id: ac.device_id,
+    action_type: ac.action_type, delay_seconds: ac.delay_seconds || 0, order_index: i
+  }));
+  const { error: ae } = await sb.from("automation_actions").insert(actInserts);
+  if (ae) return showToast("Actions: " + ae.message, true);
+  
+  showToast(editingAutomationId ? "Automation updated" : "Automation created");
+  closeModal("automationModal");
+  loadAllData();
+}
+
+// --------- Logs ---------
+async function viewLogs(automationId) {
+  const a = allAutomations.find(x => x.id === automationId);
+  document.getElementById("logsTitle").textContent = `📋 ${a.automation_name} — Logs`;
+  document.getElementById("logsList").innerHTML = '<div class="empty-text">Loading...</div>';
+  document.getElementById("logsModal").classList.add("active");
+  
+  const { data, error } = await sb.from("automation_logs")
+    .select("*")
+    .eq("automation_id", automationId)
+    .order("triggered_at", { ascending: false })
+    .limit(50);
+  
+  if (error || !data || data.length === 0) {
+    document.getElementById("logsList").innerHTML = '<div class="empty-text">No executions yet.</div>';
+    return;
+  }
+  
+  document.getElementById("logsList").innerHTML = data.map(log => `
+    <div class="log-item">
+      <div><b>${log.success ? '✅' : '❌'}</b> <span class="log-time">${new Date(log.triggered_at).toLocaleString()}</span></div>
+      <div class="log-snapshot">Snapshot: ${JSON.stringify(log.trigger_snapshot || {})}</div>
+      <div class="log-snapshot">Actions: ${JSON.stringify(log.actions_taken || {})}</div>
+    </div>
+  `).join('');
+}
+
+// ================= REALTIME =================
 function scheduleReload() {
   clearTimeout(reloadTimer);
   reloadTimer = setTimeout(loadAllData, 800);
@@ -944,9 +1143,10 @@ function subscribeRealtime() {
     .on("postgres_changes", { event: "*", schema: "public", table: "devices" }, scheduleReload)
     .on("postgres_changes", { event: "*", schema: "public", table: "device_states" }, scheduleReload)
     .on("postgres_changes", { event: "*", schema: "public", table: "sensors" }, scheduleReload)
-    .subscribe((status) => {
-      if (status === 'CHANNEL_ERROR') console.warn("Realtime error");
-    });
+    .on("postgres_changes", { event: "*", schema: "public", table: "automations" }, scheduleReload)
+    .on("postgres_changes", { event: "*", schema: "public", table: "automation_conditions" }, scheduleReload)
+    .on("postgres_changes", { event: "*", schema: "public", table: "automation_actions" }, scheduleReload)
+    .subscribe();
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove("active"); }
