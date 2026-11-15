@@ -8,7 +8,7 @@
 <style>
   :root {
     --bg: #f8fafc; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
-    --border: #e2e8f0; --primary: #000000; --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
+    --border: #e2e8f0; --primary: #000000; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --info: #3b82f6;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; padding: 40px 20px; }
@@ -54,6 +54,7 @@
   .sensor-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
   .motion-active { animation: pulse 1.5s infinite; }
   .door-open-active { animation: pulse 1.5s infinite; }
+  .alert-active { animation: pulse 1.5s infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 
   .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
@@ -77,7 +78,6 @@
 </head>
 <body>
 
-<!-- AUTH SCREEN -->
 <div id="auth-screen">
   <div class="auth-box">
     <h2 id="auth-title">Login</h2>
@@ -88,7 +88,6 @@
   </div>
 </div>
 
-<!-- MAIN APP -->
 <div id="main-app" class="container">
   <header>
     <h1>Smart Home</h1>
@@ -127,7 +126,6 @@
   <div id="sensorGrid" class="grid"></div>
 </div>
 
-<!-- MODALS -->
 <div id="gatewayModal" class="modal">
   <div class="modal-content">
     <h2>Add New Gateway</h2>
@@ -172,7 +170,12 @@
       <option value="MQ135">MQ135 (Air Quality)</option>
       <option value="PIR">PIR (Motion) — Sub Node only</option>
       <option value="REED">REED (Door/Window) — Sub Node only</option>
+      <option value="LDR">LDR (Light Level) — Sub Node only</option>
+      <option value="RAIN">RAIN (Rain Drop) — Sub Node only</option>
+      <option value="WATER_LEAK">WATER_LEAK (Leak Detection) — Sub Node only</option>
+      <option value="TOUCH">TOUCH (Capacitive Touch) — Sub Node only</option>
     </select>
+    
     <div id="pirTriggerGroup" style="display: none; margin-top: 4px;">
       <label>Motion Trigger (HIGH/LOW)</label>
       <select id="pirTriggerState">
@@ -181,6 +184,7 @@
       </select>
       <div class="info-text">HC-SR501 মডিউলের জন্য HIGH রাখুন</div>
     </div>
+    
     <div id="reedTriggerGroup" style="display: none; margin-top: 4px;">
       <label>Open Detection (HIGH/LOW)</label>
       <select id="reedTriggerState">
@@ -189,7 +193,27 @@
       </select>
       <div class="info-text">সাধারণ NO reed + internal pull-up-এ HIGH রাখুন</div>
     </div>
-    <div id="pirWarning" class="warning-text">⚠️ PIR/REED sensor must be on a Sub Node, not the Main Gateway.</div>
+    
+    <div id="leakTriggerGroup" style="display: none; margin-top: 4px;">
+      <label>Leak Detection (HIGH/LOW)</label>
+      <select id="leakTriggerState">
+        <option value="HIGH">HIGH — পানি পড়লে pin HIGH (default)</option>
+        <option value="LOW">LOW — পানি পড়লে pin LOW</option>
+      </select>
+      <div class="info-text">সাধারণ water leak sensor-এ HIGH রাখুন</div>
+    </div>
+    
+    <div id="touchTriggerGroup" style="display: none; margin-top: 4px;">
+      <label>Touch Detection (HIGH/LOW)</label>
+      <select id="touchTriggerState">
+        <option value="HIGH">HIGH — touch হলে pin HIGH (default)</option>
+        <option value="LOW">LOW — touch হলে pin LOW</option>
+      </select>
+      <div class="info-text">TTP223 capacitive module-এ HIGH রাখুন</div>
+    </div>
+    
+    <div id="pirWarning" class="warning-text">⚠️ This sensor must be on a Sub Node, not the Main Gateway.</div>
+    
     <label>Select Gateway</label>
     <select id="sensorGateway" onchange="updateSensorNodeDropdown()"></select>
     <label>Select Node</label>
@@ -211,7 +235,13 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const DEVICE_PINS = [4, 5, 13, 14, 16, 17, 18, 21, 22, 23, 25, 33];
-const SENSOR_PINS = [4, 5, 13, 14, 15, 16, 17, 18, 21, 22, 23, 25, 33, 34, 35, 36, 39];
+const SENSOR_PINS = [4, 5, 13, 14, 15, 16, 17, 18, 21, 22, 23, 25, 32, 33, 34, 35, 36, 39];
+
+// Sub-only sensors (Main ESP-এ কাজ করে না)
+const SUB_ONLY_SENSORS = ['PIR', 'REED', 'LDR', 'RAIN', 'WATER_LEAK', 'TOUCH'];
+
+// Digital sensors (5s fast poll)
+const DIGITAL_SENSORS = ['PIR', 'REED', 'WATER_LEAK', 'TOUCH'];
 
 let currentUser = null;
 let isSignUp = false;
@@ -296,14 +326,14 @@ function showDashboard() {
   loadAllData();
   subscribeRealtime();
   
-  // DHT + MQ — 20s polling
+  // Analog sensors (DHT, MQ, LDR, RAIN) — 20s polling
   sensorPollTimer = setInterval(async () => {
     if (!currentUser) return;
-    const nonFast = allSensors.filter(s => s.sensor_type !== 'PIR' && s.sensor_type !== 'REED');
-    if (nonFast.length === 0) return;
-    const results = await Promise.all(nonFast.map(s =>
+    const analogSensors = allSensors.filter(s => !DIGITAL_SENSORS.includes(s.sensor_type));
+    if (analogSensors.length === 0) return;
+    const results = await Promise.all(analogSensors.map(s =>
       sb.from("sensor_readings")
-        .select("temperature, humidity, gas_value, motion, door_state, created_at")
+        .select("temperature, humidity, gas_value, motion, door_state, light_value, rain_value, leak_state, touch_state, created_at")
         .eq("sensor_id", s.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -313,14 +343,14 @@ function showDashboard() {
     renderSensors();
   }, 20000);
 
-  // PIR + REED — 3s fast polling
+  // Digital sensors (PIR, REED, WATER_LEAK, TOUCH) — 3s fast polling
   pirPollTimer = setInterval(async () => {
     if (!currentUser) return;
-    const fast = allSensors.filter(s => s.sensor_type === 'PIR' || s.sensor_type === 'REED');
-    if (fast.length === 0) return;
-    const results = await Promise.all(fast.map(s =>
+    const digitalSensors = allSensors.filter(s => DIGITAL_SENSORS.includes(s.sensor_type));
+    if (digitalSensors.length === 0) return;
+    const results = await Promise.all(digitalSensors.map(s =>
       sb.from("sensor_readings")
-        .select("temperature, humidity, gas_value, motion, door_state, created_at")
+        .select("temperature, humidity, gas_value, motion, door_state, light_value, rain_value, leak_state, touch_state, created_at")
         .eq("sensor_id", s.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -558,13 +588,15 @@ async function deleteLight(id) {
   loadAllData();
 }
 
-// ---- Sensors (DHT / MQ / PIR / REED) ----
+// ---- Sensors (9 types) ----
 function openSensorModal() {
   if (allGateways.length === 0) return showToast("Please add a gateway first!", true);
   document.getElementById("sensorName").value = "";
   document.getElementById("sensorType").value = "DHT11";
   document.getElementById("pirTriggerState").value = "HIGH";
   document.getElementById("reedTriggerState").value = "HIGH";
+  document.getElementById("leakTriggerState").value = "HIGH";
+  document.getElementById("touchTriggerState").value = "HIGH";
   document.getElementById("sensorGateway").innerHTML = allGateways.map(g => `<option value="${g.id}">${g.gateway_name}</option>`).join('');
   updateSensorNodeDropdown();
   onSensorTypeChange();
@@ -575,7 +607,7 @@ function updateSensorNodeDropdown() {
   const gwId = parseInt(document.getElementById("sensorGateway").value);
   const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
   const type = document.getElementById("sensorType").value;
-  const isSubOnly = (type === 'PIR' || type === 'REED');
+  const isSubOnly = SUB_ONLY_SENSORS.includes(type);
   
   let opts = `<option value="0" ${isSubOnly ? 'disabled' : ''}>Main ESP32 (Gateway)</option>`;
   gwNodes.forEach(n => opts += `<option value="${n.id}">${n.node_name}</option>`);
@@ -593,34 +625,39 @@ function onSensorTypeChange() {
   const type = document.getElementById("sensorType").value;
   const pirGroup = document.getElementById("pirTriggerGroup");
   const reedGroup = document.getElementById("reedTriggerGroup");
+  const leakGroup = document.getElementById("leakTriggerGroup");
+  const touchGroup = document.getElementById("touchTriggerGroup");
   const warningDiv = document.getElementById("pirWarning");
   const saveBtn = document.getElementById("sensorSaveBtn");
   const gwId = parseInt(document.getElementById("sensorGateway").value);
   const gwNodes = allNodes.filter(n => n.gateway_id === gwId && n.is_approved);
   
+  // Reset all
   pirGroup.style.display = 'none';
   reedGroup.style.display = 'none';
+  leakGroup.style.display = 'none';
+  touchGroup.style.display = 'none';
   warningDiv.style.display = 'none';
   saveBtn.disabled = false;
   
+  const isSubOnly = SUB_ONLY_SENSORS.includes(type);
+  
   if (type === 'PIR') {
     pirGroup.style.display = 'block';
-    updateSensorNodeDropdown();
-    if (gwNodes.length === 0) {
-      warningDiv.textContent = "⚠️ PIR needs an approved Sub Node.";
-      warningDiv.style.display = 'block';
-      saveBtn.disabled = true;
-    }
   } else if (type === 'REED') {
     reedGroup.style.display = 'block';
-    updateSensorNodeDropdown();
-    if (gwNodes.length === 0) {
-      warningDiv.textContent = "⚠️ REED needs an approved Sub Node.";
-      warningDiv.style.display = 'block';
-      saveBtn.disabled = true;
-    }
-  } else {
-    updateSensorNodeDropdown();
+  } else if (type === 'WATER_LEAK') {
+    leakGroup.style.display = 'block';
+  } else if (type === 'TOUCH') {
+    touchGroup.style.display = 'block';
+  }
+  
+  updateSensorNodeDropdown();
+  
+  if (isSubOnly && gwNodes.length === 0) {
+    warningDiv.textContent = "⚠️ " + type + " needs an approved Sub Node.";
+    warningDiv.style.display = 'block';
+    saveBtn.disabled = true;
   }
 }
 
@@ -630,7 +667,7 @@ function onSensorNodeChange() {
   const warningDiv = document.getElementById("pirWarning");
   const saveBtn = document.getElementById("sensorSaveBtn");
   
-  if ((type === 'PIR' || type === 'REED') && nodeId === 0) {
+  if (SUB_ONLY_SENSORS.includes(type) && nodeId === 0) {
     warningDiv.textContent = "⚠️ " + type + " sensor must be on a Sub Node.";
     warningDiv.style.display = 'block';
     saveBtn.disabled = true;
@@ -644,7 +681,7 @@ async function loadSensorReadings() {
   if (allSensors.length === 0) { allReadings = {}; return; }
   const results = await Promise.all(allSensors.map(s =>
     sb.from("sensor_readings")
-      .select("temperature, humidity, gas_value, motion, door_state, created_at")
+      .select("temperature, humidity, gas_value, motion, door_state, light_value, rain_value, leak_state, touch_state, created_at")
       .eq("sensor_id", s.id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -675,7 +712,7 @@ function renderSensors() {
     let dataHtml = '';
     let extraBadge = '';
     
-    // PIR
+    // ---------- PIR ----------
     if (s.sensor_type === 'PIR') {
       const motionVal = r ? (getLatest(r.motion) !== null ? Number(getLatest(r.motion)) : null) : null;
       const isMotion = motionVal === 1;
@@ -694,7 +731,7 @@ function renderSensors() {
           ${r ? `<div><div class="sensor-val" style="font-size:12px; color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Last Update</div></div>` : ''}
         </div>`;
     }
-    // REED
+    // ---------- REED ----------
     else if (s.sensor_type === 'REED') {
       const doorVal = r ? (getLatest(r.door_state) !== null ? Number(getLatest(r.door_state)) : null) : null;
       const isOpen = doorVal === 1;
@@ -713,7 +750,98 @@ function renderSensors() {
           ${r ? `<div><div class="sensor-val" style="font-size:12px; color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Last Update</div></div>` : ''}
         </div>`;
     }
-    // MQ
+    // ---------- WATER_LEAK ----------
+    else if (s.sensor_type === 'WATER_LEAK') {
+      const leakVal = r ? (getLatest(r.leak_state) !== null ? Number(getLatest(r.leak_state)) : null) : null;
+      const isWet = leakVal === 1;
+      const statusColor = leakVal === null ? 'var(--text-muted)' : (isWet ? 'var(--danger)' : 'var(--success)');
+      const statusIcon = leakVal === null ? '⚪' : (isWet ? '💧' : '✅');
+      const statusText = leakVal === null ? 'NO DATA' : (isWet ? 'LEAK!' : 'DRY');
+      const pulseClass = isWet ? 'alert-active' : '';
+      extraBadge = `<span class="badge">Trigger: ${s.pir_trigger_state || 'HIGH'}</span>`;
+      
+      dataHtml = `
+        <div class="sensor-data">
+          <div style="flex: 1;">
+            <div class="sensor-val ${pulseClass}" style="color: ${statusColor}">${statusIcon} ${statusText}</div>
+            <div class="sensor-lbl">Water Leak Status</div>
+          </div>
+          ${r ? `<div><div class="sensor-val" style="font-size:12px; color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Last Update</div></div>` : ''}
+        </div>`;
+    }
+    // ---------- TOUCH ----------
+    else if (s.sensor_type === 'TOUCH') {
+      const touchVal = r ? (getLatest(r.touch_state) !== null ? Number(getLatest(r.touch_state)) : null) : null;
+      const isTouched = touchVal === 1;
+      const statusColor = touchVal === null ? 'var(--text-muted)' : (isTouched ? 'var(--info)' : 'var(--text-muted)');
+      const statusIcon = touchVal === null ? '⚪' : (isTouched ? '👆' : '⚫');
+      const statusText = touchVal === null ? 'NO DATA' : (isTouched ? 'TOUCHED' : 'IDLE');
+      const pulseClass = isTouched ? 'alert-active' : '';
+      extraBadge = `<span class="badge">Trigger: ${s.pir_trigger_state || 'HIGH'}</span>`;
+      
+      dataHtml = `
+        <div class="sensor-data">
+          <div style="flex: 1;">
+            <div class="sensor-val ${pulseClass}" style="color: ${statusColor}">${statusIcon} ${statusText}</div>
+            <div class="sensor-lbl">Touch Status</div>
+          </div>
+          ${r ? `<div><div class="sensor-val" style="font-size:12px; color:var(--text-muted);">${formatTime(r.created_at)}</div><div class="sensor-lbl">Last Update</div></div>` : ''}
+        </div>`;
+    }
+    // ---------- LDR ----------
+    else if (s.sensor_type === 'LDR') {
+      let lightVal = '--', lightStatus = 'Unknown', lightColor = 'var(--text-muted)', lightIcon = '⚪';
+      if (r && r.light_value) {
+        const l = getLatest(r.light_value);
+        if (l !== null) {
+          const numVal = Number(l);
+          lightVal = numVal.toFixed(0);
+          if (numVal > 3000) { lightStatus = 'BRIGHT'; lightColor = 'var(--warning)'; lightIcon = '☀️'; }
+          else if (numVal > 1500) { lightStatus = 'DIM'; lightColor = 'var(--info)'; lightIcon = '🌤️'; }
+          else { lightStatus = 'DARK'; lightColor = 'var(--text-main)'; lightIcon = '🌙'; }
+        }
+      }
+      
+      dataHtml = `
+        <div class="sensor-data">
+          <div style="flex: 1;">
+            <div class="sensor-val" style="color: ${lightColor}">${lightIcon} ${lightStatus}</div>
+            <div class="sensor-lbl">Light Level</div>
+          </div>
+          <div>
+            <div class="sensor-val">${lightVal}</div>
+            <div class="sensor-lbl">Raw (0-4095)</div>
+          </div>
+        </div>`;
+    }
+    // ---------- RAIN ----------
+    else if (s.sensor_type === 'RAIN') {
+      let rainVal = '--', rainStatus = 'Unknown', rainColor = 'var(--text-muted)', rainIcon = '⚪';
+      if (r && r.rain_value) {
+        const rv = getLatest(r.rain_value);
+        if (rv !== null) {
+          const numVal = Number(rv);
+          rainVal = numVal.toFixed(0);
+          if (numVal > 3000) { rainStatus = 'HEAVY'; rainColor = 'var(--danger)'; rainIcon = '🌧️'; }
+          else if (numVal > 1500) { rainStatus = 'MODERATE'; rainColor = 'var(--info)'; rainIcon = '🌦️'; }
+          else if (numVal > 500) { rainStatus = 'LIGHT'; rainColor = 'var(--info)'; rainIcon = '🌦️'; }
+          else { rainStatus = 'DRY'; rainColor = 'var(--success)'; rainIcon = '☀️'; }
+        }
+      }
+      
+      dataHtml = `
+        <div class="sensor-data">
+          <div style="flex: 1;">
+            <div class="sensor-val" style="color: ${rainColor}">${rainIcon} ${rainStatus}</div>
+            <div class="sensor-lbl">Rain Level</div>
+          </div>
+          <div>
+            <div class="sensor-val">${rainVal}</div>
+            <div class="sensor-lbl">Raw (0-4095)</div>
+          </div>
+        </div>`;
+    }
+    // ---------- MQ ----------
     else if (s.sensor_type.startsWith('MQ')) {
       let gasVal = '--';
       if (r && r.gas_value) {
@@ -728,7 +856,7 @@ function renderSensors() {
           </div>
         </div>`;
     }
-    // DHT
+    // ---------- DHT ----------
     else {
       let temp = '--', hum = '--';
       if (r) {
@@ -768,13 +896,15 @@ async function saveSensor() {
   const pin = parseInt(document.getElementById("sensorPin").value);
   
   if (!name) return showToast("Enter sensor name", true);
-  if ((type === 'PIR' || type === 'REED') && nodeId === 0) {
+  if (SUB_ONLY_SENSORS.includes(type) && nodeId === 0) {
     return showToast(type + " must be on Sub Node", true);
   }
   
   let triggerState = 'HIGH';
   if (type === 'PIR') triggerState = document.getElementById("pirTriggerState").value;
   else if (type === 'REED') triggerState = document.getElementById("reedTriggerState").value;
+  else if (type === 'WATER_LEAK') triggerState = document.getElementById("leakTriggerState").value;
+  else if (type === 'TOUCH') triggerState = document.getElementById("touchTriggerState").value;
   
   const payload = {
     gateway_id: gwId,
