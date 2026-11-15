@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { SENSOR_PINS } from "../services/config";
 import { Modal } from "./Feedback";
 import { Empty, same, ago } from "./resourceHelpers";
 function Reading({ sensor, reading: r }) {
@@ -122,7 +121,7 @@ function Reading({ sensor, reading: r }) {
     </div>
   );
 }
-export function SensorCards({ items, gateways, nodes, readings, onDelete }) {
+export function SensorCards({ items, gateways, nodes, readings, options, onDelete }) {
   return (
     <div className="card-grid sensor-grid">
       <style jsx global>{`
@@ -137,9 +136,7 @@ export function SensorCards({ items, gateways, nodes, readings, onDelete }) {
               ? nodes.find((n) => same(n.id, s.node_id))?.node_name ||
                 "Unknown Node"
               : "Main Board";
-          const trigger = ["PIR", "REED", "WATER_LEAK", "TOUCH"].includes(
-            s.sensor_type,
-          );
+          const trigger = options.digital_sensor_types.includes(s.sensor_type);
           return (
             <article className={`card sensor-card`} key={s.id}>
               <div className="card-top">
@@ -187,17 +184,18 @@ export function SensorCards({ items, gateways, nodes, readings, onDelete }) {
 
 
 
-const SENSOR_TYPES = ["DHT11", "DHT22", "MQ2", "MQ135", "PIR", "REED", "LDR", "RAIN", "WATER_LEAK", "TOUCH"];
-const SUB_NODE_TYPES = new Set(["PIR", "REED", "LDR", "RAIN", "WATER_LEAK", "TOUCH"]);
-const DIGITAL_TYPES = new Set(["PIR", "REED", "WATER_LEAK", "TOUCH"]);
 export const createSensor = (request, payload) => request("/api/sensors", { method: "POST", body: JSON.stringify(payload) });
 export const deleteSensor = (request, id) => request(`/api/sensors/${encodeURIComponent(id)}`, { method: "DELETE" });
 
-export default function SensorsSection({ items, gateways, nodes, readings, request, onRefresh, notify }) {
+export default function SensorsSection({ items, gateways, nodes, readings, options, request, onRefresh, notify }) {
   const [adding, setAdding] = useState(false); const [busy, setBusy] = useState(false);
   const [gatewayId, setGatewayId] = useState(""); const [nodeId, setNodeId] = useState("0");
   const [sensorType, setSensorType] = useState("DHT11"); const [trigger, setTrigger] = useState("HIGH");
-  const subOnly = SUB_NODE_TYPES.has(sensorType); const digital = DIGITAL_TYPES.has(sensorType);
+  const sensorTypes = options.sensor_types;
+  const triggerStates = options.pir_trigger_states;
+  const subNodeTypes = new Set(options.sub_node_sensor_types);
+  const digitalTypes = new Set(options.digital_sensor_types);
+  const subOnly = subNodeTypes.has(sensorType); const digital = digitalTypes.has(sensorType);
   const approved = nodes.filter((node) => node.is_approved && String(node.gateway_id) === String(gatewayId));
   const allowedNodes = subOnly ? approved : [{ id: "0", node_name: "Main ESP32 (Gateway)" }, ...approved];
   function openAdd() { if (!gateways.length) { notify("Add a gateway first.", true); return; } setGatewayId(String(gateways[0].id)); setNodeId("0"); setSensorType("DHT11"); setTrigger("HIGH"); setAdding(true); }
@@ -205,8 +203,6 @@ export default function SensorsSection({ items, gateways, nodes, readings, reque
   async function submit(event) {
     event.preventDefault(); if (busy) return; setBusy(true); const form = new FormData(event.currentTarget); const pin = Number(form.get("pin")); const node = Number(form.get("node"));
     try {
-      if (!SENSOR_PINS.includes(pin)) throw new Error("Select a valid GPIO pin.");
-      if (subOnly && (!node || !approved.some((item) => String(item.id) === String(node)))) throw new Error(`${sensorType} can only be assigned to an approved Sub Node.`);
       await createSensor(request, { gateway_id: Number(form.get("gateway")), node_id: node, sensor_name: String(form.get("name")).trim(), pin, sensor_type: sensorType, pir_trigger_state: trigger });
       setAdding(false); notify("Sensor added."); await onRefresh();
     } catch (error) { notify(error.message, true); } finally { setBusy(false); }
@@ -215,17 +211,17 @@ export default function SensorsSection({ items, gateways, nodes, readings, reque
     <section className="dashboard-block">
       <div className="section-heading"><div><p className="eyebrow">Environmental Monitoring</p><h2>Sensors</h2></div><button className="btn btn-primary" onClick={openAdd}>＋ Add Sensor</button></div>
       <p className="muted page-description">View the latest temperature, humidity, gas, light, rain, leak, touch and contact readings from your connected sensors.</p>
-      <SensorCards items={items} gateways={gateways} nodes={nodes} readings={readings} onDelete={remove} />
+      <SensorCards items={items} gateways={gateways} nodes={nodes} readings={readings} options={options} onDelete={remove} />
     </section>
     {adding && <Modal title="Add Sensor" eyebrow="Environmental Monitoring" onClose={() => setAdding(false)}><form onSubmit={submit}>
       <label htmlFor="sensor-name">Sensor name</label><input id="sensor-name" name="name" required maxLength={80} placeholder="e.g., Living room temperature" autoFocus />
       <label htmlFor="sensor-gateway">Gateway</label><select id="sensor-gateway" name="gateway" required value={gatewayId} onChange={(event) => { const next = event.target.value; setGatewayId(next); const first = nodes.find((item) => item.is_approved && String(item.gateway_id) === String(next)); setNodeId(subOnly ? String(first?.id || "") : "0"); }} >{gateways.map((item) => <option key={item.id} value={item.id}>{item.gateway_name}</option>)}</select>
       <label htmlFor="sensor-node">Node</label><select id="sensor-node" name="node" required value={nodeId} onChange={(event) => setNodeId(event.target.value)}>{subOnly && !approved.length && <option value="">Select an approved Sub Node</option>}{allowedNodes.map((item) => <option key={item.id} value={item.id}>{item.node_name || "Sub Node"}</option>)}</select>
-      <label htmlFor="sensor-type">Sensor Type</label><select id="sensor-type" value={sensorType} onChange={(event) => { const next = event.target.value; setSensorType(next); const first = approved[0]; setNodeId(SUB_NODE_TYPES.has(next) ? String(first?.id || "") : "0"); }}>{SENSOR_TYPES.map((type) => <option key={type} value={type}>{type}{SUB_NODE_TYPES.has(type) ? " · Sub Node only" : type.startsWith("DHT") ? " · temperature and humidity" : type === "MQ2" ? " · gas" : " · air quality"}</option>)}</select>
-      {digital && <div className="conditional"><label htmlFor="sensor-trigger">Trigger state</label><select id="sensor-trigger" value={trigger} onChange={(event) => setTrigger(event.target.value)}><option value="HIGH">HIGH — pin is HIGH when triggered</option><option value="LOW">LOW — pin is LOW when triggered</option></select><p className="hint">Choose the signal level that indicates an active sensor event.</p></div>}
+      <label htmlFor="sensor-type">Sensor Type</label><select id="sensor-type" value={sensorType} onChange={(event) => { const next = event.target.value; setSensorType(next); const first = approved[0]; setNodeId(subNodeTypes.has(next) ? String(first?.id || "") : "0"); }}>{sensorTypes.map((type) => <option key={type} value={type}>{type}{subNodeTypes.has(type) ? " · Sub Node only" : type.startsWith("DHT") ? " · temperature and humidity" : type === "MQ2" ? " · gas" : " · air quality"}</option>)}</select>
+      {digital && <div className="conditional"><label htmlFor="sensor-trigger">Trigger state</label><select id="sensor-trigger" value={trigger} onChange={(event) => setTrigger(event.target.value)}>{triggerStates.map((state) => <option key={state} value={state}>{state} — pin is {state} when triggered</option>)}</select><p className="hint">Choose the signal level that indicates an active sensor event.</p></div>}
       {subOnly && !approved.length && <p className="warning" role="alert">{sensorType} sensors require an approved Sub Node on this Gateway.</p>}
-      <label htmlFor="sensor-pin">GPIO Pin</label><select id="sensor-pin" name="pin">{SENSOR_PINS.map((pin) => <option key={pin} value={pin}>GPIO {pin}</option>)}</select>
-      <div className="modal-actions"><button className="btn btn-quiet" type="button" onClick={() => setAdding(false)}>Cancel</button><button className="btn btn-primary" type="submit" disabled={busy || (subOnly && !approved.length)}>{busy ? "Saving…" : "Add Sensor"}</button></div>
+      <label htmlFor="sensor-pin">GPIO Pin</label><select id="sensor-pin" name="pin">{options.sensor_pins.map((pin) => <option key={pin} value={pin}>GPIO {pin}</option>)}</select>
+      <div className="modal-actions"><button className="btn btn-quiet" type="button" onClick={() => setAdding(false)}>Cancel</button><button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "Saving…" : "Add Sensor"}</button></div>
     </form></Modal>}
     <style jsx global>{`
       .app-shell .sensor-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 255px), 1fr)); gap: 14px; }

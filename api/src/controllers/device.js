@@ -31,21 +31,24 @@ async function create(req, config, token) {
 }
 async function state(req, config, token, id) {
   const b = await readBody(req);
-  requireKeys(b, ["is_on"]);
-  if (typeof b.is_on !== "boolean")
-    throw new HttpError(400, "is_on must be a boolean.");
+  requireKeys(b, ["is_on", "action"]);
+  const deviceId = requireId(id, "device ID");
+  let desiredState;
+  if (Object.keys(b).length === 1 && b.action === "toggle") {
+    const current = await supabaseRequest(
+      config, token, query("device_states", { device_id: `eq.${deviceId}`, select: "device_id,is_on", limit: "1" }),
+    );
+    if (!Array.isArray(current) || !current.length)
+      throw new HttpError(404, "Device state not found.");
+    desiredState = !current[0].is_on;
+  } else {
+    if (Object.keys(b).length !== 1 || typeof b.is_on !== "boolean")
+      throw new HttpError(400, "Provide either action=toggle or a boolean is_on value.");
+    desiredState = b.is_on;
+  }
   const data = await supabaseRequest(
-    config,
-    token,
-    query("device_states", {
-      device_id: `eq.${requireId(id, "device ID")}`,
-      select: "device_id,is_on,updated_at",
-    }),
-    {
-      method: "PATCH",
-      prefer: "return=representation",
-      body: { is_on: b.is_on },
-    },
+    config, token, query("device_states", { device_id: `eq.${deviceId}`, select: "device_id,is_on,updated_at" }),
+    { method: "PATCH", prefer: "return=representation", body: { is_on: desiredState } },
   );
   if (!Array.isArray(data) || !data.length)
     throw new HttpError(404, "Device state not found.");

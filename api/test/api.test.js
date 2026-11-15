@@ -162,6 +162,62 @@ test("returns dashboard data only after Supabase user validation", async () => {
   );
 });
 
+
+test("serves authoritative form options without database access", async () => {
+  let networkCalls = 0;
+  global.fetch = async () => { networkCalls += 1; throw new Error("options must not query the database"); };
+  const result = await callApi({ url: "/api/options" });
+  assert.equal(result.status, 200);
+  assert.ok(result.body.device_pins.includes(4));
+  assert.ok(result.body.sensor_pins.includes(39));
+  assert.ok(result.body.sub_node_sensor_types.includes("RAIN"));
+  assert.ok(result.body.automation.operators.includes("gte"));
+  assert.equal(result.body.automation.max_rule_items, 3);
+  assert.deepEqual(result.body.automation.logic_types, ["AND", "OR"]);
+  assert.deepEqual(result.body.pir_trigger_states, ["HIGH", "LOW"]);
+  assert.equal(networkCalls, 0);
+});
+
+test("toggles device state from server-side current state", async () => {
+  let mutation;
+  mockAuthAndDatabase((parsed, options) => {
+    if (parsed.pathname === "/rest/v1/device_states" && options.method === "PATCH") {
+      mutation = JSON.parse(options.body);
+      return mockResponse(200, [{ device_id: 7, is_on: true }]);
+    }
+    if (parsed.pathname === "/rest/v1/device_states")
+      return mockResponse(200, [{ device_id: 7, is_on: false }]);
+    return mockResponse(200, []);
+  });
+  const result = await callApi({
+    method: "PATCH", url: "/api/devices/7/state",
+    headers: { authorization: "Bearer valid-user-token" }, body: { action: "toggle" },
+  });
+  assert.equal(result.status, 200);
+  assert.deepEqual(mutation, { is_on: true });
+  assert.equal(result.body.is_on, true);
+});
+
+test("toggles automation enabled state from server-side current state", async () => {
+  let mutation;
+  mockAuthAndDatabase((parsed, options) => {
+    if (parsed.pathname === "/rest/v1/automations" && options.method === "PATCH") {
+      mutation = JSON.parse(options.body);
+      return mockResponse(200, [{ id: 9, enabled: true }]);
+    }
+    if (parsed.pathname === "/rest/v1/automations")
+      return mockResponse(200, [{ id: 9, enabled: false }]);
+    return mockResponse(200, []);
+  });
+  const result = await callApi({
+    method: "PATCH", url: "/api/automations/9",
+    headers: { authorization: "Bearer valid-user-token" }, body: { action: "toggle" },
+  });
+  assert.equal(result.status, 200);
+  assert.deepEqual(mutation, { enabled: true });
+  assert.equal(result.body.enabled, true);
+});
+
 test("creates gateways with the authenticated owner and a generated claim code", async () => {
   let inserted;
   mockAuthAndDatabase((parsed, options) => {

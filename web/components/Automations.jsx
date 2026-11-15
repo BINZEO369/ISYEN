@@ -13,13 +13,10 @@ const OPERATOR_LABELS = {
   changed: "has changed",
 };
 const ACTION_LABELS = { on: "Turn on", off: "Turn off", toggle: "Toggle" };
-const DIGITAL_TYPES = new Set(["PIR", "REED", "WATER_LEAK", "TOUCH"]);
-const OPERATORS = ["eq", "ne", "gt", "gte", "lt", "lte", "changed"];
-const DIGITAL_OPERATORS = ["eq", "ne", "changed"];
 
 
 const saveAutomationEndpoint = (request, id, payload) => request(id ? `/api/automations/${encodeURIComponent(id)}` : "/api/automations", { method: id ? "PATCH" : "POST", body: JSON.stringify(payload) });
-const setAutomationEnabledEndpoint = (request, id, enabled) => request(`/api/automations/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ enabled }) });
+const setAutomationEnabledEndpoint = (request, id) => request(`/api/automations/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ action: "toggle" }) });
 const deleteAutomationEndpoint = (request, id) => request(`/api/automations/${encodeURIComponent(id)}`, { method: "DELETE" });
 const getAutomationLogsEndpoint = (request, id) => request(`/api/automations/${encodeURIComponent(id)}/logs`);
 function newForm(gatewayId = "") {
@@ -58,7 +55,18 @@ export default function AutomationSection({
   request,
   onRefresh,
   notify,
+  options,
 }) {
+  const DIGITAL_TYPES = new Set(options.digital_sensor_types);
+  const OPERATORS = options.automation.operators;
+  const DIGITAL_OPERATORS = options.automation.digital_operators;
+  const MIN_RULE_ITEMS = options.automation.min_rule_items;
+  const MAX_RULE_ITEMS = options.automation.max_rule_items;
+  const LOGIC_TYPES = options.automation.logic_types;
+  const DIGITAL_VALUES = options.automation.digital_sensor_values;
+  const MAX_DELAY = options.automation.max_delay_seconds;
+  const MAX_COOLDOWN = options.automation.max_cooldown_seconds;
+  const allowedActions = options.automation.actions;
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const [workingId, setWorkingId] = useState(null);
@@ -139,8 +147,8 @@ export default function AutomationSection({
   }
 
   function addCondition() {
-    if (form.conditions.length >= 3) {
-      notify("An automation can have up to 3 conditions.", true);
+    if (form.conditions.length >= MAX_RULE_ITEMS) {
+      notify(`An automation can have up to ${MAX_RULE_ITEMS} conditions.`, true);
       return;
     }
     setForm((current) => ({
@@ -157,8 +165,8 @@ export default function AutomationSection({
   }
 
   function addAction() {
-    if (form.actions.length >= 3) {
-      notify("An automation can have up to 3 actions.", true);
+    if (form.actions.length >= MAX_RULE_ITEMS) {
+      notify(`An automation can have up to ${MAX_RULE_ITEMS} actions.`, true);
       return;
     }
     setForm((current) => ({
@@ -179,43 +187,16 @@ export default function AutomationSection({
     if (saving) return;
     setSaving(true);
     try {
-      const conditions = form.conditions.map((condition) => {
-        const sensorId = Number(condition.sensor_id);
-        const sensor = sensors.find((item) => item.id === sensorId);
-        const value =
-          condition.operator === "changed" || condition.value === ""
-            ? null
-            : Number(condition.value);
-        if (!Number.isSafeInteger(sensorId) || sensorId < 1 || !sensor)
-          throw new Error("Select a sensor for every condition.");
-        if (condition.operator !== "changed" && !Number.isFinite(value))
-          throw new Error("Enter a numeric value for every condition.");
-        if (
-          DIGITAL_TYPES.has(sensor.sensor_type) &&
-          condition.operator !== "changed" &&
-          ![0, 1].includes(value)
-        )
-          throw new Error("Digital sensor values must be 0 or 1.");
-        return {
-          sensor_id: sensorId,
-          operator: condition.operator,
-          value,
-        };
-      });
-      const actions = form.actions.map((action) => {
-        const deviceId = Number(action.device_id);
-        const device = devices.find((item) => item.id === deviceId);
-        const delay = Number(action.delay_seconds);
-        if (!Number.isSafeInteger(deviceId) || deviceId < 1 || !device)
-          throw new Error("Select a device for every action.");
-        if (!Number.isInteger(delay) || delay < 0 || delay > 60)
-          throw new Error("Action delays must be from 0 to 60 seconds.");
-        return {
-          device_id: deviceId,
-          action_type: action.action_type,
-          delay_seconds: delay,
-        };
-      });
+      const conditions = form.conditions.map((condition) => ({
+        sensor_id: Number(condition.sensor_id),
+        operator: condition.operator,
+        value: condition.operator === "changed" || condition.value === "" ? null : Number(condition.value),
+      }));
+      const actions = form.actions.map((action) => ({
+        device_id: Number(action.device_id),
+        action_type: action.action_type,
+        delay_seconds: Number(action.delay_seconds),
+      }));
       const payload = {
         gateway_id: Number(form.gateway_id),
         automation_name: form.automation_name.trim(),
@@ -224,9 +205,6 @@ export default function AutomationSection({
         conditions,
         actions,
       };
-      if (!payload.automation_name) throw new Error("Enter an automation name.");
-      if (!Number.isInteger(payload.cooldown_seconds) || payload.cooldown_seconds < 0 || payload.cooldown_seconds > 3600)
-        throw new Error("Cooldown must be from 0 to 3600 seconds.");
       await saveAutomationEndpoint(request, form.id, payload);
       setForm(null);
       notify(form.id ? "Automation updated." : "Automation created.");
@@ -241,8 +219,8 @@ export default function AutomationSection({
   async function toggle(automation) {
     setWorkingId(automation.id);
     try {
-      await setAutomationEnabledEndpoint(request, automation.id, !automation.enabled);
-      notify(automation.enabled ? "Automation disabled." : "Automation enabled.");
+      const updated = await setAutomationEnabledEndpoint(request, automation.id);
+      notify(updated?.enabled ? "Automation enabled." : "Automation disabled.");
       await onRefresh();
     } catch (error) {
       notify(error.message || "Could not update this automation.", true);
@@ -393,7 +371,7 @@ export default function AutomationSection({
         <Modal
           title={form.id ? "Edit Automation" : "Add Automation"}
           eyebrow="Rule Builder"
-          description="Choose sensors and devices on the same gateway. Each rule supports up to three conditions and actions."
+          description={`Choose sensors and devices on the same gateway. Each rule supports up to ${MAX_RULE_ITEMS} conditions and actions.`}
           className="automation-modal"
           onClose={() => !saving && setForm(null)}
         >
@@ -432,14 +410,14 @@ export default function AutomationSection({
               </div>
               <div>
                 <label htmlFor="automation-cooldown">Cooldown (seconds)</label>
-                <input id="automation-cooldown" type="number" min="0" max="3600" step="1" value={form.cooldown_seconds} onChange={(event) => updateForm("cooldown_seconds", event.target.value)} required />
+                <input id="automation-cooldown" type="number" min="0" max={String(MAX_COOLDOWN)} step="1" value={form.cooldown_seconds} onChange={(event) => updateForm("cooldown_seconds", event.target.value)} required />
               </div>
             </div>
 
             <div className="automation-editor-section">
               <div className="automation-editor-heading">
                 <div><span className="automation-step">IF</span><strong>Conditions</strong></div>
-                <button className="automation-add-button" type="button" onClick={addCondition} disabled={form.conditions.length >= 3}>＋ Condition</button>
+                <button className="automation-add-button" type="button" onClick={addCondition} disabled={form.conditions.length >= MAX_RULE_ITEMS}>＋ Condition</button>
               </div>
               {form.conditions.map((condition, index) => {
                 const selectedSensor = gatewaySensors.find((sensor) => String(sensor.id) === String(condition.sensor_id));
@@ -468,8 +446,8 @@ export default function AutomationSection({
                           id={`condition-value-${index}`}
                           type="number"
                           step={selectedSensor && DIGITAL_TYPES.has(selectedSensor.sensor_type) ? "1" : "any"}
-                          min={selectedSensor && DIGITAL_TYPES.has(selectedSensor.sensor_type) ? "0" : undefined}
-                          max={selectedSensor && DIGITAL_TYPES.has(selectedSensor.sensor_type) ? "1" : undefined}
+                          min={selectedSensor && DIGITAL_TYPES.has(selectedSensor.sensor_type) ? String(Math.min(...DIGITAL_VALUES)) : undefined}
+                          max={selectedSensor && DIGITAL_TYPES.has(selectedSensor.sensor_type) ? String(Math.max(...DIGITAL_VALUES)) : undefined}
                           value={condition.value}
                           disabled={condition.operator === "changed"}
                           required={condition.operator !== "changed"}
@@ -478,7 +456,7 @@ export default function AutomationSection({
                         />
                       </div>
                     </div>
-                    <button className="automation-remove-button" type="button" aria-label={`Remove condition ${index + 1}`} onClick={() => removeCondition(index)} disabled={form.conditions.length === 1}>×</button>
+                    <button className="automation-remove-button" type="button" aria-label={`Remove condition ${index + 1}`} onClick={() => removeCondition(index)} disabled={form.conditions.length <= MIN_RULE_ITEMS}>×</button>
                   </div>
                 );
               })}
@@ -487,7 +465,7 @@ export default function AutomationSection({
             <div className="automation-editor-section">
               <div className="automation-editor-heading">
                 <div><span className="automation-step then-step">THEN</span><strong>Actions</strong></div>
-                <button className="automation-add-button" type="button" onClick={addAction} disabled={form.actions.length >= 3}>＋ Action</button>
+                <button className="automation-add-button" type="button" onClick={addAction} disabled={form.actions.length >= MAX_RULE_ITEMS}>＋ Action</button>
               </div>
               {form.actions.map((action, index) => (
                 <div className="automation-editor-row" key={`action-${index}`}>
@@ -502,15 +480,15 @@ export default function AutomationSection({
                     <div>
                       <label className="sr-only" htmlFor={`action-type-${index}`}>Device action</label>
                       <select id={`action-type-${index}`} value={action.action_type} onChange={(event) => updateAction(index, "action_type", event.target.value)}>
-                        {Object.entries(ACTION_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                        {allowedActions.map((value) => <option key={value} value={value}>{ACTION_LABELS[value] || value}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="sr-only" htmlFor={`action-delay-${index}`}>Delay seconds</label>
-                      <input id={`action-delay-${index}`} type="number" min="0" max="60" step="1" value={action.delay_seconds} onChange={(event) => updateAction(index, "delay_seconds", event.target.value)} placeholder="Delay (s)" required />
+                      <input id={`action-delay-${index}`} type="number" min="0" max={String(MAX_DELAY)} step="1" value={action.delay_seconds} onChange={(event) => updateAction(index, "delay_seconds", event.target.value)} placeholder="Delay (s)" required />
                     </div>
                   </div>
-                  <button className="automation-remove-button" type="button" aria-label={`Remove action ${index + 1}`} onClick={() => removeAction(index)} disabled={form.actions.length === 1}>×</button>
+                  <button className="automation-remove-button" type="button" aria-label={`Remove action ${index + 1}`} onClick={() => removeAction(index)} disabled={form.actions.length <= MIN_RULE_ITEMS}>×</button>
                 </div>
               ))}
             </div>

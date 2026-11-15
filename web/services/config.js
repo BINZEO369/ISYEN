@@ -8,8 +8,3 @@ export const SESSION_KEY = "isyen.auth.session";
 export function apiUrl(path) {
   return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
-
-export const DEVICE_PINS = [4, 5, 13, 14, 16, 17, 18, 21, 22, 23, 25, 33];
-export const SENSOR_PINS = [
-  4, 5, 13, 14, 15, 16, 17, 18, 21, 22, 23, 25, 32, 33, 34, 35, 36, 39,
-];

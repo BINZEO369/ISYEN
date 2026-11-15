@@ -5,11 +5,31 @@ const { supabaseRequest, query } = require("../supabase");
 const { readBody } = require("../http");
 const { requireId, requireKeys, requireText } = require("../validators");
 
+const MIN_RULE_ITEMS = 1;
 const MAX_RULE_ITEMS = 3;
+const MAX_ACTION_DELAY_SECONDS = 60;
+const MAX_COOLDOWN_SECONDS = 3600;
+const LOGIC_TYPES = new Set(["AND", "OR"]);
+const DIGITAL_SENSOR_VALUES = [0, 1];
 const MAX_DATABASE_ID = 2147483647;
 const OPERATORS = new Set(["eq", "ne", "gt", "gte", "lt", "lte", "changed"]);
 const DIGITAL_SENSOR_TYPES = new Set(["PIR", "REED", "WATER_LEAK", "TOUCH"]);
 const ACTIONS = new Set(["on", "off", "toggle"]);
+
+function options() {
+  return {
+    min_rule_items: MIN_RULE_ITEMS,
+    max_rule_items: MAX_RULE_ITEMS,
+    logic_types: [...LOGIC_TYPES],
+    operators: [...OPERATORS],
+    digital_operators: ["eq", "ne", "changed"],
+    actions: [...ACTIONS],
+    digital_sensor_types: [...DIGITAL_SENSOR_TYPES],
+    digital_sensor_values: DIGITAL_SENSOR_VALUES,
+    max_delay_seconds: MAX_ACTION_DELAY_SECONDS,
+    max_cooldown_seconds: MAX_COOLDOWN_SECONDS,
+  };
+}
 
 function databaseId(value, field) {
   const id = requireId(value, field);
@@ -33,7 +53,7 @@ function boundedInteger(value, field, minimum, maximum) {
 }
 
 function parseConditions(value) {
-  if (!Array.isArray(value) || value.length < 1 || value.length > MAX_RULE_ITEMS)
+  if (!Array.isArray(value) || value.length < MIN_RULE_ITEMS || value.length > MAX_RULE_ITEMS)
     throw new HttpError(400, "Add between 1 and 3 automation conditions.");
   return value.map((item) => {
     if (!item || typeof item !== "object" || Array.isArray(item))
@@ -55,7 +75,7 @@ function parseConditions(value) {
 }
 
 function parseActions(value) {
-  if (!Array.isArray(value) || value.length < 1 || value.length > MAX_RULE_ITEMS)
+  if (!Array.isArray(value) || value.length < MIN_RULE_ITEMS || value.length > MAX_RULE_ITEMS)
     throw new HttpError(400, "Add between 1 and 3 automation actions.");
   return value.map((item) => {
     if (!item || typeof item !== "object" || Array.isArray(item))
@@ -67,7 +87,7 @@ function parseActions(value) {
     const delay_seconds =
       item.delay_seconds === undefined
         ? 0
-        : boundedInteger(item.delay_seconds, "Action delay", 0, 60);
+        : boundedInteger(item.delay_seconds, "Action delay", 0, MAX_ACTION_DELAY_SECONDS);
     return { device_id, action_type: item.action_type, delay_seconds };
   });
 }
@@ -88,13 +108,13 @@ function parseRule(body) {
   }
   const gateway_id = databaseId(body.gateway_id, "gateway ID");
   const automation_name = requireText(body.automation_name, "Automation name");
-  if (!new Set(["AND", "OR"]).has(body.logic_type))
+  if (!LOGIC_TYPES.has(body.logic_type))
     throw new HttpError(400, "Logic type must be AND or OR.");
   const cooldown_seconds = boundedInteger(
     body.cooldown_seconds,
     "Cooldown",
     0,
-    3600,
+    MAX_COOLDOWN_SECONDS,
   );
   return {
     gateway_id,
@@ -153,7 +173,7 @@ async function verifyOwnerResources(config, token, rule) {
     if (!DIGITAL_SENSOR_TYPES.has(sensorTypes.get(condition.sensor_id))) continue;
     if (!["eq", "ne", "changed"].includes(condition.operator))
       throw new HttpError(400, "Digital sensors support equals, not-equals, or changed conditions.");
-    if (condition.operator !== "changed" && ![0, 1].includes(condition.value))
+    if (condition.operator !== "changed" && !DIGITAL_SENSOR_VALUES.includes(condition.value))
       throw new HttpError(400, "Digital sensor conditions must use 0 or 1.");
   }
 }
@@ -163,21 +183,23 @@ async function save(req, config, token, rawId = null) {
   let automationId = null;
   if (rawId !== null) {
     automationId = databaseId(rawId, "automation ID");
-    if (Object.keys(body).length === 1 && Object.hasOwn(body, "enabled")) {
-      if (typeof body.enabled !== "boolean")
+    const toggleEnabled = Object.keys(body).length === 1 && body.action === "toggle";
+    const setEnabled = Object.keys(body).length === 1 && Object.hasOwn(body, "enabled");
+    if (toggleEnabled || setEnabled) {
+      let enabled = body.enabled;
+      if (toggleEnabled) {
+        const current = await supabaseRequest(
+          config, token, query("automations", { id: `eq.${automationId}`, select: "id,enabled", limit: "1" }),
+        );
+        if (!Array.isArray(current) || !current.length)
+          throw new HttpError(404, "Automation not found.");
+        enabled = !current[0].enabled;
+      } else if (typeof enabled !== "boolean") {
         throw new HttpError(400, "enabled must be a boolean.");
+      }
       const updated = await supabaseRequest(
-        config,
-        token,
-        query("automations", {
-          id: `eq.${automationId}`,
-          select: "id,enabled",
-        }),
-        {
-          method: "PATCH",
-          prefer: "return=representation",
-          body: { enabled: body.enabled },
-        },
+        config, token, query("automations", { id: `eq.${automationId}`, select: "id,enabled" }),
+        { method: "PATCH", prefer: "return=representation", body: { enabled } },
       );
       if (!Array.isArray(updated) || !updated.length)
         throw new HttpError(404, "Automation not found.");
@@ -260,4 +282,4 @@ async function logs(config, token, rawId) {
   return { logs: Array.isArray(rows) ? rows : [] };
 }
 
-module.exports = { save, remove, logs };
+module.exports = { save, remove, logs, options };

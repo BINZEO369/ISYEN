@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { DEVICE_PINS } from "../services/config";
 import { Modal } from "./Feedback";
 import { Empty, same } from "./resourceHelpers";
 export function DeviceCards({ items, gateways, nodes, onToggle, onDelete }) {
@@ -68,17 +67,16 @@ export function DeviceCards({ items, gateways, nodes, onToggle, onDelete }) {
 
 
 export const createDevice = (request, payload) => request("/api/devices", { method: "POST", body: JSON.stringify(payload) });
-export const setDeviceState = (request, id, isOn) => request(`/api/devices/${encodeURIComponent(id)}/state`, { method: "PATCH", body: JSON.stringify({ is_on: isOn }) });
+export const setDeviceState = (request, id) => request(`/api/devices/${encodeURIComponent(id)}/state`, { method: "PATCH", body: JSON.stringify({ action: "toggle" }) });
 export const deleteDevice = (request, id) => request(`/api/devices/${encodeURIComponent(id)}`, { method: "DELETE" });
 
-export default function DevicesSection({ items, gateways, nodes, request, onRefresh, notify }) {
+export default function DevicesSection({ items, gateways, nodes, options, request, onRefresh, notify }) {
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
   const [gatewayId, setGatewayId] = useState("");
   function openAdd() { if (!gateways.length) { notify("Add a gateway first.", true); return; } setGatewayId(String(gateways[0].id)); setAdding(true); }
   async function toggle(device) {
-    const on = Array.isArray(device.device_states) ? Boolean(device.device_states[0]?.is_on) : Boolean(device.device_states?.is_on);
-    try { await setDeviceState(request, device.id, !on); await onRefresh(); }
+    try { await setDeviceState(request, device.id); await onRefresh(); }
     catch (error) { notify(error.message, true); await onRefresh(); }
   }
   async function remove(device) {
@@ -90,7 +88,6 @@ export default function DevicesSection({ items, gateways, nodes, request, onRefr
     event.preventDefault(); if (busy) return; setBusy(true);
     const form = new FormData(event.currentTarget); const pin = Number(form.get("pin"));
     try {
-      if (!DEVICE_PINS.includes(pin)) throw new Error("Select a valid GPIO pin.");
       await createDevice(request, { gateway_id: Number(form.get("gateway")), node_id: Number(form.get("node")), device_name: String(form.get("name")).trim(), pin });
       setAdding(false); notify("Device added."); await onRefresh();
     } catch (error) { notify(error.message, true); } finally { setBusy(false); }
@@ -106,7 +103,7 @@ export default function DevicesSection({ items, gateways, nodes, request, onRefr
       <label htmlFor="device-name">Device name</label><input id="device-name" name="name" required maxLength={80} placeholder="e.g., Living room fan" autoFocus />
       <label htmlFor="device-gateway">Gateway</label><select id="device-gateway" name="gateway" required value={gatewayId} onChange={(event) => setGatewayId(event.target.value)}>{gateways.map((item) => <option key={item.id} value={item.id}>{item.gateway_name}</option>)}</select>
       <label htmlFor="device-node">Node</label><select id="device-node" name="node" required><option value="0">Main ESP32 (Gateway)</option>{approved.map((item) => <option key={item.id} value={item.id}>{item.node_name || "Sub Node"}</option>)}</select>
-      <label htmlFor="device-pin">GPIO Pin</label><select id="device-pin" name="pin">{DEVICE_PINS.map((pin) => <option key={pin} value={pin}>GPIO {pin}</option>)}</select>
+      <label htmlFor="device-pin">GPIO Pin</label><select id="device-pin" name="pin">{options.device_pins.map((pin) => <option key={pin} value={pin}>GPIO {pin}</option>)}</select>
       <div className="modal-actions"><button className="btn btn-quiet" type="button" onClick={() => setAdding(false)}>Cancel</button><button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "Saving…" : "Add Device"}</button></div>
     </form></Modal>}
     <style jsx global>{`

@@ -94,6 +94,7 @@ GitHub repository-টি Vercel-এ import করে **Root Directory = `web`** 
 | Method         | Endpoint                           | উদ্দেশ্য                                               |
 | -------------- | ---------------------------------- | ------------------------------------------------------ |
 | GET            | `/api/health`                      | API health check                                       |
+| GET            | `/api/options`                     | server-owned form choices and rule constraints        |
 | POST           | `/api/auth/register`               | Supabase Auth-এ account registration                  |
 | POST           | `/api/auth/login`                  | Password login এবং session ফেরানো                     |
 | POST           | `/api/auth/refresh`                | Expired access token refresh                           |

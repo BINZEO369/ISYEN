@@ -5,6 +5,7 @@ const {
   supabaseRequest,
 } = require("./supabase");
 const authController = require("./controllers/auth");
+const optionsController = require("./controllers/options");
 const dashboard = require("./controllers/dashboard"),
   automation = require("./controllers/automation"),
   gateway = require("./controllers/gateway"),
@@ -12,6 +13,8 @@ const dashboard = require("./controllers/dashboard"),
   device = require("./controllers/device"),
   sensor = require("./controllers/sensor");
 async function route(req, path, searchParams) {
+  if (req.method === "GET" && path === "/options")
+    return optionsController.options();
   if (req.method === "GET" && path === "/health")
     return {
       ok: true,

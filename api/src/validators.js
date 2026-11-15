@@ -23,6 +23,7 @@ const SUB_NODE_SENSOR_TYPES = new Set([
 ]);
 const DIGITAL_SENSOR_TYPES = new Set(["PIR", "REED", "WATER_LEAK", "TOUCH"]);
 const DEVICE_PINS = new Set([4, 5, 13, 14, 16, 17, 18, 21, 22, 23, 25, 33]);
+const PIR_TRIGGER_STATES = new Set(["HIGH", "LOW"]);
 const SENSOR_PINS = new Set([
   4, 5, 13, 14, 15, 16, 17, 18, 21, 22, 23, 25, 32, 33, 34, 35, 36, 39,
 ]);
@@ -53,6 +54,7 @@ module.exports = {
   DIGITAL_SENSOR_TYPES,
   DEVICE_PINS,
   SENSOR_PINS,
+  PIR_TRIGGER_STATES,
   requireText,
   requireId,
   validatePin,

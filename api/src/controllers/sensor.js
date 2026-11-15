@@ -8,6 +8,7 @@ const {
   requireId,
   validatePin,
   SENSOR_PINS,
+  PIR_TRIGGER_STATES,
   VALID_SENSOR_TYPES,
   SUB_NODE_SENSOR_TYPES,
 } = require("../validators");
@@ -33,7 +34,7 @@ async function create(req, config, token) {
     );
   const gateway_id = requireId(b.gateway_id, "gateway ID");
   if (node_id > 0) await assertApprovedNode(config, token, node_id, gateway_id);
-  if (!["HIGH", "LOW"].includes(b.pir_trigger_state))
+  if (!PIR_TRIGGER_STATES.has(b.pir_trigger_state))
     throw new HttpError(400, "Trigger state must be HIGH or LOW.");
   const data = await supabaseRequest(config, token, "/rest/v1/sensors", {
     method: "POST",
