@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { API_BASE_URL, DEVICE_PINS, SENSOR_PINS } from "../services/config";
+import { DEVICE_PINS, SENSOR_PINS } from "../services/config";
 import { Loading, Modal } from "./Feedback";
-import AutomationSection from "./AutomationSection";
-import {
-  DeviceCards,
-  GatewayCards,
-  NodeCards,
-  SensorCards,
-} from "./ResourceCards";
+import AutomationSection from "./dashboard/automations/AutomationSection";
+import { DeviceCards } from "./dashboard/devices/DeviceCards";
+import { GatewayCards } from "./dashboard/gateways/GatewayCards";
+import { NodeCards } from "./dashboard/nodes/NodeCards";
+import { SensorCards } from "./dashboard/sensors/SensorCards";
+import { requestBackendEndpoint } from "./dashboard/shared/request";
+import { getDashboard, getReadings } from "./dashboard/shared/dashboardApi";
+import { createDevice, deleteDevice, setDeviceState } from "./dashboard/devices/deviceApi";
+import { createGateway } from "./dashboard/gateways/gatewayApi";
+import { approveNode as approveNodeRequest, deleteNode } from "./dashboard/nodes/nodeApi";
+import { createSensor, deleteSensor } from "./dashboard/sensors/sensorApi";
 
 const TYPES = ["DHT11", "DHT22", "MQ2", "MQ135", "PIR", "REED", "LDR", "RAIN", "WATER_LEAK", "TOUCH"];
 const SUB_NODE_TYPES = new Set(["PIR", "REED", "LDR", "RAIN", "WATER_LEAK", "TOUCH"]);
@@ -26,43 +30,6 @@ const SECTION_TITLES = {
   automation: "Automations",
 };
 
-// Dashboard actions call their backend endpoints; Supabase credentials stay on the server.
-async function requestBackendEndpoint(accessToken, path, options = {}) {
-  if (!accessToken) throw new Error("Your session has expired. Please sign in again.");
-  const headers = new Headers(options.headers || {});
-  headers.set("Authorization", `Bearer ${accessToken}`);
-  headers.set("Accept", "application/json");
-  if (options.body !== undefined) headers.set("Content-Type", "application/json");
-
-  let response;
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
-  } catch (error) {
-    throw new Error(error.message || "Could not connect to the server. Check your connection and try again.");
-  }
-  const raw = await response.text();
-  let payload = null;
-  if (raw) {
-    try {
-      payload = JSON.parse(raw);
-    } catch {
-      throw new Error("The server returned an invalid response.");
-    }
-  }
-  if (!response.ok) {
-    const message =
-      response.status === 401 || response.status === 403
-        ? "Your session has expired. Please sign in again."
-        : response.status === 404
-          ? "The requested item was not found."
-          : `Request failed (${response.status}). Please try again.`;
-    throw new Error(message);
-  }
-  return payload;
-}
-
-const jsonRequest = (method, body) => ({ method, body: JSON.stringify(body) });
-const endpointId = (value) => encodeURIComponent(value);
 export default function DashboardShell({
   user,
   session,
@@ -87,15 +54,14 @@ export default function DashboardShell({
   const [nodeId, setNodeId] = useState("0");
   const [trigger, setTrigger] = useState("HIGH");
   const requestApi = useCallback(
-    (path, options = {}) =>
-      requestBackendEndpoint(session.access_token, path, options),
+    (path, options = {}) => requestBackendEndpoint(session.access_token, path, options),
     [session.access_token],
   );
   const refresh = useCallback(async ({ showLoading = false } = {}) => {
     if (showLoading) setLoading(true);
     setError("");
     try {
-      const d = await requestBackendEndpoint(session.access_token, "/api/dashboard");
+      const d = await getDashboard(requestApi);
       const readings = {};
       (d.readings || []).forEach((r) => {
         if (r.sensor_id != null) readings[r.sensor_id] = r;
@@ -132,7 +98,7 @@ export default function DashboardShell({
     let active = true;
     const poll = async (type) => {
       try {
-        const out = await requestBackendEndpoint(session.access_token, `/api/readings?type=${encodeURIComponent(type)}`);
+        const out = await getReadings(requestApi, type);
         if (!active) return;
         setData((d) => {
           const readings = { ...d.readings };
@@ -194,11 +160,7 @@ export default function DashboardShell({
     const f = new FormData(e.currentTarget);
     try {
       if (modal === "gateway") {
-        const result = await requestBackendEndpoint(
-          session.access_token,
-          "/api/gateways",
-          jsonRequest("POST", { gateway_name: String(f.get("name")).trim() }),
-        );
+        const result = await createGateway(requestApi, { gateway_name: String(f.get("name")).trim() });
         setModal("");
         notify(
           `Gateway created${result?.claim_code ? ` · Claim Code ${result.claim_code}` : ""}`,
@@ -208,12 +170,12 @@ export default function DashboardShell({
         const pin = Number(f.get("pin"));
         if (!DEVICE_PINS.includes(pin))
           throw new Error("Select a valid GPIO pin.");
-        await requestBackendEndpoint(session.access_token, "/api/devices", jsonRequest("POST", {
+        await createDevice(requestApi, {
           gateway_id: Number(f.get("gateway")),
           node_id: Number(f.get("node")),
           device_name: String(f.get("name")).trim(),
           pin,
-        }));
+        });
         setModal("");
         notify("Device added.");
         await refresh();
@@ -229,14 +191,14 @@ export default function DashboardShell({
           throw new Error(
             `${sensorType} can only be assigned to an approved Sub Node.`,
           );
-        await requestBackendEndpoint(session.access_token, "/api/sensors", jsonRequest("POST", {
+        await createSensor(requestApi, {
           gateway_id: Number(f.get("gateway")),
           node_id: node,
           sensor_name: String(f.get("name")).trim(),
           pin,
           sensor_type: sensorType,
           pir_trigger_state: trigger,
-        }));
+        });
         setModal("");
         notify("Sensor added.");
         await refresh();
@@ -251,11 +213,7 @@ export default function DashboardShell({
     const name = window.prompt("Enter a name for this Node:", "Room Node");
     if (!name?.trim()) return;
     await run(
-      () => requestBackendEndpoint(
-        session.access_token,
-        `/api/nodes/${endpointId(n.id)}`,
-        jsonRequest("PATCH", { node_name: name.trim(), is_approved: true }),
-      ),
+      () => approveNodeRequest(requestApi, n.id, name.trim()),
       "Node approved.",
     );
   }
@@ -272,7 +230,7 @@ export default function DashboardShell({
       )
     )
       await run(
-        () => requestBackendEndpoint(session.access_token, `/api/nodes/${endpointId(n.id)}`, { method: "DELETE" }),
+        () => deleteNode(requestApi, n.id),
         "Node and related resources deleted.",
       );
   }
@@ -289,11 +247,7 @@ export default function DashboardShell({
       ),
     }));
     try {
-      await requestBackendEndpoint(
-        session.access_token,
-        `/api/devices/${endpointId(d.id)}/state`,
-        jsonRequest("PATCH", { is_on: !on }),
-      );
+      await setDeviceState(requestApi, d.id, !on);
       await refresh();
     } catch (e) {
       notify(e.message, true);
@@ -310,8 +264,8 @@ export default function DashboardShell({
     await run(
       () =>
         type === "device"
-          ? requestBackendEndpoint(session.access_token, `/api/devices/${endpointId(item.id)}`, { method: "DELETE" })
-          : requestBackendEndpoint(session.access_token, `/api/sensors/${endpointId(item.id)}`, { method: "DELETE" }),
+          ? deleteDevice(requestApi, item.id)
+          : deleteSensor(requestApi, item.id),
       `${type === "device" ? "Device" : "Sensor"} deleted.`,
     );
   }

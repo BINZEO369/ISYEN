@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Modal } from "./Feedback";
+import { Modal } from "../../Feedback";
+import styles from "./automations.module.css";
+import { deleteAutomation, getAutomationLogs, saveAutomation, setAutomationEnabled } from "./automationApi";
 
 const OPERATOR_LABELS = {
   eq: "equals",
@@ -222,10 +224,7 @@ export default function AutomationSection({
       if (!payload.automation_name) throw new Error("Enter an automation name.");
       if (!Number.isInteger(payload.cooldown_seconds) || payload.cooldown_seconds < 0 || payload.cooldown_seconds > 3600)
         throw new Error("Cooldown must be from 0 to 3600 seconds.");
-      await request(
-        form.id ? `/api/automations/${encodeURIComponent(form.id)}` : "/api/automations",
-        { method: form.id ? "PATCH" : "POST", body: JSON.stringify(payload) },
-      );
+      await saveAutomation(request, form.id, payload);
       setForm(null);
       notify(form.id ? "Automation updated." : "Automation created.");
       await onRefresh();
@@ -239,10 +238,7 @@ export default function AutomationSection({
   async function toggle(automation) {
     setWorkingId(automation.id);
     try {
-      await request(`/api/automations/${encodeURIComponent(automation.id)}`, {
-        method: "PATCH",
-        body: JSON.stringify({ enabled: !automation.enabled }),
-      });
+      await setAutomationEnabled(request, automation.id, !automation.enabled);
       notify(automation.enabled ? "Automation disabled." : "Automation enabled.");
       await onRefresh();
     } catch (error) {
@@ -256,7 +252,7 @@ export default function AutomationSection({
     if (!window.confirm(`Delete “${automation.automation_name}” and its execution history?`)) return;
     setWorkingId(automation.id);
     try {
-      await request(`/api/automations/${encodeURIComponent(automation.id)}`, { method: "DELETE" });
+      await deleteAutomation(request, automation.id);
       notify("Automation and its logs deleted.");
       await onRefresh();
     } catch (error) {
@@ -271,7 +267,7 @@ export default function AutomationSection({
     setLogRows([]);
     setLogsLoading(true);
     try {
-      const result = await request(`/api/automations/${encodeURIComponent(automation.id)}/logs`);
+      const result = await getAutomationLogs(request, automation.id);
       setLogRows(result?.logs || []);
     } catch (error) {
       notify(error.message || "Could not load execution logs.", true);
@@ -303,7 +299,7 @@ export default function AutomationSection({
       </p>
 
       {automations.length ? (
-        <div className="automation-grid">
+        <div className={`automation-grid ${styles.grid}`}>
           {automations.map((automation) => {
             const gateway = gateways.find((item) => item.id === automation.gateway_id);
             const conditions = [...(automation.automation_conditions || [])].sort(
@@ -313,7 +309,7 @@ export default function AutomationSection({
               (a, b) => a.order_index - b.order_index,
             );
             return (
-              <article className="card automation-card" key={automation.id}>
+              <article className={`card automation-card ${styles.card}`} key={automation.id}>
                 <div className="automation-card-heading">
                   <div className="resource-heading">
                     <span className="resource-icon automation-icon" aria-hidden="true">↗</span>
