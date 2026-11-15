@@ -3591,3 +3591,11 @@ select:focus-visible {
   .app-shell .card,
   .app-shell .dashboard-overview-card { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
 }
+
+/* Plain white dashboard backdrop; the supplied image remains unused in public assets. */
+.app-shell {
+  background: #fff;
+  background-image: none;
+  background-attachment: scroll;
+}
+.app-shell::before { display: none; }
