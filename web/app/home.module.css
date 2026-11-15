@@ -1049,3 +1049,118 @@
     border-radius: 15px;
   }
 }
+
+
+/* Light liquid-glass homepage palette aligned with the shared site theme. */
+.page {
+  --home-navy: #111b2d;
+  --home-teal: #2867d5;
+  --home-teal-bright: #4388f5;
+  --home-muted: #697991;
+  --home-line: rgba(112, 145, 190, 0.18);
+  color: #111b2d;
+  background: transparent;
+}
+.hero {
+  background:
+    radial-gradient(ellipse at 84% 11%, rgba(105, 169, 255, 0.17), transparent 34%),
+    radial-gradient(ellipse at 11% 80%, rgba(185, 221, 255, 0.21), transparent 35%),
+    linear-gradient(160deg, rgba(255,255,255,0.68), rgba(239,246,255,0.64));
+}
+.eyebrow,
+.heroCopy h1 span,
+.heroNote a,
+.inlineLink { color: #2867d5; }
+.eyebrowDot { background: #4388f5; box-shadow: 0 0 0 4px rgba(67,136,245,0.15); }
+.primaryButton {
+  color: #fff;
+  background: linear-gradient(125deg, #5599fa, #2d6fe0);
+  box-shadow: 0 10px 24px rgba(47,111,224,0.23);
+}
+.primaryButton:hover { background: linear-gradient(125deg, #4388f5, #205fc9); }
+.secondaryButton {
+  border: 1px solid rgba(106,146,197,0.24);
+  color: #253752;
+  background: rgba(255,255,255,0.75);
+  box-shadow: 0 7px 20px rgba(47,91,153,0.06);
+  backdrop-filter: blur(12px);
+}
+.secondaryButton:hover { background: rgba(233,243,255,0.9); }
+.heroNote { color: #697991; }
+.quickTags span {
+  border-color: rgba(255,255,255,0.95);
+  color: #4f627b;
+  background: rgba(255,255,255,0.62);
+  box-shadow: 0 5px 15px rgba(47,91,153,0.05);
+  backdrop-filter: blur(12px);
+}
+.heroImageFrame {
+  border-color: rgba(255,255,255,0.92);
+  background: #dceaff;
+  box-shadow: 0 26px 68px rgba(42,82,141,0.17);
+}
+.imageCaption {
+  border-color: rgba(255,255,255,0.72);
+  background: rgba(20,36,59,0.42);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+.captionIcon { background: linear-gradient(145deg, #65adff, #3478e2); }
+.imageLabel { background: rgba(22,43,72,0.32); backdrop-filter: blur(12px); }
+.visualAccent {
+  border: 1px solid rgba(255,255,255,0.88);
+  background: linear-gradient(145deg, rgba(199,225,255,0.82), rgba(234,244,255,0.62));
+  box-shadow: 0 14px 40px rgba(58,116,193,0.1);
+  backdrop-filter: blur(18px);
+}
+.featuresSection { background: rgba(255,255,255,0.56); }
+.featureCard {
+  border-color: rgba(255,255,255,0.95);
+  background: rgba(255,255,255,0.68);
+  box-shadow: 0 12px 30px rgba(47,91,153,0.075);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+.featureCard:hover {
+  border-color: rgba(74,139,231,0.32);
+  box-shadow: 0 19px 38px rgba(47,91,153,0.13);
+}
+.featureIcon { color: #2867d5; background: linear-gradient(145deg, #edf6ff, #dcecff); }
+.featureNumber { color: #89a7cc; }
+.detailSection { background: rgba(225,239,255,0.46); }
+.detailImageFrame {
+  border: 1px solid rgba(255,255,255,0.9);
+  box-shadow: 0 22px 54px rgba(42,82,141,0.12);
+}
+.detailImageTag { background: rgba(22,43,72,0.53); backdrop-filter: blur(12px); }
+.detailList li { color: #40536e; }
+.detailList li span { color: #2867d5; background: #e4f0ff; }
+.finalCta { background: rgba(255,255,255,0.52); }
+.finalCtaInner {
+  border: 1px solid rgba(255,255,255,0.96);
+  color: #111b2d;
+  background:
+    radial-gradient(ellipse at 90% 6%, rgba(110,174,255,0.2), transparent 34%),
+    linear-gradient(125deg, rgba(255,255,255,0.82), rgba(223,238,255,0.84));
+  box-shadow: 0 20px 48px rgba(47,91,153,0.12);
+  backdrop-filter: blur(20px) saturate(145%);
+  -webkit-backdrop-filter: blur(20px) saturate(145%);
+}
+.finalCta .eyebrow { color: #2867d5; }
+.finalCta h2 { color: #111b2d; }
+.finalCtaInner > div:first-child > p:last-child { color: #66778f; }
+.finalPrimary {
+  color: #fff;
+  background: linear-gradient(125deg, #5599fa, #2d6fe0);
+  box-shadow: 0 7px 17px rgba(47,111,224,0.2);
+}
+.finalPrimary:hover { background: linear-gradient(125deg, #4388f5, #205fc9); }
+.finalSecondary {
+  border-color: rgba(87,133,192,0.25);
+  color: #2a4569;
+  background: rgba(255,255,255,0.62);
+}
+.finalSecondary:hover { background: rgba(255,255,255,0.88); }
+@media (max-width: 680px) {
+  .featureCard { background: rgba(255,255,255,0.78); }
+}

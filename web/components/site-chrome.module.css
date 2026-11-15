@@ -336,3 +336,62 @@
     display: none;
   }
 }
+
+
+/* Shared frosted-glass chrome for every route. */
+.header {
+  border-bottom-color: rgba(255,255,255,0.92);
+  background: rgba(248,251,255,0.76);
+  box-shadow: 0 7px 24px rgba(44,84,139,0.065);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+}
+.brand { color: #111b2d; }
+.brandMark {
+  background: linear-gradient(145deg, #70b7ff, #3277e7 72%);
+  box-shadow: 0 8px 18px rgba(52,120,223,0.23);
+}
+.brandWord small { color: #7588a3; }
+.nav a,
+.signIn,
+.signUp,
+.footerInner a { color: #53657e; }
+.nav a:hover,
+.signIn:hover,
+.signUp:hover,
+.footerInner a:hover { color: #2867d5; }
+.signIn,
+.signUp {
+  border-color: rgba(107,148,199,0.23);
+  border-radius: 11px;
+  background: rgba(255,255,255,0.58);
+  box-shadow: 0 4px 13px rgba(47,91,153,0.05);
+  backdrop-filter: blur(12px);
+}
+.signIn:hover,
+.signUp:hover {
+  border-color: rgba(67,136,245,0.34);
+  background: rgba(232,243,255,0.84);
+}
+.dashboard {
+  border: 1px solid rgba(255,255,255,0.36);
+  border-radius: 11px;
+  color: #fff;
+  background: linear-gradient(125deg, #5599fa, #2d6fe0);
+  box-shadow: 0 7px 17px rgba(47,111,224,0.23);
+}
+.dashboard:hover {
+  background: linear-gradient(125deg, #4388f5, #205fc9);
+  box-shadow: 0 10px 21px rgba(47,111,224,0.27);
+}
+.footer {
+  border-top-color: rgba(255,255,255,0.9);
+  background: rgba(248,251,255,0.72);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+.footerInner { color: #75849b; }
+.footerInner a { transition: color 150ms ease; }
+@media (max-width: 680px) {
+  .header { background: rgba(248,251,255,0.84); }
+}
