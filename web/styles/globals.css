@@ -3245,3 +3245,184 @@ select:focus-visible {
   .app-shell .card,
   .app-shell .dashboard-overview-card { -webkit-backdrop-filter: blur(15px) saturate(145%); backdrop-filter: blur(15px) saturate(145%); }
 }
+
+
+/* Monochrome liquid-glass refinement: translucent white surfaces, soft shadow, black controls. */
+.app-shell {
+  --dashboard-white: #fff;
+  --dashboard-black: #000;
+  --dashboard-glass: rgba(255, 255, 255, 0.16);
+  --dashboard-edge: rgba(255, 255, 255, 0.56);
+  --dashboard-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+  color: var(--dashboard-white);
+  background-color: #222;
+  background-image: url("/images/dashboard-background.jpg");
+  background-position: center 44%;
+  background-size: cover;
+  background-attachment: fixed;
+}
+.app-shell::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.25);
+}
+.app-shell .workspace { position: relative; z-index: 1; color: #fff; }
+.app-shell .dashboard-heading,
+.app-shell .dashboard-section-nav,
+.app-shell .dashboard-welcome-card,
+.app-shell .stat-card,
+.app-shell .dashboard-block,
+.app-shell .card,
+.app-shell .empty-state,
+.app-shell .error-panel,
+.app-shell .dashboard-overview-card {
+  border: 1px solid var(--dashboard-edge);
+  color: #fff;
+  background: var(--dashboard-glass);
+  box-shadow: var(--dashboard-shadow), inset 0 1px 0 rgba(255,255,255,0.24);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  backdrop-filter: blur(18px) saturate(120%);
+}
+.app-shell .dashboard-heading,
+.app-shell .dashboard-welcome-card,
+.app-shell .dashboard-block { border-radius: 22px; }
+.app-shell .dashboard-heading .eyebrow,
+.app-shell .section-heading .eyebrow,
+.app-shell .eyebrow,
+.app-shell .dashboard-heading h1,
+.app-shell .dashboard-heading .profile-meta b,
+.app-shell .dashboard-heading .profile-meta small,
+.app-shell .welcome-row h2,
+.app-shell .dashboard-welcome-card h2,
+.app-shell .section-heading h2,
+.app-shell .dashboard-overview-card strong,
+.app-shell .card-title,
+.app-shell .stat-card strong,
+.app-shell .reading-value,
+.app-shell .automation-rule-line strong,
+.app-shell .automation-last-run strong,
+.app-shell .automation-empty strong,
+.app-shell .automation-rule-label,
+.app-shell .automation-then-label,
+.app-shell .automation-editor label,
+.app-shell .automation-editor-heading > div { color: #fff; }
+.app-shell .muted,
+.app-shell .stat-card small,
+.app-shell .card-sub,
+.app-shell .reading-label,
+.app-shell .reading-unit,
+.app-shell .page-description,
+.app-shell .automation-rule-line,
+.app-shell .automation-last-run,
+.app-shell .automation-rule-empty,
+.app-shell .automation-empty p,
+.app-shell .automation-log-data > span { color: rgba(255,255,255,0.9); }
+.app-shell .dashboard-section-nav a { color: #fff; border-color: rgba(255,255,255,0.28); }
+.app-shell .dashboard-section-nav a:hover,
+.app-shell .dashboard-section-nav a.active {
+  color: #fff;
+  border-color: #fff;
+  background: rgba(0,0,0,0.76);
+  box-shadow: 0 5px 14px rgba(0,0,0,0.16);
+}
+.app-shell .dashboard-heading .avatar,
+.app-shell .stat-icon.teal,
+.app-shell .stat-icon.violet,
+.app-shell .stat-icon.amber,
+.app-shell .stat-icon.blue,
+.app-shell .dashboard-overview-card::before,
+.app-shell .dashboard-overview-card:nth-child(2)::before,
+.app-shell .dashboard-overview-card:nth-child(3)::before,
+.app-shell .resource-icon,
+.app-shell .device-icon,
+.app-shell .sensor-icon,
+.app-shell .node-icon,
+.app-shell .automation-icon {
+  border: 1px solid rgba(255,255,255,0.55);
+  color: #fff;
+  background: rgba(0,0,0,0.48);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.app-shell .sync-label,
+.app-shell .badge,
+.app-shell .status,
+.app-shell .status.offline,
+.app-shell .automation-status.is-active,
+.app-shell .automation-status.is-paused {
+  border: 1px solid rgba(255,255,255,0.42);
+  color: #fff;
+  background: rgba(0,0,0,0.44);
+}
+.app-shell .live-dot { background: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,0.17); }
+.app-shell .dashboard-overview-card:hover,
+.app-shell .card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.78);
+  box-shadow: 0 14px 34px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.app-shell .dashboard-overview-count { color: #fff; }
+.app-shell .btn-primary,
+.app-shell .section-heading .btn-primary,
+.app-shell .btn-quiet,
+.app-shell .icon-button,
+.app-shell .automation-add-button,
+.app-shell .automation-remove-button {
+  border: 1px solid rgba(255,255,255,0.72);
+  color: #fff;
+  background: #000;
+  box-shadow: 0 5px 13px rgba(0,0,0,0.16);
+}
+.app-shell .btn-primary:hover:not(:disabled),
+.app-shell .btn-quiet:hover:not(:disabled),
+.app-shell .icon-button:hover,
+.app-shell .automation-add-button:hover:not(:disabled),
+.app-shell .automation-remove-button:hover:not(:disabled) {
+  color: #000;
+  background: #fff;
+  border-color: #000;
+}
+.app-shell .toggle { background: rgba(0,0,0,0.32); border: 1px solid rgba(255,255,255,0.7); }
+.app-shell .toggle.on { background: #000; border-color: #fff; }
+.app-shell .card.pending { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.76); }
+.app-shell .card-actions { border-top-color: rgba(255,255,255,0.3); }
+.app-shell .sensor-reading,
+.app-shell .sensor-reading > div,
+.app-shell .automation-editor-section,
+.app-shell .automation-step,
+.app-shell .automation-step.then-step,
+.app-shell .conditional,
+.app-shell .automation-log-data pre {
+  border-color: rgba(255,255,255,0.34);
+  color: #fff;
+  background: rgba(0,0,0,0.25);
+}
+.app-shell .automation-then-label { border-top-color: rgba(255,255,255,0.3); }
+.app-shell .modal { background: rgba(0,0,0,0.48); }
+.app-shell .modal-content {
+  border-color: rgba(255,255,255,0.8);
+  color: #000;
+  background: rgba(255,255,255,0.94);
+}
+.app-shell .modal-content h2,
+.app-shell .modal-content label,
+.app-shell .modal-content p,
+.app-shell .modal-close { color: #000; }
+.app-shell .modal-content input,
+.app-shell .modal-content select { color: #000; border-color: #000; background: #fff; }
+.app-shell .warning { color: #fff; border: 1px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.65); }
+.app-shell .error-mark { color: #fff; background: #000; }
+.app-shell .spinner { border-color: rgba(255,255,255,0.36); border-top-color: #fff; }
+.app-shell :focus-visible { outline-color: #fff; }
+@media (max-width: 700px) {
+  .app-shell { background-attachment: scroll; background-position: 54% center; }
+  .app-shell .dashboard-heading,
+  .app-shell .dashboard-section-nav,
+  .app-shell .dashboard-welcome-card,
+  .app-shell .stat-card,
+  .app-shell .dashboard-block,
+  .app-shell .card,
+  .app-shell .dashboard-overview-card { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+}
