@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Modal } from "./Feedback";
-import { Empty, same, ago } from "./resourceHelpers";
+import { Modal } from "./UI";
+import { Empty, same, ago } from "./UI";
 export function GatewayCards({ items }) {
   return (
     <div className="card-grid gateway-grid">

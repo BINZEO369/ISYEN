@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Modal } from "./Feedback";
-import { Empty, same, ago } from "./resourceHelpers";
+import { Modal } from "./UI";
+import { Empty, same, ago } from "./UI";
 function Reading({ sensor, reading: r }) {
   const last = (value) =>
     Array.isArray(value) ? (value[value.length - 1] ?? null) : (value ?? null);

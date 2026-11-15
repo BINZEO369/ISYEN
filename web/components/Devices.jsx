@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Modal } from "./Feedback";
-import { Empty, same } from "./resourceHelpers";
+import { Modal } from "./UI";
+import { Empty, same } from "./UI";
 export function DeviceCards({ items, gateways, nodes, onToggle, onDelete }) {
   return (
     <div className="card-grid device-grid">

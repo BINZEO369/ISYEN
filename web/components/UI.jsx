@@ -1,11 +1,14 @@
+"use client";
+
 import { useEffect } from "react";
 
 export function Toast({ toast, onDismiss }) {
   useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(onDismiss, 3800);
-    return () => clearTimeout(t);
+    if (!toast) return undefined;
+    const timer = setTimeout(onDismiss, 3800);
+    return () => clearTimeout(timer);
   }, [toast, onDismiss]);
+
   if (!toast) return null;
   return (
     <div
@@ -18,17 +21,29 @@ export function Toast({ toast, onDismiss }) {
   );
 }
 
-export function Modal({ title, eyebrow, description, onClose, children, className = "" }) {
+export function Modal({
+  title,
+  eyebrow,
+  description,
+  onClose,
+  children,
+  className = "",
+}) {
   useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
   }, [onClose]);
+
   return (
     <div
       className="modal active"
       role="presentation"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
     >
       <section
         className={["modal-content", className].filter(Boolean).join(" ")}
@@ -60,4 +75,22 @@ export function Loading({ text = "Preparing your dashboard…" }) {
       {text}
     </div>
   );
+}
+
+export function Empty({ children }) {
+  return <div className="empty-state">{children}</div>;
+}
+
+export const same = (left, right) => String(left) === String(right);
+
+export function ago(value) {
+  if (!value) return "—";
+  const seconds = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(value).getTime()) / 1000),
+  );
+  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
 }

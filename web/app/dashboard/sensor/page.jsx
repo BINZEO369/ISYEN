@@ -1,7 +1,7 @@
-import DashboardRoute from "../../../components/DashboardRoute";
+import Dashboard from "../../../components/Dashboard";
 
 export const metadata = { title: "Sensors · ISYEN Smart Home" };
 
 export default function SensorsPage() {
-  return <DashboardRoute section="sensor" />;
+  return <Dashboard section="sensor" />;
 }

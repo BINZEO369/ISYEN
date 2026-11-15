@@ -7,7 +7,7 @@
 ```text
 web/                         # Vercel website project root
   app/                       # Next.js URL routes: /signin, /signup, /dashboard
-  components/                # auth, protected dashboard route, cards, feedback
+  components/                # Header/Footer, Home/Auth, Dashboard, one file per section, shared UI
   services/                  # API origin/configuration only; no Supabase browser key
   styles/                    # responsive dashboard styles
   public/images/             # public homepage smart-home visuals
@@ -20,7 +20,7 @@ api/                         # separate Node.js API host root
   src/
     server.js                # request lifecycle, CORS, error mapping
     router.js                # endpoint dispatch
-    controllers/              # auth, dashboard, gateway, node, device, sensor
+    controllers/              # auth, dashboard, options, gateway, node, device, sensor, automation
     http.js                  # request/response, CORS, URL helpers
     supabase.js               # server-side Supabase Auth/REST requests
     validators.js             # IDs, pins, fields and payload validation
