@@ -3599,3 +3599,34 @@ select:focus-visible {
   background-attachment: scroll;
 }
 .app-shell::before { display: none; }
+
+/* Flatten section wrappers and nested detail panels so each dashboard item is one card. */
+.app-shell .dashboard-block {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.app-shell .card {
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.96);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.07);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.app-shell .automation-rule-box,
+.app-shell .sensor-reading,
+.app-shell .sensor-reading > div {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.app-shell .automation-rule-box { gap: 6px; }
+.app-shell .sensor-reading { gap: 18px; margin-top: 11px; }
+.app-shell .card:hover { box-shadow: 0 9px 22px rgba(0,0,0,0.1); }
