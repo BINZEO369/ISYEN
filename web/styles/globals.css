@@ -3426,3 +3426,168 @@ select:focus-visible {
   .app-shell .card,
   .app-shell .dashboard-overview-card { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
 }
+
+
+/* Final card palette: softly translucent white cards and solid black-and-white controls. */
+.app-shell .dashboard-heading,
+.app-shell .dashboard-section-nav,
+.app-shell .dashboard-welcome-card,
+.app-shell .stat-card,
+.app-shell .dashboard-block,
+.app-shell .card,
+.app-shell .empty-state,
+.app-shell .error-panel,
+.app-shell .dashboard-overview-card {
+  color: #000;
+  border: 1px solid rgba(255,255,255,0.88);
+  background: rgba(255,255,255,0.66);
+  background-image: none;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.11), inset 0 1px 0 rgba(255,255,255,0.82);
+  -webkit-backdrop-filter: blur(18px) saturate(110%);
+  backdrop-filter: blur(18px) saturate(110%);
+}
+.app-shell .dashboard-heading .eyebrow,
+.app-shell .dashboard-heading h1,
+.app-shell .dashboard-heading .profile-meta b,
+.app-shell .dashboard-heading .profile-meta small,
+.app-shell .dashboard-welcome-card .eyebrow,
+.app-shell .dashboard-welcome-card h2,
+.app-shell .dashboard-welcome-card .muted,
+.app-shell .stat-card small,
+.app-shell .stat-card strong,
+.app-shell .dashboard-block .eyebrow,
+.app-shell .dashboard-block .section-heading h2,
+.app-shell .dashboard-block .page-description,
+.app-shell .dashboard-block .muted,
+.app-shell .card .eyebrow,
+.app-shell .card .card-title,
+.app-shell .card .card-sub,
+.app-shell .card .muted,
+.app-shell .card .reading-value,
+.app-shell .card .reading-label,
+.app-shell .dashboard-overview-card .eyebrow,
+.app-shell .dashboard-overview-card strong,
+.app-shell .dashboard-overview-card .muted,
+.app-shell .dashboard-overview-card .dashboard-overview-count,
+.app-shell .empty-state,
+.app-shell .error-panel,
+.app-shell .error-panel h2,
+.app-shell .error-panel p { color: #000; }
+.app-shell .dashboard-heading .avatar,
+.app-shell .stat-icon.teal,
+.app-shell .stat-icon.violet,
+.app-shell .stat-icon.amber,
+.app-shell .stat-icon.blue,
+.app-shell .dashboard-overview-card::before,
+.app-shell .dashboard-overview-card:nth-child(2)::before,
+.app-shell .dashboard-overview-card:nth-child(3)::before,
+.app-shell .resource-icon,
+.app-shell .device-icon,
+.app-shell .sensor-icon,
+.app-shell .node-icon,
+.app-shell .automation-icon {
+  color: #fff;
+  border: 1px solid #000;
+  background: #000;
+  box-shadow: none;
+}
+.app-shell .dashboard-overview-count { color: #000; }
+.app-shell .dashboard-section-nav { background: rgba(255,255,255,0.66); }
+.app-shell .dashboard-section-nav a { color: #000; border-color: transparent; }
+.app-shell .dashboard-section-nav a:hover,
+.app-shell .dashboard-section-nav a.active {
+  color: #fff;
+  border-color: #000;
+  background: #000;
+  box-shadow: 0 5px 13px rgba(0,0,0,0.14);
+}
+.app-shell .sync-label,
+.app-shell .badge,
+.app-shell .status,
+.app-shell .status.offline,
+.app-shell .automation-status.is-active,
+.app-shell .automation-status.is-paused {
+  color: #000;
+  border: 1px solid rgba(0,0,0,0.42);
+  background: rgba(255,255,255,0.72);
+}
+.app-shell .live-dot { background: #000; box-shadow: 0 0 0 4px rgba(0,0,0,0.12); }
+.app-shell .btn-primary,
+.app-shell .section-heading .btn-primary,
+.app-shell .btn-quiet,
+.app-shell .icon-button,
+.app-shell .automation-add-button,
+.app-shell .automation-remove-button {
+  color: #fff;
+  border: 1px solid #000;
+  background: #000;
+  box-shadow: 0 5px 13px rgba(0,0,0,0.14);
+}
+.app-shell .btn-primary:hover:not(:disabled),
+.app-shell .btn-quiet:hover:not(:disabled),
+.app-shell .icon-button:hover,
+.app-shell .automation-add-button:hover:not(:disabled),
+.app-shell .automation-remove-button:hover:not(:disabled) {
+  color: #000;
+  border-color: #000;
+  background: #fff;
+}
+.app-shell .toggle { background: rgba(0,0,0,0.14); border: 1px solid #000; }
+.app-shell .toggle.on { background: #000; border-color: #000; }
+.app-shell .card.pending { background: rgba(255,255,255,0.72); border-color: #000; }
+.app-shell .gateway-card,
+.app-shell .node-card,
+.app-shell .device-card,
+.app-shell .sensor-card { border-top-color: #000; }
+.app-shell .card-actions { border-top-color: rgba(0,0,0,0.18); }
+.app-shell .sensor-reading,
+.app-shell .sensor-reading > div,
+.app-shell .automation-editor-section,
+.app-shell .automation-step,
+.app-shell .automation-step.then-step,
+.app-shell .conditional,
+.app-shell .automation-log-data pre {
+  color: #000;
+  border-color: rgba(0,0,0,0.2);
+  background: rgba(255,255,255,0.58);
+}
+.app-shell .sensor-reading .reading-value,
+.app-shell .sensor-reading .reading-label,
+.app-shell .automation-rule-line,
+.app-shell .automation-rule-line strong,
+.app-shell .automation-last-run,
+.app-shell .automation-last-run strong,
+.app-shell .automation-rule-empty,
+.app-shell .automation-empty p,
+.app-shell .automation-empty strong,
+.app-shell .automation-then-label,
+.app-shell .automation-rule-label,
+.app-shell .automation-editor label,
+.app-shell .automation-editor-heading > div,
+.app-shell .automation-log-data > span { color: #000; }
+.app-shell .automation-then-label { border-top-color: rgba(0,0,0,0.18); }
+.app-shell .modal { background: rgba(0,0,0,0.48); }
+.app-shell .modal-content {
+  color: #000;
+  border-color: #000;
+  background: rgba(255,255,255,0.96);
+}
+.app-shell .modal-content h2,
+.app-shell .modal-content label,
+.app-shell .modal-content p,
+.app-shell .modal-close { color: #000; }
+.app-shell .modal-content input,
+.app-shell .modal-content select { color: #000; border-color: #000; background: #fff; }
+.app-shell .warning { color: #fff; border: 1px solid #000; background: #000; }
+.app-shell .error-mark { color: #fff; background: #000; }
+.app-shell .spinner { border-color: rgba(0,0,0,0.18); border-top-color: #000; }
+.app-shell :focus-visible { outline-color: #000; }
+@media (max-width: 700px) {
+  .app-shell .dashboard-heading,
+  .app-shell .dashboard-section-nav,
+  .app-shell .dashboard-welcome-card,
+  .app-shell .stat-card,
+  .app-shell .dashboard-block,
+  .app-shell .card,
+  .app-shell .dashboard-overview-card { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+}
