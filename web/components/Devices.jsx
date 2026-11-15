@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { DEVICE_PINS } from "../../services/config";
-import { Modal } from "../Feedback";
-import { Empty, same } from "./shared/resourceHelpers";
+import { DEVICE_PINS } from "../services/config";
+import { Modal } from "./Feedback";
+import { Empty, same } from "./resourceHelpers";
 export function DeviceCards({ items, gateways, nodes, onToggle, onDelete }) {
   return (
     <div className="card-grid device-grid">

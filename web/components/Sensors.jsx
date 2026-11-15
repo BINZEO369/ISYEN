@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { SENSOR_PINS } from "../../services/config";
-import { Modal } from "../Feedback";
-import { Empty, same, ago } from "./shared/resourceHelpers";
+import { SENSOR_PINS } from "../services/config";
+import { Modal } from "./Feedback";
+import { Empty, same, ago } from "./resourceHelpers";
 function Reading({ sensor, reading: r }) {
   const last = (value) =>
     Array.isArray(value) ? (value[value.length - 1] ?? null) : (value ?? null);

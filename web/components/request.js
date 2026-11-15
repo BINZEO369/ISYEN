@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../../../services/config";
+import { API_BASE_URL } from "../services/config";
 export async function requestBackendEndpoint(accessToken, path, options = {}) {
   if (!accessToken) throw new Error("Your session has expired. Please sign in again.");
   const headers = new Headers(options.headers || {});

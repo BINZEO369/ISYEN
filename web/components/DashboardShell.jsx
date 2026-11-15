@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Loading } from "./Feedback";
-import { requestBackendEndpoint } from "./dashboard/shared/request";
-import { getDashboard, getReadings } from "./dashboard/shared/dashboardApi";
-import OverviewSection from "./dashboard/Overview";
-import DevicesSection from "./dashboard/Devices";
-import SensorsSection from "./dashboard/Sensors";
-import AutomationSection from "./dashboard/Automations";
-import DashboardBackground from "./dashboard/DashboardBackground";
+import { requestBackendEndpoint } from "./request";
+import { getDashboard, getReadings } from "./dashboardApi";
+import OverviewSection from "./Overview";
+import DevicesSection from "./Devices";
+import SensorsSection from "./Sensors";
+import AutomationSection from "./Automations";
+import DashboardBackground from "./DashboardBackground";
 const DASHBOARD_SECTIONS = [
   { id: "overview", label: "Control Panel", href: "/dashboard" },
   { id: "device", label: "Devices", href: "/dashboard/device" },

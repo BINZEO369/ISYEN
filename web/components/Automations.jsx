@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Modal } from "../Feedback";
+import { Modal } from "./Feedback";
 
 const OPERATOR_LABELS = {
   eq: "equals",
