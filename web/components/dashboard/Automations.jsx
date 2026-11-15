@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Modal } from "../../Feedback";
-import styles from "./automations.module.css";
-import { deleteAutomation, getAutomationLogs, saveAutomation, setAutomationEnabled } from "./automationApi";
+import { Modal } from "../Feedback";
 
 const OPERATOR_LABELS = {
   eq: "equals",
@@ -19,6 +17,11 @@ const DIGITAL_TYPES = new Set(["PIR", "REED", "WATER_LEAK", "TOUCH"]);
 const OPERATORS = ["eq", "ne", "gt", "gte", "lt", "lte", "changed"];
 const DIGITAL_OPERATORS = ["eq", "ne", "changed"];
 
+
+const saveAutomationEndpoint = (request, id, payload) => request(id ? `/api/automations/${encodeURIComponent(id)}` : "/api/automations", { method: id ? "PATCH" : "POST", body: JSON.stringify(payload) });
+const setAutomationEnabledEndpoint = (request, id, enabled) => request(`/api/automations/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ enabled }) });
+const deleteAutomationEndpoint = (request, id) => request(`/api/automations/${encodeURIComponent(id)}`, { method: "DELETE" });
+const getAutomationLogsEndpoint = (request, id) => request(`/api/automations/${encodeURIComponent(id)}/logs`);
 function newForm(gatewayId = "") {
   return {
     id: null,
@@ -224,7 +227,7 @@ export default function AutomationSection({
       if (!payload.automation_name) throw new Error("Enter an automation name.");
       if (!Number.isInteger(payload.cooldown_seconds) || payload.cooldown_seconds < 0 || payload.cooldown_seconds > 3600)
         throw new Error("Cooldown must be from 0 to 3600 seconds.");
-      await saveAutomation(request, form.id, payload);
+      await saveAutomationEndpoint(request, form.id, payload);
       setForm(null);
       notify(form.id ? "Automation updated." : "Automation created.");
       await onRefresh();
@@ -238,7 +241,7 @@ export default function AutomationSection({
   async function toggle(automation) {
     setWorkingId(automation.id);
     try {
-      await setAutomationEnabled(request, automation.id, !automation.enabled);
+      await setAutomationEnabledEndpoint(request, automation.id, !automation.enabled);
       notify(automation.enabled ? "Automation disabled." : "Automation enabled.");
       await onRefresh();
     } catch (error) {
@@ -252,7 +255,7 @@ export default function AutomationSection({
     if (!window.confirm(`Delete “${automation.automation_name}” and its execution history?`)) return;
     setWorkingId(automation.id);
     try {
-      await deleteAutomation(request, automation.id);
+      await deleteAutomationEndpoint(request, automation.id);
       notify("Automation and its logs deleted.");
       await onRefresh();
     } catch (error) {
@@ -267,7 +270,7 @@ export default function AutomationSection({
     setLogRows([]);
     setLogsLoading(true);
     try {
-      const result = await getAutomationLogs(request, automation.id);
+      const result = await getAutomationLogsEndpoint(request, automation.id);
       setLogRows(result?.logs || []);
     } catch (error) {
       notify(error.message || "Could not load execution logs.", true);
@@ -285,6 +288,11 @@ export default function AutomationSection({
 
   return (
     <section className="dashboard-block automation-section">
+      <style jsx global>{`
+.app-shell .automation-section { min-width: 0; }
+.app-shell .automation-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 13px; }
+.app-shell .automation-card { display: flex; min-width: 0; flex-direction: column; gap: 12px; padding: 16px; }
+      `}</style>
       <div className="section-heading">
         <div>
           <p className="eyebrow">Rules &amp; Actions</p>
@@ -299,7 +307,7 @@ export default function AutomationSection({
       </p>
 
       {automations.length ? (
-        <div className={`automation-grid ${styles.grid}`}>
+        <div className="automation-grid">
           {automations.map((automation) => {
             const gateway = gateways.find((item) => item.id === automation.gateway_id);
             const conditions = [...(automation.automation_conditions || [])].sort(
@@ -309,7 +317,7 @@ export default function AutomationSection({
               (a, b) => a.order_index - b.order_index,
             );
             return (
-              <article className={`card automation-card ${styles.card}`} key={automation.id}>
+              <article className="card automation-card" key={automation.id}>
                 <div className="automation-card-heading">
                   <div className="resource-heading">
                     <span className="resource-icon automation-icon" aria-hidden="true">↗</span>
